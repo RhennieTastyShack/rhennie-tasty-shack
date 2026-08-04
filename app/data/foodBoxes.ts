@@ -1,0 +1,42 @@
+export const foodBoxes = [
+  {
+    id: "executive-brunch-box",
+    premiumName: "Executive Brunch Box",
+    description: "Perfect for meetings, brunches and premium gifting.",
+    category: "Food Box",
+    collection: "Luxury Food Boxes",
+    available: true,
+  },
+  {
+    id: "family-feast-box",
+    premiumName: "Family Feast Box",
+    description: "A delicious feast for families and small gatherings.",
+    category: "Food Box",
+    collection: "Luxury Food Boxes",
+    available: true,
+  },
+  {
+    id: "corporate-hospitality-box",
+    premiumName: "Corporate Hospitality Box",
+    description: "Ideal for business meetings and corporate events.",
+    category: "Food Box",
+    collection: "Luxury Food Boxes",
+    available: true,
+  },
+  {
+    id: "weekend-indulgence-box",
+    premiumName: "Weekend Indulgence Box",
+    description: "Treat yourself and your loved ones this weekend.",
+    category: "Food Box",
+    collection: "Luxury Food Boxes",
+    available: true,
+  },
+  {
+    id: "celebration-box",
+    premiumName: "Celebration Box",
+    description: "Perfect for birthdays and special occasions.",
+    category: "Food Box",
+    collection: "Luxury Food Boxes",
+    available: true,
+  },
+];
