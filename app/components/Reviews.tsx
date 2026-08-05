@@ -18,7 +18,7 @@ const reviews = [
       "Excellent customer service and amazing meals. Every order arrives on time and tastes just as good as it looks.",
   },
   {
-    name: "Sinmiloluwa",
+    name: "Sinmiloluwa A.",
     role: "Food Enthusiast",
     image: "/images/simi.jpeg",
     review:
@@ -28,50 +28,78 @@ const reviews = [
 
 export default function Reviews() {
   return (
-    <section className="bg-white py-20">
-      <div className="max-w-7xl mx-auto px-6">
-        <div className="text-center mb-14">
-          <h2 className="text-4xl font-bold text-black">
+    <section
+      id="reviews"
+      className="bg-gradient-to-b from-white to-gray-50 py-20 md:py-28"
+    >
+      <div className="mx-auto max-w-7xl px-5 md:px-8">
+
+        <div className="mb-16 text-center">
+
+          <span className="inline-block rounded-full bg-yellow-100 px-4 py-2 text-sm font-semibold text-yellow-700">
+            Customer Reviews
+          </span>
+
+          <h2 className="mt-5 text-3xl font-extrabold text-gray-900 md:text-5xl">
             What Our Customers Say
           </h2>
-          <p className="text-gray-600 mt-3">
-            Real reviews from happy customers.
+
+          <p className="mx-auto mt-5 max-w-2xl text-base text-gray-600 md:text-lg">
+            Every meal is prepared with care, and these reviews reflect the
+            experiences of our valued customers.
           </p>
+
         </div>
 
-        <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-          {reviews.map((review, index) => (
+        <div className="grid gap-8 md:grid-cols-2 xl:grid-cols-3">
+
+          {reviews.map((review) => (
             <div
-              key={index}
-              className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8 hover:shadow-2xl transition duration-300"
+              key={review.name}
+              className="group rounded-3xl border border-gray-100 bg-white p-8 shadow-lg transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl"
             >
-              <div className="flex items-center mb-6">
+
+              <div className="flex items-center gap-5">
+
                 <Image
                   src={review.image}
                   alt={review.name}
-                  width={70}
-                  height={70}
-                  className="rounded-full object-cover w-[70px] h-[70px]"
+                  width={80}
+                  height={80}
+                  className="h-20 w-20 rounded-full object-cover ring-4 ring-yellow-100"
                 />
 
-                <div className="ml-4">
-                  <h3 className="font-semibold text-lg text-black">
+                <div>
+
+                  <h3 className="text-xl font-bold text-gray-900">
                     {review.name}
                   </h3>
-                  <p className="text-sm text-yellow-600">{review.role}</p>
+
+                  <p className="text-sm text-yellow-600">
+                    {review.role}
+                  </p>
+
+                  <span className="mt-2 inline-block rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700">
+                    ✔ Verified Customer
+                  </span>
+
                 </div>
+
               </div>
 
-              <p className="text-gray-700 italic leading-relaxed">
+              <div className="mt-6 text-2xl text-yellow-500">
+                ★★★★★
+              </div>
+
+              <p className="mt-5 italic leading-8 text-gray-600">
                 "{review.review}"
               </p>
 
-              <div className="mt-6 text-yellow-500 text-xl">
-                ★★★★★
-              </div>
             </div>
           ))}
+
         </div>
+
       </div>
     </section>
   );

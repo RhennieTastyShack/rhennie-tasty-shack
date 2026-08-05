@@ -15,42 +15,59 @@ const gallery = [
 
 export default function Gallery() {
   return (
-    <section className="bg-[#0B0B0B] py-28">
-      <div className="max-w-7xl mx-auto px-6">
+    <section
+      id="gallery"
+      className="bg-[#0B0B0B] py-20 md:py-28"
+    >
+      <div className="mx-auto max-w-7xl px-5 md:px-8">
 
-        <div className="text-center mb-20">
+        {/* Heading */}
 
-          <span className="inline-block rounded-full border border-[#D4AF37]/20 bg-[#1A1A1A] px-6 py-2 text-sm tracking-[0.3em] text-[#D4AF37]">
-            OUR GALLERY
+        <div className="mb-16 text-center">
+
+          <span className="inline-block rounded-full border border-[#D4AF37]/30 bg-[#1A1A1A] px-5 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-[#D4AF37]">
+            Our Gallery
           </span>
 
-          <h2 className="text-6xl font-bold text-white mt-6">
+          <h2 className="mt-6 text-3xl font-extrabold text-white md:text-5xl">
             A Taste of Luxury
           </h2>
 
-          <p className="mt-6 text-[#B8B8B8] max-w-3xl mx-auto leading-8">
-            Every dish is prepared with passion, beautifully presented,
-            and made to create unforgettable dining experiences.
+          <p className="mx-auto mt-6 max-w-3xl text-base leading-8 text-[#B8B8B8] md:text-lg">
+            Every dish is carefully prepared, beautifully presented,
+            and crafted to create unforgettable dining experiences.
           </p>
 
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+        {/* Gallery */}
+
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
 
           {gallery.map((image, index) => (
 
             <div
               key={index}
-              className="group overflow-hidden rounded-[30px]"
+              className="group relative overflow-hidden rounded-3xl shadow-xl"
             >
 
               <Image
                 src={image}
-                alt="Gallery"
-                width={500}
-                height={500}
-                className="h-72 w-full object-cover transition duration-700 group-hover:scale-110"
+                alt={`Gallery ${index + 1}`}
+                width={600}
+                height={600}
+                className="h-80 w-full object-cover transition-transform duration-700 group-hover:scale-110"
               />
+
+              {/* Overlay */}
+
+              <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition-all duration-500 group-hover:bg-black/40">
+
+                <span className="translate-y-4 rounded-full bg-[#D4AF37] px-5 py-3 font-semibold text-black opacity-0 transition-all duration-500 group-hover:translate-y-0 group-hover:opacity-100">
+                  View
+                </span>
+
+              </div>
 
             </div>
 
