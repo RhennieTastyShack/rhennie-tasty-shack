@@ -61,18 +61,19 @@ export default function Hero() {
             straight to your doorstep.
           </p>
 
-          <div className="flex flex-col justify-center gap-4 sm:flex-row">
+          {/* Premium Action Buttons */}
+          <div className="mt-10 flex flex-col items-center justify-center gap-5 sm:flex-row">
 
             <Link
               href="/menu"
-              className="rounded-full bg-yellow-500 px-8 py-4 text-lg font-semibold text-black transition duration-300 hover:scale-105 hover:bg-yellow-400"
+              className="flex h-14 w-full max-w-xs items-center justify-center rounded-xl bg-yellow-500 text-lg font-bold text-black shadow-lg transition-all duration-300 hover:scale-105 hover:bg-yellow-400 sm:w-56"
             >
               Order Now
             </Link>
 
             <Link
               href="/menu"
-              className="rounded-full border-2 border-white px-8 py-4 text-lg font-semibold transition duration-300 hover:scale-105 hover:bg-white hover:text-black"
+              className="flex h-14 w-full max-w-xs items-center justify-center rounded-xl border-2 border-white text-lg font-bold text-white transition-all duration-300 hover:scale-105 hover:bg-white hover:text-black sm:w-56"
             >
               View Menu
             </Link>

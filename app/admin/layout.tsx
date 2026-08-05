@@ -1,96 +1,81 @@
-"use client";
-
-import Link from "next/link";
-import {
-  FaChartPie,
-  FaUtensils,
-  FaClipboardList,
-  FaUsers,
-  FaBoxOpen,
-  FaImages,
-  FaCog,
-} from "react-icons/fa";
-
-export default function AdminLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function MenuPage() {
   return (
-    <div className="flex min-h-screen bg-gray-100">
+    <div className="space-y-8">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-white">
+            Menu Management
+          </h1>
 
-      {/* Sidebar */}
-      <aside className="w-72 bg-black text-white p-6">
+          <p className="mt-2 text-gray-400">
+            Manage all meals, prices and collections.
+          </p>
+        </div>
 
-        <h1 className="text-3xl font-bold text-yellow-400 mb-10">
-          Rhennie Admin
-        </h1>
+        <button className="rounded-xl bg-yellow-500 px-6 py-3 font-semibold text-black hover:bg-yellow-400 transition">
+          + Add Meal
+        </button>
+      </div>
 
-        <nav className="space-y-2">
+      <div className="rounded-2xl border border-yellow-500/20 bg-zinc-900 overflow-hidden">
+        <table className="w-full">
+          <thead className="bg-black">
+            <tr>
+              <th className="px-6 py-4 text-left text-yellow-400">
+                Meal
+              </th>
 
-          <Link
-            href="/admin"
-            className="flex items-center gap-3 p-3 rounded-lg hover:bg-yellow-500 hover:text-black transition"
-          >
-            <FaChartPie />
-            Dashboard
-          </Link>
+              <th className="px-6 py-4 text-left text-yellow-400">
+                Collection
+              </th>
 
-          <Link
-            href="/admin/meals"
-            className="flex items-center gap-3 p-3 rounded-lg hover:bg-yellow-500 hover:text-black transition"
-          >
-            <FaUtensils />
-            Meals
-          </Link>
+              <th className="px-6 py-4 text-left text-yellow-400">
+                Price
+              </th>
 
-          <Link
-            href="/admin/orders"
-            className="flex items-center gap-3 p-3 rounded-lg hover:bg-yellow-500 hover:text-black transition"
-          >
-            <FaClipboardList />
-            Orders
-          </Link>
+              <th className="px-6 py-4 text-left text-yellow-400">
+                Status
+              </th>
 
-          <Link
-            href="/admin/customers"
-            className="flex items-center gap-3 p-3 rounded-lg hover:bg-yellow-500 hover:text-black transition"
-          >
-            <FaUsers />
-            Customers
-          </Link>
+              <th className="px-6 py-4 text-right text-yellow-400">
+                Actions
+              </th>
+            </tr>
+          </thead>
 
-          <Link
-            href="/admin/subscriptions"
-            className="flex items-center gap-3 p-3 rounded-lg hover:bg-yellow-500 hover:text-black transition"
-          >
-            <FaBoxOpen />
-            Subscriptions
-          </Link>
+          <tbody>
+            <tr className="border-t border-zinc-800">
+              <td className="px-6 py-5 text-white">
+                Royal Jollof Feast
+              </td>
 
-          <Link
-            href="/admin/gallery"
-            className="flex items-center gap-3 p-3 rounded-lg hover:bg-yellow-500 hover:text-black transition"
-          >
-            <FaImages />
-            Gallery
-          </Link>
+              <td className="px-6 py-5 text-gray-300">
+                Signature Rice
+              </td>
 
-          <Link
-            href="/admin/settings"
-            className="flex items-center gap-3 p-3 rounded-lg hover:bg-yellow-500 hover:text-black transition"
-          >
-            <FaCog />
-            Settings
-          </Link>
+              <td className="px-6 py-5 text-yellow-400">
+                ₦6,500
+              </td>
 
-        </nav>
-      </aside>
+              <td className="px-6 py-5">
+                <span className="rounded-full bg-green-600 px-3 py-1 text-sm text-white">
+                  Available
+                </span>
+              </td>
 
-      {/* Main Content */}
-      <main className="flex-1 p-8">
-        {children}
-      </main>
+              <td className="px-6 py-5 text-right">
+                <button className="mr-3 text-yellow-400 hover:text-yellow-300">
+                  Edit
+                </button>
+
+                <button className="text-red-400 hover:text-red-300">
+                  Delete
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
