@@ -5,26 +5,35 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 
-export default function LoginPage() {
+export default function SignupPage() {
   const router = useRouter();
 
+  const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
-  const handleLogin = async (
+  const handleSignup = async (
     e: React.FormEvent<HTMLFormElement>
   ) => {
     e.preventDefault();
 
     setLoading(true);
     setError("");
+    setSuccess("");
 
-    const { error } = await supabase.auth.signInWithPassword({
+    const { error } = await supabase.auth.signUp({
       email,
       password,
+      options: {
+        emailRedirectTo: "http://localhost:3000/auth/callback",
+        data: {
+          full_name: fullName,
+        },
+      },
     });
 
     setLoading(false);
@@ -34,7 +43,13 @@ export default function LoginPage() {
       return;
     }
 
-    router.push("/client-portal");
+    setSuccess(
+      "Account created successfully! Please check your email to verify your account."
+    );
+
+    setTimeout(() => {
+      router.push("/login");
+    }, 2000);
   };
 
   return (
@@ -44,24 +59,40 @@ export default function LoginPage() {
         {/* Heading */}
         <div className="text-center">
 
-          <span className="inline-block rounded-full border border-[#D4AF37]/20 bg-[#1F1F1F] px-5 py-2 text-xs tracking-[0.3em] uppercase text-[#D4AF37]">
+          <span className="inline-block rounded-full border border-[#D4AF37]/20 bg-[#1F1F1F] px-5 py-2 text-xs uppercase tracking-[0.3em] text-[#D4AF37]">
             Client Portal
           </span>
 
           <h1 className="mt-6 text-4xl font-bold text-white">
-            Welcome Back
+            Create Account
           </h1>
 
           <p className="mt-3 text-[#B8B8B8]">
-            Sign in to manage your orders, quotations and events.
+            Join Rhennie Tasty Shack and manage your orders,
+            quotations and celebrations in one place.
           </p>
 
         </div>
 
         <form
-          onSubmit={handleLogin}
+          onSubmit={handleSignup}
           className="mt-10 space-y-6"
         >
+
+          <div>
+            <label className="mb-2 block text-sm text-[#D4AF37]">
+              Full Name
+            </label>
+
+            <input
+              type="text"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              placeholder="Your full name"
+              required
+              className="w-full rounded-xl border border-[#D4AF37]/20 bg-[#111111] px-4 py-4 text-white outline-none transition focus:border-[#D4AF37]"
+            />
+          </div>
 
           <div>
             <label className="mb-2 block text-sm text-[#D4AF37]">
@@ -87,21 +118,11 @@ export default function LoginPage() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
+              placeholder="Create a password"
               required
+              minLength={6}
               className="w-full rounded-xl border border-[#D4AF37]/20 bg-[#111111] px-4 py-4 text-white outline-none transition focus:border-[#D4AF37]"
             />
-          </div>
-
-          <div className="flex items-center justify-between">
-
-            <Link
-              href="/forgot-password"
-              className="text-sm text-[#D4AF37] hover:underline"
-            >
-              Forgot Password?
-            </Link>
-
           </div>
 
           {error && (
@@ -110,25 +131,31 @@ export default function LoginPage() {
             </div>
           )}
 
+          {success && (
+            <div className="rounded-lg border border-green-500/30 bg-green-500/10 p-3 text-sm text-green-400">
+              {success}
+            </div>
+          )}
+
           <button
             type="submit"
             disabled={loading}
             className="w-full rounded-full bg-[#D4AF37] py-4 text-lg font-semibold text-black transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {loading ? "Signing In..." : "Sign In"}
+            {loading ? "Creating Account..." : "Create Account"}
           </button>
 
         </form>
 
         <div className="mt-8 text-center text-[#B8B8B8]">
 
-          Don't have an account?{" "}
+          Already have an account?{" "}
 
           <Link
-            href="/signup"
+            href="/login"
             className="font-semibold text-[#D4AF37] hover:underline"
           >
-            Create one
+            Sign In
           </Link>
 
         </div>
