@@ -8,6 +8,7 @@
 -- ===========================
 
 CREATE TABLE IF NOT EXISTS menu_categories (
+
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 
     name TEXT NOT NULL UNIQUE,
@@ -23,6 +24,7 @@ CREATE TABLE IF NOT EXISTS menu_categories (
     created_at TIMESTAMPTZ DEFAULT NOW(),
 
     updated_at TIMESTAMPTZ DEFAULT NOW()
+
 );
 
 -- ===========================
@@ -30,6 +32,7 @@ CREATE TABLE IF NOT EXISTS menu_categories (
 -- ===========================
 
 CREATE TABLE IF NOT EXISTS menu_items (
+
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 
     category_id UUID
@@ -55,6 +58,7 @@ CREATE TABLE IF NOT EXISTS menu_items (
     created_at TIMESTAMPTZ DEFAULT NOW(),
 
     updated_at TIMESTAMPTZ DEFAULT NOW()
+
 );
 
 -- ===========================
@@ -62,6 +66,7 @@ CREATE TABLE IF NOT EXISTS menu_items (
 -- ===========================
 
 CREATE TABLE IF NOT EXISTS package_items (
+
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 
     package_id UUID
@@ -72,7 +77,12 @@ CREATE TABLE IF NOT EXISTS package_items (
 
     quantity TEXT,
 
-    display_order INTEGER DEFAULT 0
+    display_order INTEGER DEFAULT 0,
+
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+
 );
 
 -- ===========================
@@ -95,17 +105,31 @@ ON package_items(display_order);
 -- UPDATED_AT TRIGGERS
 -- ===========================
 
+DROP TRIGGER IF EXISTS update_menu_categories_updated_at
+ON menu_categories;
+
 CREATE TRIGGER update_menu_categories_updated_at
 BEFORE UPDATE ON menu_categories
 FOR EACH ROW
 EXECUTE FUNCTION update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_menu_items_updated_at
+ON menu_items;
 
 CREATE TRIGGER update_menu_items_updated_at
 BEFORE UPDATE ON menu_items
 FOR EACH ROW
 EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_package_items_updated_at
+ON package_items;
+
 CREATE TRIGGER update_package_items_updated_at
 BEFORE UPDATE ON package_items
 FOR EACH ROW
 EXECUTE FUNCTION update_updated_at_column();
+
+-- =====================================================
+-- RHENNIE TASTY SHACK
+-- END OF MENU MODULE
+-- =====================================================
