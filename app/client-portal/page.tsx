@@ -1,160 +1,63 @@
-"use client";
-
 import Link from "next/link";
 
-const stats = [
+const cards = [
   {
-    title: "Active Orders",
-    value: "2",
-    description: "Orders currently in progress",
-    href: "/client-portal/orders",
-  },
-  {
-    title: "Pending Quotations",
-    value: "1",
-    description: "Awaiting your approval",
-    href: "/client-portal/quotations",
-  },
-  {
-    title: "Event Requests",
-    value: "3",
-    description: "Consultations in progress",
+    title: "Event Concierge",
+    description: "Plan your next event and submit a consultation.",
     href: "/client-portal/event-concierge",
   },
   {
-    title: "Favourite Meals",
-    value: "12",
-    description: "Saved for quick ordering",
-    href: "/client-portal/favourites",
-  },
-];
-
-const quickActions = [
-  {
-    title: "Start Consultation",
-    href: "/client-portal/event-concierge",
-  },
-  {
-    title: "Browse Menu",
-    href: "/menu",
-  },
-  {
-    title: "View Orders",
+    title: "Orders",
+    description: "Track your current and previous orders.",
     href: "/client-portal/orders",
   },
   {
-    title: "My Quotations",
+    title: "Quotations",
+    description: "View and manage your quotations.",
     href: "/client-portal/quotations",
+  },
+  {
+    title: "Profile",
+    description: "Manage your personal information.",
+    href: "/client-portal/profile",
   },
 ];
 
-export default function ClientPortalDashboard() {
+export default function ClientPortalPage() {
   return (
-    <div className="space-y-10">
-
-      {/* Welcome Banner */}
-
-      <section className="rounded-[32px] border border-[#D4AF37]/20 bg-gradient-to-r from-[#171717] to-[#101010] p-10">
-
-        <p className="text-[#D4AF37] uppercase tracking-[0.3em] text-sm">
+    <main className="min-h-screen bg-[#0B0B0B] px-6 py-12 text-white">
+      <div className="mx-auto max-w-7xl">
+        <span className="rounded-full border border-[#D4AF37]/20 bg-[#171717] px-4 py-2 text-xs uppercase tracking-[0.3em] text-[#D4AF37]">
           Client Portal
-        </p>
+        </span>
 
-        <h1 className="mt-4 text-5xl font-bold text-white">
-          Welcome Back 👋
+        <h1 className="mt-6 text-5xl font-bold">
+          Welcome to your Dashboard
         </h1>
 
-        <p className="mt-5 max-w-2xl text-lg text-[#B8B8B8]">
-          Manage your food orders, celebrations, quotations and
-          concierge requests from one beautiful dashboard.
+        <p className="mt-4 max-w-2xl text-[#B8B8B8]">
+          Manage your consultations, quotations, orders and account from one
+          place.
         </p>
 
-      </section>
-
-      {/* Statistics */}
-
-      <section className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
-
-        {stats.map((item) => (
-
-          <Link
-            key={item.title}
-            href={item.href}
-            className="rounded-[24px] border border-[#D4AF37]/10 bg-[#171717] p-8 transition duration-300 hover:-translate-y-1 hover:border-[#D4AF37] hover:shadow-2xl"
-          >
-
-            <h3 className="text-[#B8B8B8]">
-              {item.title}
-            </h3>
-
-            <p className="mt-4 text-5xl font-bold text-[#D4AF37]">
-              {item.value}
-            </p>
-
-            <p className="mt-4 text-sm text-[#8F8F8F]">
-              {item.description}
-            </p>
-
-          </Link>
-
-        ))}
-
-      </section>
-
-      {/* Quick Actions */}
-
-      <section className="rounded-[32px] border border-[#D4AF37]/10 bg-[#171717] p-8">
-
-        <h2 className="text-3xl font-bold">
-          Quick Actions
-        </h2>
-
-        <div className="mt-8 grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-
-          {quickActions.map((action) => (
-
+        <div className="mt-12 grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+          {cards.map((card) => (
             <Link
-              key={action.title}
-              href={action.href}
-              className="rounded-2xl bg-[#111111] p-6 transition hover:bg-[#D4AF37] hover:text-black"
+              key={card.title}
+              href={card.href}
+              className="rounded-3xl border border-[#D4AF37]/10 bg-[#171717] p-6 transition hover:border-[#D4AF37]"
             >
-              <h3 className="text-xl font-semibold">
-                {action.title}
-              </h3>
+              <h2 className="text-2xl font-semibold text-white">
+                {card.title}
+              </h2>
+
+              <p className="mt-3 text-sm leading-7 text-[#B8B8B8]">
+                {card.description}
+              </p>
             </Link>
-
           ))}
-
         </div>
-
-      </section>
-
-      {/* Recent Activity */}
-
-      <section className="rounded-[32px] border border-[#D4AF37]/10 bg-[#171717] p-8">
-
-        <h2 className="text-3xl font-bold">
-          Recent Activity
-        </h2>
-
-        <div className="mt-8 space-y-5">
-
-          <div className="rounded-xl bg-[#111111] p-5">
-            ✅ Wedding consultation submitted successfully.
-          </div>
-
-          <div className="rounded-xl bg-[#111111] p-5">
-            📦 Lunch order confirmed.
-          </div>
-
-          <div className="rounded-xl bg-[#111111] p-5">
-            📄 Quotation ready for review.
-          </div>
-
-        </div>
-
-      </section>
-
-    </div>
+      </div>
+    </main>
   );
 }
