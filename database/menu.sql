@@ -1,135 +1,137 @@
 -- =====================================================
 -- RHENNIE TASTY SHACK
--- MENU MODULE
+-- MENU SEED DATA
 -- =====================================================
 
--- ===========================
--- MENU CATEGORIES
--- ===========================
+INSERT INTO public.menu
+  (name, collection, description, price, image_url, available)
+VALUES
 
-CREATE TABLE IF NOT EXISTS menu_categories (
+-- =========================
+-- SIGNATURE MEALS
+-- =========================
 
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+(
+  'Jollof Rice + Turkey',
+  'Signature Meals',
+  'Premium jollof rice served with turkey.',
+  8000,
+  '',
+  true
+),
 
-    name TEXT NOT NULL UNIQUE,
+(
+  'Jollof Rice + Chicken',
+  'Signature Meals',
+  'Premium jollof rice served with chicken.',
+  5500,
+  '',
+  true
+),
 
-    slug TEXT NOT NULL UNIQUE,
+(
+  'Royale Pasta Bowl + Turkey',
+  'Signature Meals',
+  'Creamy royale pasta bowl served with turkey.',
+  8000,
+  '',
+  true
+),
 
-    description TEXT,
+(
+  'Golden Harvest Fried Rice',
+  'Signature Meals',
+  'Premium fried rice prepared with carefully selected ingredients.',
+  8500,
+  '',
+  true
+),
 
-    display_order INTEGER DEFAULT 0,
+(
+  'Seafood Rice',
+  'Signature Meals',
+  'Rich seafood rice prepared with premium seafood.',
+  12500,
+  '',
+  true
+),
 
-    active BOOLEAN DEFAULT TRUE,
+(
+  'Seafood Okra',
+  'Signature Meals',
+  'Premium seafood okra prepared for a rich dining experience.',
+  10000,
+  '',
+  true
+),
 
-    created_at TIMESTAMPTZ DEFAULT NOW(),
+(
+  'Amala & Assorted',
+  'Signature Meals',
+  'Traditional amala served with assorted meat.',
+  6000,
+  '',
+  true
+),
 
-    updated_at TIMESTAMPTZ DEFAULT NOW()
+(
+  'Small Chops',
+  'Signature Meals',
+  'A selection of freshly prepared small chops.',
+  3000,
+  '',
+  true
+),
 
+-- =========================
+-- FOOD BOXES
+-- =========================
+
+(
+  'Luxury Brunch Box',
+  'Food Boxes',
+  'A premium brunch box curated by Rhennie Tasty Shack.',
+  35000,
+  '',
+  true
+),
+
+(
+  'Weekend Treat Box',
+  'Food Boxes',
+  'A premium food box perfect for weekend indulgence.',
+  40000,
+  '',
+  true
+),
+
+-- =========================
+-- FOOD BY LITRE
+-- =========================
+
+(
+  'Party Jollof Rice - 1 Litre',
+  'Food By Litre',
+  'Party-style jollof rice supplied by the litre.',
+  28000,
+  '',
+  true
+),
+
+(
+  'Seafood Rice - 1 Litre',
+  'Food By Litre',
+  'Premium seafood rice supplied by the litre.',
+  40000,
+  '',
+  true
+),
+
+(
+  'Seafood Okra - 1 Litre',
+  'Food By Litre',
+  'Premium seafood okra supplied by the litre.',
+  45000,
+  '',
+  true
 );
-
--- ===========================
--- MENU ITEMS
--- ===========================
-
-CREATE TABLE IF NOT EXISTS menu_items (
-
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-
-    category_id UUID
-        REFERENCES menu_categories(id)
-        ON DELETE CASCADE,
-
-    name TEXT NOT NULL,
-
-    slug TEXT UNIQUE,
-
-    description TEXT,
-
-    price NUMERIC(10,2),
-
-    image_url TEXT,
-
-    available BOOLEAN DEFAULT TRUE,
-
-    featured BOOLEAN DEFAULT FALSE,
-
-    display_order INTEGER DEFAULT 0,
-
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-
-    updated_at TIMESTAMPTZ DEFAULT NOW()
-
-);
-
--- ===========================
--- PACKAGE ITEMS
--- ===========================
-
-CREATE TABLE IF NOT EXISTS package_items (
-
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-
-    package_id UUID
-        REFERENCES menu_items(id)
-        ON DELETE CASCADE,
-
-    item_name TEXT NOT NULL,
-
-    quantity TEXT,
-
-    display_order INTEGER DEFAULT 0,
-
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-
-    updated_at TIMESTAMPTZ DEFAULT NOW()
-
-);
-
--- ===========================
--- INDEXES
--- ===========================
-
-CREATE INDEX IF NOT EXISTS idx_menu_category
-ON menu_items(category_id);
-
-CREATE INDEX IF NOT EXISTS idx_menu_featured
-ON menu_items(featured);
-
-CREATE INDEX IF NOT EXISTS idx_menu_order
-ON menu_items(display_order);
-
-CREATE INDEX IF NOT EXISTS idx_package_order
-ON package_items(display_order);
-
--- ===========================
--- UPDATED_AT TRIGGERS
--- ===========================
-
-DROP TRIGGER IF EXISTS update_menu_categories_updated_at
-ON menu_categories;
-
-CREATE TRIGGER update_menu_categories_updated_at
-BEFORE UPDATE ON menu_categories
-FOR EACH ROW
-EXECUTE FUNCTION update_updated_at_column();
-
-DROP TRIGGER IF EXISTS update_menu_items_updated_at
-ON menu_items;
-
-CREATE TRIGGER update_menu_items_updated_at
-BEFORE UPDATE ON menu_items
-FOR EACH ROW
-EXECUTE FUNCTION update_updated_at_column();
-
-DROP TRIGGER IF EXISTS update_package_items_updated_at
-ON package_items;
-
-CREATE TRIGGER update_package_items_updated_at
-BEFORE UPDATE ON package_items
-FOR EACH ROW
-EXECUTE FUNCTION update_updated_at_column();
-
--- =====================================================
--- RHENNIE TASTY SHACK
--- END OF MENU MODULE
--- =====================================================

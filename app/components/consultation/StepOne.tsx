@@ -1,29 +1,17 @@
 "use client";
 
-interface StepOneProps {
-  fullName: string;
-  email: string;
-  phone: string;
-  onChange: (
-    field: "fullName" | "email" | "phone",
-    value: string
-  ) => void;
-}
+import { StepProps } from "./types";
 
 export default function StepOne({
-  fullName,
-  email,
-  phone,
-  onChange,
-}: StepOneProps) {
+  data,
+  updateField,
+}: StepProps) {
   return (
-    <div className="space-y-8">
-
-      {/* Welcome */}
+    <div className="space-y-10">
 
       <div>
 
-        <span className="inline-block rounded-full border border-[#D4AF37]/20 bg-[#1A1A1A] px-5 py-2 text-sm uppercase tracking-[0.3em] text-[#D4AF37]">
+        <span className="inline-block rounded-full border border-[#D4AF37]/20 bg-[#171717] px-5 py-2 text-sm uppercase tracking-[0.3em] text-[#D4AF37]">
           Step 1
         </span>
 
@@ -32,18 +20,15 @@ export default function StepOne({
         </h2>
 
         <p className="mt-4 max-w-2xl leading-8 text-[#B8B8B8]">
-          We'll use these details to prepare your quotation
-          and keep you updated throughout your Event Concierge
-          experience.
+          We need your contact details so our Event Concierge can
+          reach you regarding your consultation.
         </p>
 
       </div>
 
-      {/* Form */}
+      <div className="grid gap-6 md:grid-cols-2">
 
-      <div className="grid gap-8">
-
-        <div>
+        <div className="md:col-span-2">
 
           <label className="mb-3 block text-sm font-medium text-[#D4AF37]">
             Full Name
@@ -51,12 +36,12 @@ export default function StepOne({
 
           <input
             type="text"
-            value={fullName}
+            value={data.fullName}
             onChange={(e) =>
-              onChange("fullName", e.target.value)
+              updateField("fullName", e.target.value)
             }
             placeholder="Enter your full name"
-            className="w-full rounded-2xl border border-[#D4AF37]/15 bg-[#111111] px-6 py-5 text-white outline-none transition focus:border-[#D4AF37]"
+            className="w-full rounded-2xl border border-[#D4AF37]/15 bg-[#111111] px-6 py-4 text-white outline-none focus:border-[#D4AF37]"
           />
 
         </div>
@@ -69,12 +54,12 @@ export default function StepOne({
 
           <input
             type="email"
-            value={email}
+            value={data.email}
             onChange={(e) =>
-              onChange("email", e.target.value)
+              updateField("email", e.target.value)
             }
-            placeholder="you@example.com"
-            className="w-full rounded-2xl border border-[#D4AF37]/15 bg-[#111111] px-6 py-5 text-white outline-none transition focus:border-[#D4AF37]"
+            placeholder="example@email.com"
+            className="w-full rounded-2xl border border-[#D4AF37]/15 bg-[#111111] px-6 py-4 text-white outline-none focus:border-[#D4AF37]"
           />
 
         </div>
@@ -87,12 +72,12 @@ export default function StepOne({
 
           <input
             type="tel"
-            value={phone}
+            value={data.phone}
             onChange={(e) =>
-              onChange("phone", e.target.value)
+              updateField("phone", e.target.value)
             }
             placeholder="+234..."
-            className="w-full rounded-2xl border border-[#D4AF37]/15 bg-[#111111] px-6 py-5 text-white outline-none transition focus:border-[#D4AF37]"
+            className="w-full rounded-2xl border border-[#D4AF37]/15 bg-[#111111] px-6 py-4 text-white outline-none focus:border-[#D4AF37]"
           />
 
         </div>

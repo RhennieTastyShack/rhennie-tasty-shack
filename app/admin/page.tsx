@@ -1,97 +1,339 @@
+"use client";
+
+import { useEffect, useState } from "react";
+
+interface Consultation {
+  full_name?: string;
+  phone?: string;
+  email?: string;
+}
+
+interface Order {
+  id: string;
+  order_no: string;
+  title: string;
+  amount: number | null;
+  status: string | null;
+  order_date: string | null;
+  created_at: string;
+  consultation?: Consultation | null;
+}
+
 export default function AdminDashboard() {
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    async function loadOrders() {
+      try {
+        const response = await fetch("/api/orders", {
+          cache: "no-store",
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(
+            data?.error || "Unable to load orders."
+          );
+        }
+
+        setOrders(data);
+      } catch (err) {
+        console.error("Dashboard orders error:", err);
+
+        setError(
+          err instanceof Error
+            ? err.message
+            : "Unable to load dashboard."
+        );
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadOrders();
+  }, []);
+
+  const today = new Date().toISOString().split("T")[0];
+
+  const todaysOrders = orders.filter((order) => {
+    return (
+      order.created_at?.split("T")[0] === today
+    );
+  });
+
+  const totalRevenue = orders.reduce(
+    (total, order) =>
+      total + Number(order.amount || 0),
+    0
+  );
+
+  const uniqueCustomers = new Set(
+    orders
+      .map(
+        (order) =>
+          order.consultation?.email ||
+          order.consultation?.phone
+      )
+      .filter(Boolean)
+  ).size;
+
+  const activeOrders = orders.filter((order) => {
+    const status = order.status?.toUpperCase();
+
+    return (
+      status !== "COMPLETED" &&
+      status !== "CANCELLED"
+    );
+  }).length;
+
+  const recentOrders = orders.slice(0, 5);
+
+  function formatAmount(amount: number | null) {
+    return `₦${Number(amount || 0).toLocaleString(
+      "en-NG"
+    )}`;
+  }
+
+  function getStatusClass(status: string | null) {
+    switch (status?.toUpperCase()) {
+      case "COMPLETED":
+        return "bg-green-100 text-green-700";
+
+      case "CONFIRMED":
+        return "bg-blue-100 text-blue-700";
+
+      case "PREPARING":
+        return "bg-yellow-100 text-yellow-700";
+
+      case "OUT FOR DELIVERY":
+        return "bg-indigo-100 text-indigo-700";
+
+      case "CANCELLED":
+        return "bg-red-100 text-red-700";
+
+      case "IN REVIEW":
+        return "bg-purple-100 text-purple-700";
+
+      default:
+        return "bg-gray-100 text-gray-700";
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-8">
+        <h1 className="text-4xl font-bold text-gray-900">
+          Dashboard
+        </h1>
+
+        <div className="mt-10 rounded-xl bg-white p-10 text-center shadow">
+          <p className="text-gray-500">
+            Loading dashboard...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div>
-      <h1 className="text-4xl font-bold text-gray-900 mb-8">
-        Dashboard
-      </h1>
+    <div className="min-h-screen bg-gray-50 p-6 md:p-8">
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+      {/* HEADER */}
+      <div className="mb-8">
+        <p className="text-sm font-semibold uppercase tracking-[0.3em] text-[#B08D22]">
+          Rhennie Tasty Shack
+        </p>
 
-        <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-yellow-500">
-          <h3 className="text-gray-500">Today's Orders</h3>
-          <p className="text-4xl font-bold mt-2">24</p>
+        <h1 className="mt-2 text-4xl font-bold text-gray-900">
+          Dashboard
+        </h1>
+
+        <p className="mt-2 text-gray-500">
+          Overview of your orders and business activity.
+        </p>
+      </div>
+
+      {/* ERROR */}
+      {error && (
+        <div className="mb-6 rounded-xl border border-red-200 bg-red-50 p-4 text-red-700">
+          {error}
+        </div>
+      )}
+
+      {/* STATS */}
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
+
+        {/* TODAY'S ORDERS */}
+        <div className="rounded-xl border-l-4 border-yellow-500 bg-white p-6 shadow-lg">
+          <h3 className="text-gray-500">
+            Today's Orders
+          </h3>
+
+          <p className="mt-2 text-4xl font-bold text-gray-900">
+            {todaysOrders.length}
+          </p>
+
+          <p className="mt-2 text-sm text-gray-400">
+            Orders created today
+          </p>
         </div>
 
-        <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-green-500">
-          <h3 className="text-gray-500">Revenue</h3>
-          <p className="text-4xl font-bold mt-2">₦245,000</p>
+        {/* REVENUE */}
+        <div className="rounded-xl border-l-4 border-green-500 bg-white p-6 shadow-lg">
+          <h3 className="text-gray-500">
+            Total Revenue
+          </h3>
+
+          <p className="mt-2 text-3xl font-bold text-gray-900">
+            {formatAmount(totalRevenue)}
+          </p>
+
+          <p className="mt-2 text-sm text-gray-400">
+            From recorded orders
+          </p>
         </div>
 
-        <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-blue-500">
-          <h3 className="text-gray-500">Customers</h3>
-          <p className="text-4xl font-bold mt-2">158</p>
+        {/* CUSTOMERS */}
+        <div className="rounded-xl border-l-4 border-blue-500 bg-white p-6 shadow-lg">
+          <h3 className="text-gray-500">
+            Customers
+          </h3>
+
+          <p className="mt-2 text-4xl font-bold text-gray-900">
+            {uniqueCustomers}
+          </p>
+
+          <p className="mt-2 text-sm text-gray-400">
+            Unique customers
+          </p>
         </div>
 
-        <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-red-500">
-          <h3 className="text-gray-500">Active Subscriptions</h3>
-          <p className="text-4xl font-bold mt-2">36</p>
+        {/* ACTIVE ORDERS */}
+        <div className="rounded-xl border-l-4 border-purple-500 bg-white p-6 shadow-lg">
+          <h3 className="text-gray-500">
+            Active Orders
+          </h3>
+
+          <p className="mt-2 text-4xl font-bold text-gray-900">
+            {activeOrders}
+          </p>
+
+          <p className="mt-2 text-sm text-gray-400">
+            Currently in progress
+          </p>
         </div>
 
       </div>
 
-      {/* Recent Orders */}
-      <div className="bg-white rounded-xl shadow-lg mt-10 p-6">
+      {/* RECENT ORDERS */}
+      <div className="mt-10 rounded-xl bg-white p-6 shadow-lg">
 
-        <h2 className="text-2xl font-bold mb-6 text-gray-900">
-          Recent Orders
-        </h2>
+        <div className="mb-6 flex flex-col justify-between gap-3 md:flex-row md:items-center">
 
-        <div className="overflow-x-auto">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">
+              Recent Orders
+            </h2>
 
-          <table className="w-full">
+            <p className="mt-1 text-sm text-gray-500">
+              Your latest customer orders.
+            </p>
+          </div>
 
-            <thead>
-              <tr className="border-b">
-                <th className="text-left py-3">Customer</th>
-                <th className="text-left py-3">Meal</th>
-                <th className="text-left py-3">Amount</th>
-                <th className="text-left py-3">Status</th>
-              </tr>
-            </thead>
-
-            <tbody>
-
-              <tr className="border-b">
-                <td className="py-4">Adeola Johnson</td>
-                <td>Jollof Rice & Turkey</td>
-                <td>₦8,000</td>
-                <td>
-                  <span className="bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full">
-                    Preparing
-                  </span>
-                </td>
-              </tr>
-
-              <tr className="border-b">
-                <td className="py-4">Mary Okafor</td>
-                <td>Seafood Rice</td>
-                <td>₦12,500</td>
-                <td>
-                  <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full">
-                    Delivered
-                  </span>
-                </td>
-              </tr>
-
-              <tr>
-                <td className="py-4">David Yusuf</td>
-                <td>Luxury Food Box</td>
-                <td>₦35,000</td>
-                <td>
-                  <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full">
-                    Out for Delivery
-                  </span>
-                </td>
-              </tr>
-
-            </tbody>
-
-          </table>
+          <a
+            href="/admin/orders"
+            className="font-semibold text-[#B08D22] hover:underline"
+          >
+            View All Orders →
+          </a>
 
         </div>
 
+        {recentOrders.length === 0 ? (
+          <div className="rounded-xl bg-gray-50 p-10 text-center">
+            <p className="text-gray-500">
+              No orders have been placed yet.
+            </p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+
+            <table className="w-full min-w-[800px]">
+
+              <thead>
+                <tr className="border-b border-gray-200">
+                  <th className="py-3 text-left text-sm font-semibold text-gray-500">
+                    Order
+                  </th>
+
+                  <th className="py-3 text-left text-sm font-semibold text-gray-500">
+                    Customer
+                  </th>
+
+                  <th className="py-3 text-left text-sm font-semibold text-gray-500">
+                    Service
+                  </th>
+
+                  <th className="py-3 text-left text-sm font-semibold text-gray-500">
+                    Amount
+                  </th>
+
+                  <th className="py-3 text-left text-sm font-semibold text-gray-500">
+                    Status
+                  </th>
+                </tr>
+              </thead>
+
+              <tbody>
+
+                {recentOrders.map((order) => (
+                  <tr
+                    key={order.id}
+                    className="border-b border-gray-100"
+                  >
+
+                    <td className="py-4 font-semibold text-gray-900">
+                      {order.order_no}
+                    </td>
+
+                    <td className="py-4 text-gray-700">
+                      {order.consultation?.full_name ||
+                        "Guest"}
+                    </td>
+
+                    <td className="py-4 text-gray-700">
+                      {order.title}
+                    </td>
+
+                    <td className="py-4 font-semibold text-gray-900">
+                      {formatAmount(order.amount)}
+                    </td>
+
+                    <td className="py-4">
+                      <span
+                        className={`rounded-full px-3 py-1 text-xs font-semibold ${getStatusClass(
+                          order.status
+                        )}`}
+                      >
+                        {order.status || "IN REVIEW"}
+                      </span>
+                    </td>
+
+                  </tr>
+                ))}
+
+              </tbody>
+
+            </table>
+
+          </div>
+        )}
+
       </div>
+
     </div>
   );
 }

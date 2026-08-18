@@ -28,7 +28,7 @@ create table if not exists payments (
     created_at timestamptz default now()
 
 );
-
+git add .
 create index if not exists idx_payment_customer
 on payments(customer_id);
 

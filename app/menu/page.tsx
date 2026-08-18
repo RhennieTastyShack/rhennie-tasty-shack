@@ -5,27 +5,25 @@ import MenuHero from "../components/menu/MenuHero";
 import MenuSearch from "../components/menu/MenuSearch";
 import CategoryTabs from "../components/menu/CategoryTabs";
 import CollectionCard from "../components/menu/CollectionCard";
+import MenuGrid from "../components/menu/MenuGrid";
 
 export default function MenuPage() {
   return (
     <main className="min-h-screen bg-[#0B0B0B] text-white">
-      
-      {/* Navigation */}
+
       <Navbar />
 
-      {/* Hero Section */}
       <MenuHero />
 
-      {/* Search */}
       <MenuSearch />
 
-      {/* Category Tabs */}
       <CategoryTabs />
 
-      {/* Menu Collections */}
       <CollectionCard />
 
-      {/* Footer */}
+      {/* ACTUAL SUPABASE MEALS */}
+      <MenuGrid />
+
       <Footer />
 
     </main>

@@ -3,7 +3,8 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Rhennie Tasty Shack",
-  description: "Premium Catering & Food Delivery",
+  description:
+    "Premium Nigerian and continental cuisine, catering, meal subscriptions and unforgettable dining experiences.",
 };
 
 export default function RootLayout({
@@ -12,7 +13,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" data-scroll-behavior="smooth">
       <body>{children}</body>
     </html>
   );

@@ -3,32 +3,78 @@ import Link from "next/link";
 
 const boxes = [
   {
-    title: "Luxury Brunch Box",
-    image: "/images/food-brunch.jpeg",
-    price: "From ₦35,000",
-    popular: true,
-    items: [
-      "Mini Burgers",
-      "Chicken Wings",
-      "Pancakes",
-      "Fresh Juice",
-      "Fresh Fruits",
-      "Dessert",
-    ],
+    number: "01",
+    title: "Jollof & Pasta Feast Box",
+    price: "₦32,000",
+    image: "/images/Jollof & Pasta Feast Box.png",
+    description:
+      "Jollof pasta, fried rice, two pieces of turkey, fried plantain and a refreshing fruit juice.",
   },
   {
+    number: "02",
+    title: "Luxury Brunch Box",
+    price: "₦35,000",
+    image: "/images/Luxury Brunch Box.png",
+    popular: true,
+    description:
+      "A luxurious three-meal experience featuring jollof rice, fried rice and pasta, served with four generous pieces of seasoned chicken.",
+  },
+  {
+    number: "03",
     title: "Weekend Treat Box",
-    image: "/images/food-box-2.png",
-    price: "From ₦40,000",
-    popular: false,
-    items: [
-      "Jollof Rice",
-      "Turkey",
-      "Small Chops",
-      "Drinks",
-      "Dessert",
-      "Chef's Special",
-    ],
+    price: "₦40,000",
+    image: "/images/Weekend Treat Box.png",
+    description:
+      "Four delicious meals paired with two pieces of chicken, a signature shawarma and refreshing fruit juice.",
+  },
+  {
+    number: "04",
+    title: "Family Feast Box",
+    price: "₦50,000",
+    image: "/images/Family Feast Box.png",
+    description:
+      "A generous family spread featuring jollof rice, fried rice, turkey, beef, samosa, spring rolls, puff-puff, apples and fruit juice.",
+  },
+  {
+    number: "05",
+    title: "Heritage Feast Box",
+    price: "₦60,000",
+    image: "/images/Heritage Feast Box.png",
+    description:
+      "Efo Riro with panla fish and assorted, semo, peppered turkey, small chops, fresh fruits and fruit juice. Soup served in two bowls.",
+  },
+  {
+    number: "06",
+    title: "Ultimate Brunch Box",
+    price: "₦70,000",
+    image: "/images/Ultimate Brunch Box.png",
+    description:
+      "A premium brunch spread featuring sandwiches, waffles, pancakes, turkey, bento cake, jollof rice, fried rice, chocolates, fruit and drinks.",
+  },
+  {
+    number: "07",
+    title: "Grand Celebration Box",
+    price: "₦80,000",
+    image: "/images/Grand Celebration Box.png",
+    description:
+      "Our grand celebration spread with sausages, waffles, pancakes, small chops, turkey, scrambled eggs, jollof rice, fried rice, bento cake, chocolates, fruits and drinks.",
+  },
+];
+
+const platters = [
+  {
+    title: "Chicken & Small Chops Platter",
+    price: "₦9,000",
+    image: "/images/Chicken & Small Chops Platter.png",
+    description:
+      "Tender seasoned chicken served with a generous selection of freshly prepared small chops.",
+  },
+  {
+    title: "Turkey & Small Chops Platter",
+    price: "₦10,000",
+    image: "/images/Turkey & Small Chops Platter.png",
+    description:
+      "Two pieces of premium turkey paired with a generous selection of delicious small chops.",
   },
 ];
 
@@ -36,95 +82,236 @@ export default function FoodBoxes() {
   return (
     <section
       id="foodboxes"
-      className="bg-gradient-to-b from-gray-50 to-white py-20 md:py-28"
+      className="relative overflow-hidden bg-[#080808] py-20 text-white md:py-24"
     >
-      <div className="mx-auto max-w-7xl px-5 md:px-8">
+      {/* Decorative gold glow */}
+      <div className="pointer-events-none absolute -left-40 top-20 h-96 w-96 rounded-full bg-yellow-500/10 blur-3xl" />
 
-        <div className="mb-16 text-center">
+      <div className="pointer-events-none absolute -right-40 top-1/3 h-96 w-96 rounded-full bg-yellow-500/10 blur-3xl" />
 
-          <span className="inline-block rounded-full bg-yellow-100 px-4 py-2 text-sm font-semibold text-yellow-700">
-            Premium Catering
-          </span>
+      <div className="relative mx-auto max-w-7xl px-5 sm:px-6">
 
-          <h2 className="mt-5 text-3xl font-extrabold text-gray-900 md:text-5xl">
-            Signature Food Boxes
+        {/* HEADER */}
+        <div className="mx-auto mb-14 max-w-4xl text-center">
+
+          <div className="mb-5 flex items-center justify-center gap-4">
+            <span className="h-px w-12 bg-yellow-500" />
+
+            <span className="text-xs font-bold uppercase tracking-[0.35em] text-yellow-500">
+              Signature Collection
+            </span>
+
+            <span className="h-px w-12 bg-yellow-500" />
+          </div>
+
+          <h2 className="font-serif text-4xl font-bold leading-tight sm:text-5xl md:text-6xl">
+            Signature{" "}
+            <span className="text-yellow-500">
+              Food Boxes
+            </span>
           </h2>
 
-          <p className="mx-auto mt-5 max-w-2xl text-gray-600 text-base md:text-lg">
-            Beautifully curated food boxes perfect for birthdays,
-            corporate meetings, weddings and every special celebration.
+          <p className="mx-auto mt-5 max-w-2xl text-sm leading-7 text-gray-400 sm:text-base">
+            Thoughtfully curated food experiences for celebrations,
+            intimate gatherings, gifting, brunches and unforgettable moments.
           </p>
 
         </div>
 
-        <div className="grid gap-10 lg:grid-cols-2">
+        {/* FOOD BOXES */}
+        <div className="grid items-stretch gap-7 md:grid-cols-2 xl:grid-cols-6">
 
           {boxes.map((box) => (
-            <div
+            <article
               key={box.title}
-              className="group overflow-hidden rounded-3xl bg-white shadow-lg transition-all duration-500 hover:-translate-y-3 hover:shadow-2xl"
+              className={`group flex h-[500px] w-full flex-col overflow-hidden rounded-[28px] border bg-[#0d0d0d] transition-all duration-500 hover:-translate-y-2 ${
+                box.number === "07"
+                  ? "xl:col-span-2 xl:col-start-3"
+                  : "xl:col-span-2"
+              } ${
+                box.popular
+                  ? "border-yellow-500 bg-[#15130c] shadow-[0_25px_70px_rgba(234,179,8,0.14)]"
+                  : "border-white/10 hover:border-yellow-500/50"
+              }`}
             >
 
-              <div className="relative h-80 overflow-hidden">
-
-                {box.popular && (
-                  <span className="absolute left-5 top-5 z-20 rounded-full bg-yellow-500 px-4 py-2 text-xs font-bold uppercase tracking-widest text-black shadow-lg">
-                    Most Popular
-                  </span>
-                )}
+              {/* IMAGE */}
+              <div className="relative h-[250px] w-full shrink-0 overflow-hidden">
 
                 <Image
                   src={box.image}
                   alt={box.title}
                   fill
-                  className="object-cover transition-transform duration-700 group-hover:scale-110"
+                  priority={box.number === "01"}
+                  sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw"
+                  className="object-cover transition-transform duration-700 group-hover:scale-105"
                 />
+
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent" />
+
+                {/* NUMBER */}
+                <div className="absolute left-5 top-5 flex h-8 w-8 items-center justify-center rounded-full border border-yellow-500 bg-black/80 text-xs font-bold text-yellow-500">
+                  {box.number}
+                </div>
+
+                {/* MOST POPULAR */}
+                {box.popular && (
+                  <div className="absolute right-5 top-5 rounded-full bg-yellow-500 px-4 py-2 text-[10px] font-extrabold uppercase tracking-[0.15em] text-black shadow-lg">
+                    Most Popular
+                  </div>
+                )}
 
               </div>
 
-              <div className="p-8">
+              {/* CONTENT */}
+              <div className="flex flex-1 flex-col p-6">
 
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <h3 className="min-h-[54px] text-[22px] font-bold leading-tight text-white sm:text-2xl">
+                  {box.title}
+                </h3>
 
-                  <h3 className="text-3xl font-bold text-gray-900">
-                    {box.title}
-                  </h3>
+                <p className="mt-3 h-[72px] overflow-hidden text-sm leading-6 text-gray-400">
+                  {box.description}
+                </p>
 
-                  <span className="inline-flex w-fit rounded-full bg-yellow-500 px-5 py-2 text-lg font-bold text-black">
-                    {box.price}
-                  </span>
+                {/* PRICE + BUTTON */}
+                <div className="mt-auto flex items-end justify-between gap-4 border-t border-white/10 pt-5">
+
+                  <div>
+                    <p className="text-[9px] font-semibold uppercase tracking-[0.25em] text-gray-500">
+                      Starting from
+                    </p>
+
+                    <p className="mt-1 text-[25px] font-extrabold tracking-tight text-yellow-500">
+                      {box.price}
+                    </p>
+                  </div>
+
+                  <Link
+                    href="/menu"
+                    className="flex items-center gap-2 rounded-full border border-yellow-500/60 px-5 py-2.5 text-xs font-bold text-yellow-500 transition-all duration-300 hover:bg-yellow-500 hover:text-black"
+                  >
+                    View Box
+                    <span>→</span>
+                  </Link>
 
                 </div>
 
-                <ul className="mt-8 space-y-4">
-
-                  {box.items.map((item) => (
-                    <li
-                      key={item}
-                      className="flex items-center gap-3 text-gray-700"
-                    >
-                      <span className="flex h-7 w-7 items-center justify-center rounded-full bg-yellow-500 font-bold text-black">
-                        ✓
-                      </span>
-
-                      <span>{item}</span>
-
-                    </li>
-                  ))}
-
-                </ul>
-
-                <Link
-                  href="/menu"
-                  className="mt-10 flex h-14 w-full items-center justify-center rounded-xl bg-black text-lg font-bold text-white transition-all duration-300 hover:bg-yellow-500 hover:text-black"
-                >
-                  Order This Box
-                </Link>
-
               </div>
 
-            </div>
+            </article>
           ))}
+
+        </div>
+
+        {/* PLATTER COLLECTION */}
+        <div className="mt-24">
+
+          <div className="mx-auto mb-10 max-w-3xl text-center">
+
+            <span className="text-xs font-bold uppercase tracking-[0.35em] text-yellow-500">
+              Platter Collection
+            </span>
+
+            <h3 className="mt-3 font-serif text-3xl font-bold sm:text-4xl">
+              Perfect for{" "}
+              <span className="text-yellow-500">
+                Sharing
+              </span>
+            </h3>
+
+            <p className="mt-4 text-sm leading-7 text-gray-400">
+              Deliciously prepared platters made for intimate gatherings,
+              casual celebrations and sharing.
+            </p>
+
+          </div>
+
+          {/* PLATTERS */}
+          <div className="mx-auto grid max-w-5xl items-stretch gap-7 md:grid-cols-2">
+
+            {platters.map((platter) => (
+              <article
+                key={platter.title}
+                className="group flex h-[450px] w-full flex-col overflow-hidden rounded-[28px] border border-white/10 bg-[#0d0d0d] transition-all duration-500 hover:-translate-y-2 hover:border-yellow-500/50"
+              >
+
+                <div className="relative h-[240px] w-full shrink-0 overflow-hidden">
+
+                  <Image
+                    src={platter.image}
+                    alt={platter.title}
+                    fill
+                    sizes="(max-width: 768px) 100vw, 50vw"
+                    className="object-cover transition-transform duration-700 group-hover:scale-105"
+                  />
+
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
+
+                </div>
+
+                <div className="flex flex-1 flex-col p-7">
+
+                  <h4 className="min-h-[55px] text-2xl font-bold">
+                    {platter.title}
+                  </h4>
+
+                  <p className="mt-3 h-[60px] overflow-hidden text-sm leading-6 text-gray-400">
+                    {platter.description}
+                  </p>
+
+                  <div className="mt-auto flex items-center justify-between gap-4 border-t border-white/10 pt-5">
+
+                    <span className="text-2xl font-extrabold text-yellow-500">
+                      {platter.price}
+                    </span>
+
+                    <Link
+                      href="/menu"
+                      className="flex items-center gap-2 rounded-full border border-yellow-500/60 px-5 py-2.5 text-xs font-bold text-yellow-500 transition-all duration-300 hover:bg-yellow-500 hover:text-black"
+                    >
+                      View Platter
+                      <span>→</span>
+                    </Link>
+
+                  </div>
+
+                </div>
+
+              </article>
+            ))}
+
+          </div>
+
+        </div>
+
+        {/* CUSTOM ORDER CTA */}
+        <div className="mt-16 rounded-[28px] border border-yellow-500/20 bg-[#101010] p-7 md:p-9">
+
+          <div className="flex flex-col items-center justify-between gap-7 text-center md:flex-row md:text-left">
+
+            <div>
+
+              <p className="text-xl font-bold md:text-2xl">
+                Planning something special?
+              </p>
+
+              <p className="mt-2 max-w-xl text-sm leading-6 text-gray-400">
+                Need a custom food box for your celebration, event or
+                corporate gathering? We can create something specially
+                curated for you.
+              </p>
+
+            </div>
+
+            <Link
+              href="/menu"
+              className="shrink-0 rounded-full bg-yellow-500 px-7 py-3.5 text-sm font-bold text-black transition-all hover:bg-yellow-400"
+            >
+              Explore Our Menu →
+            </Link>
+
+          </div>
 
         </div>
 

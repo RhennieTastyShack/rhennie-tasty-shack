@@ -3,75 +3,168 @@
 import Image from "next/image";
 
 const gallery = [
-  "/images/jollofrice-turkey.jpeg",
-  "/images/jollof-chicken.jpeg",
-  "/images/pasta.jpg",
-  "/images/food-brunch.jpeg",
-  "/images/catering-platter.jpeg",
-  "/images/seafood-rice.jpg",
-  "/images/burger.jpg",
-  "/images/smallchops.jpeg",
+  {
+    image: "/images/jollofrice-turkey.jpeg",
+    title: "Jollof Rice & Turkey",
+  },
+  {
+    image: "/images/jollof-chicken.jpeg",
+    title: "Jollof Rice & Chicken",
+  },
+  {
+    image: "/images/pasta.jpg",
+    title: "Royal Pasta",
+  },
+  {
+    image: "/images/signature brunch.jpeg",
+    title: "Signature Brunch",
+  },
+  {
+    image: "/images/catering-platter.jpeg",
+    title: "Catering Collection",
+  },
+  {
+    image: "/images/seafood-rice.jpg",
+    title: "Seafood Rice",
+  },
+  {
+    image: "/images/burger.jpg",
+    title: "Gourmet Burger",
+  },
+  {
+    image: "/images/smallchops.jpeg",
+    title: "Small Chops",
+  },
 ];
 
 export default function Gallery() {
   return (
     <section
       id="gallery"
-      className="bg-[#0B0B0B] py-20 md:py-28"
+      className="relative overflow-hidden bg-[#080808] py-20 text-white md:py-28"
     >
-      <div className="mx-auto max-w-7xl px-5 md:px-8">
+      {/* Decorative gold glow */}
+      <div className="pointer-events-none absolute -left-40 top-20 h-96 w-96 rounded-full bg-yellow-500/10 blur-3xl" />
 
-        {/* Heading */}
+      <div className="pointer-events-none absolute -right-40 bottom-20 h-96 w-96 rounded-full bg-yellow-500/10 blur-3xl" />
 
-        <div className="mb-16 text-center">
+      <div className="relative mx-auto max-w-7xl px-5 sm:px-6">
 
-          <span className="inline-block rounded-full border border-[#D4AF37]/30 bg-[#1A1A1A] px-5 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-[#D4AF37]">
-            Our Gallery
-          </span>
+        {/* ================= HEADER ================= */}
+        <div className="mx-auto mb-14 max-w-4xl text-center">
 
-          <h2 className="mt-6 text-3xl font-extrabold text-white md:text-5xl">
-            A Taste of Luxury
+          <div className="mb-5 flex items-center justify-center gap-4">
+            <span className="h-px w-12 bg-yellow-500" />
+
+            <span className="text-xs font-bold uppercase tracking-[0.35em] text-yellow-500">
+              Our Gallery
+            </span>
+
+            <span className="h-px w-12 bg-yellow-500" />
+          </div>
+
+          <h2 className="font-serif text-4xl font-bold leading-tight sm:text-5xl md:text-6xl">
+            A Taste of{" "}
+            <span className="text-yellow-500">
+              Luxury
+            </span>
           </h2>
 
-          <p className="mx-auto mt-6 max-w-3xl text-base leading-8 text-[#B8B8B8] md:text-lg">
+          <p className="mx-auto mt-5 max-w-2xl text-sm leading-7 text-gray-400 sm:text-base">
             Every dish is carefully prepared, beautifully presented,
             and crafted to create unforgettable dining experiences.
           </p>
 
         </div>
 
-        {/* Gallery */}
+        {/* ================= GALLERY GRID ================= */}
+        <div className="grid auto-rows-[240px] grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
 
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          {gallery.map((item, index) => {
 
-          {gallery.map((image, index) => (
+            const featured = index === 0 || index === 4;
 
-            <div
-              key={index}
-              className="group relative overflow-hidden rounded-3xl shadow-xl"
-            >
+            return (
+              <div
+                key={item.image}
+                className={`group relative overflow-hidden rounded-[28px] border border-white/10 bg-[#101010] ${
+                  featured
+                    ? "sm:col-span-2 sm:row-span-2"
+                    : ""
+                }`}
+              >
 
-              <Image
-                src={image}
-                alt={`Gallery ${index + 1}`}
-                width={600}
-                height={600}
-                className="h-80 w-full object-cover transition-transform duration-700 group-hover:scale-110"
-              />
+                {/* Image */}
+                <Image
+                  src={item.image}
+                  alt={item.title}
+                  fill
+                  sizes={
+                    featured
+                      ? "(max-width: 768px) 100vw, 50vw"
+                      : "(max-width: 768px) 100vw, 25vw"
+                  }
+                  className="object-cover transition-transform duration-700 group-hover:scale-110"
+                />
 
-              {/* Overlay */}
+                {/* Dark gradient */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent opacity-80 transition-opacity duration-500 group-hover:opacity-100" />
 
-              <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition-all duration-500 group-hover:bg-black/40">
+                {/* Gold hover border */}
+                <div className="absolute inset-0 rounded-[28px] border border-transparent transition-all duration-500 group-hover:border-yellow-500/70" />
 
-                <span className="translate-y-4 rounded-full bg-[#D4AF37] px-5 py-3 font-semibold text-black opacity-0 transition-all duration-500 group-hover:translate-y-0 group-hover:opacity-100">
-                  View
+                {/* Number */}
+                <span className="absolute left-5 top-5 flex h-8 w-8 items-center justify-center rounded-full border border-yellow-500/70 bg-black/70 text-xs font-bold text-yellow-500">
+                  {String(index + 1).padStart(2, "0")}
                 </span>
 
+                {/* Bottom content */}
+                <div className="absolute bottom-0 left-0 right-0 p-6">
+
+                  <p className="text-[9px] font-bold uppercase tracking-[0.25em] text-yellow-500">
+                    Rhennie Tasty Shack
+                  </p>
+
+                  <h3
+                    className={
+                      featured
+                        ? "mt-2 text-2xl font-bold text-white md:text-3xl"
+                        : "mt-2 text-lg font-bold text-white"
+                    }
+                  >
+                    {item.title}
+                  </h3>
+
+                  {/* Hover action */}
+                  <div className="mt-3 max-h-0 overflow-hidden opacity-0 transition-all duration-500 group-hover:max-h-12 group-hover:opacity-100">
+                    <span className="inline-flex items-center gap-2 text-xs font-bold text-yellow-500">
+                      Explore dish
+                      <span>→</span>
+                    </span>
+                  </div>
+
+                </div>
+
               </div>
+            );
+          })}
 
-            </div>
+        </div>
 
-          ))}
+        {/* ================= BOTTOM CTA ================= */}
+        <div className="mt-12 text-center">
+
+          <p className="text-sm text-gray-500">
+            Hungry for more?
+          </p>
+
+          <a
+            href="/menu"
+            className="mt-4 inline-flex items-center gap-2 rounded-full bg-yellow-500 px-7 py-3.5 text-sm font-bold text-black transition-all duration-300 hover:bg-yellow-400"
+          >
+            Explore Our Menu
+            <span>→</span>
+          </a>
 
         </div>
 

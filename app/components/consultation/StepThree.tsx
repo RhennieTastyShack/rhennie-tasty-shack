@@ -1,59 +1,32 @@
 "use client";
 
-interface StepThreeProps {
-  eventDate: string;
-  eventTime: string;
-  guestCount: string;
-  venue: string;
-  budget: string;
-  onChange: (
-    field:
-      | "eventDate"
-      | "eventTime"
-      | "guestCount"
-      | "venue"
-      | "budget",
-    value: string
-  ) => void;
-}
-
-const budgets = [
-  "Below ₦250,000",
-  "₦250,000 - ₦500,000",
-  "₦500,000 - ₦1,000,000",
-  "₦1,000,000 - ₦2,500,000",
-  "Above ₦2,500,000",
-];
+import { StepProps } from "./types";
 
 export default function StepThree({
-  eventDate,
-  eventTime,
-  guestCount,
-  venue,
-  budget,
-  onChange,
-}: StepThreeProps) {
+  data,
+  updateField,
+}: StepProps) {
   return (
-    <div className="space-y-8">
+    <div className="space-y-10">
 
       <div>
 
-        <span className="inline-block rounded-full border border-[#D4AF37]/20 bg-[#1A1A1A] px-5 py-2 text-sm uppercase tracking-[0.3em] text-[#D4AF37]">
+        <span className="inline-block rounded-full border border-[#D4AF37]/20 bg-[#171717] px-5 py-2 text-sm uppercase tracking-[0.3em] text-[#D4AF37]">
           Step 3
         </span>
 
         <h2 className="mt-5 text-4xl font-bold text-white">
-          Tell us about your event
+          Event Details
         </h2>
 
         <p className="mt-4 max-w-2xl leading-8 text-[#B8B8B8]">
-          These details help us prepare a personalised catering proposal
-          and recommend the right menu for your event.
+          Tell us when and where your event will take place so we can
+          plan everything perfectly.
         </p>
 
       </div>
 
-      <div className="grid gap-8 md:grid-cols-2">
+      <div className="grid gap-6 md:grid-cols-2">
 
         <div>
 
@@ -63,11 +36,11 @@ export default function StepThree({
 
           <input
             type="date"
-            value={eventDate}
+            value={data.eventDate}
             onChange={(e) =>
-              onChange("eventDate", e.target.value)
+              updateField("eventDate", e.target.value)
             }
-            className="w-full rounded-2xl border border-[#D4AF37]/15 bg-[#111111] px-6 py-5 text-white outline-none focus:border-[#D4AF37]"
+            className="w-full rounded-2xl border border-[#D4AF37]/15 bg-[#111111] px-6 py-4 text-white outline-none focus:border-[#D4AF37]"
           />
 
         </div>
@@ -75,16 +48,16 @@ export default function StepThree({
         <div>
 
           <label className="mb-3 block text-sm font-medium text-[#D4AF37]">
-            Preferred Time
+            Event Time
           </label>
 
           <input
             type="time"
-            value={eventTime}
+            value={data.eventTime}
             onChange={(e) =>
-              onChange("eventTime", e.target.value)
+              updateField("eventTime", e.target.value)
             }
-            className="w-full rounded-2xl border border-[#D4AF37]/15 bg-[#111111] px-6 py-5 text-white outline-none focus:border-[#D4AF37]"
+            className="w-full rounded-2xl border border-[#D4AF37]/15 bg-[#111111] px-6 py-4 text-white outline-none focus:border-[#D4AF37]"
           />
 
         </div>
@@ -97,13 +70,12 @@ export default function StepThree({
 
           <input
             type="number"
-            min="1"
-            value={guestCount}
+            value={data.guestCount}
             onChange={(e) =>
-              onChange("guestCount", e.target.value)
+              updateField("guestCount", e.target.value)
             }
             placeholder="e.g. 150"
-            className="w-full rounded-2xl border border-[#D4AF37]/15 bg-[#111111] px-6 py-5 text-white outline-none focus:border-[#D4AF37]"
+            className="w-full rounded-2xl border border-[#D4AF37]/15 bg-[#111111] px-6 py-4 text-white outline-none focus:border-[#D4AF37]"
           />
 
         </div>
@@ -111,50 +83,36 @@ export default function StepThree({
         <div>
 
           <label className="mb-3 block text-sm font-medium text-[#D4AF37]">
-            Venue
+            Budget
           </label>
 
           <input
             type="text"
-            value={venue}
+            value={data.budget}
             onChange={(e) =>
-              onChange("venue", e.target.value)
+              updateField("budget", e.target.value)
             }
-            placeholder="Event location"
-            className="w-full rounded-2xl border border-[#D4AF37]/15 bg-[#111111] px-6 py-5 text-white outline-none focus:border-[#D4AF37]"
+            placeholder="₦500,000"
+            className="w-full rounded-2xl border border-[#D4AF37]/15 bg-[#111111] px-6 py-4 text-white outline-none focus:border-[#D4AF37]"
           />
 
         </div>
 
-      </div>
+        <div className="md:col-span-2">
 
-      <div>
+          <label className="mb-3 block text-sm font-medium text-[#D4AF37]">
+            Event Venue
+          </label>
 
-        <label className="mb-4 block text-sm font-medium text-[#D4AF37]">
-          Estimated Budget
-        </label>
-
-        <div className="grid gap-4 md:grid-cols-2">
-
-          {budgets.map((item) => {
-
-            const selected = budget === item;
-
-            return (
-              <button
-                key={item}
-                type="button"
-                onClick={() => onChange("budget", item)}
-                className={`rounded-2xl border px-6 py-5 text-left transition ${
-                  selected
-                    ? "border-[#D4AF37] bg-[#D4AF37]/10"
-                    : "border-[#D4AF37]/10 bg-[#171717] hover:border-[#D4AF37]"
-                }`}
-              >
-                {item}
-              </button>
-            );
-          })}
+          <input
+            type="text"
+            value={data.venue}
+            onChange={(e) =>
+              updateField("venue", e.target.value)
+            }
+            placeholder="Enter the event location"
+            className="w-full rounded-2xl border border-[#D4AF37]/15 bg-[#111111] px-6 py-4 text-white outline-none focus:border-[#D4AF37]"
+          />
 
         </div>
 

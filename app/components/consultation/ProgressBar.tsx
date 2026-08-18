@@ -1,49 +1,53 @@
+"use client";
+
 interface ProgressBarProps {
-  currentStep: number;
-  totalSteps: number;
+  step: number;
   steps: string[];
 }
 
 export default function ProgressBar({
-  currentStep,
-  totalSteps,
+  step,
   steps,
 }: ProgressBarProps) {
+  const progress = ((step - 1) / (steps.length - 1)) * 100;
+
   return (
-    <div className="space-y-6">
+    <div className="mb-12">
 
-      <div className="flex justify-between">
+      <div className="mb-6 flex items-center justify-between">
 
-        {steps.map((step, index) => (
+        {steps.map((title, index) => {
+          const current = index + 1;
 
-          <div
-            key={step}
-            className="flex flex-col items-center flex-1"
-          >
-
+          return (
             <div
-              className={`flex h-12 w-12 items-center justify-center rounded-full border-2 text-sm font-bold transition-all duration-300 ${
-                currentStep > index
-                  ? "border-[#D4AF37] bg-[#D4AF37] text-black"
-                  : "border-[#555] bg-[#171717] text-[#B8B8B8]"
-              }`}
+              key={title}
+              className="flex flex-1 flex-col items-center"
             >
-              {index + 1}
+              <div
+                className={`flex h-11 w-11 items-center justify-center rounded-full border text-sm font-bold transition-all ${
+                  current < step
+                    ? "border-[#D4AF37] bg-[#D4AF37] text-black"
+                    : current === step
+                    ? "border-[#D4AF37] bg-[#1A1A1A] text-[#D4AF37]"
+                    : "border-[#444] bg-[#111] text-[#777]"
+                }`}
+              >
+                {current}
+              </div>
+
+              <span
+                className={`mt-3 text-center text-xs uppercase tracking-[0.15em] ${
+                  current <= step
+                    ? "text-[#D4AF37]"
+                    : "text-[#666]"
+                }`}
+              >
+                {title}
+              </span>
             </div>
-
-            <p
-              className={`mt-3 text-center text-sm ${
-                currentStep > index
-                  ? "text-[#D4AF37]"
-                  : "text-[#8F8F8F]"
-              }`}
-            >
-              {step}
-            </p>
-
-          </div>
-
-        ))}
+          );
+        })}
 
       </div>
 
@@ -52,7 +56,7 @@ export default function ProgressBar({
         <div
           className="h-full rounded-full bg-[#D4AF37] transition-all duration-500"
           style={{
-            width: `${(currentStep / totalSteps) * 100}%`,
+            width: `${progress}%`,
           }}
         />
 

@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import Image from "next/image";
+import Link from "next/link";
 import {
   FaFacebookF,
   FaInstagram,
@@ -14,54 +14,109 @@ import {
 
 export default function Footer() {
   return (
-    <footer className="bg-black text-white pt-16 pb-8 border-t border-yellow-500">
-      <div className="max-w-7xl mx-auto px-6">
-        <div className="grid md:grid-cols-4 gap-10">
+    <footer className="relative overflow-hidden border-t border-yellow-500/20 bg-[#050505] text-white">
 
-          {/* Logo & About */}
-          <div>
-            <Image
-              src="/images/logo.png"
-              alt="Rhennie Tasty Shack"
-              width={80}
-              height={80}
-              className="rounded-full mb-4"
-            />
+      {/* Decorative gold glow */}
+      <div className="pointer-events-none absolute -left-40 top-20 h-80 w-80 rounded-full bg-yellow-500/10 blur-3xl" />
 
-            <h2 className="text-2xl font-bold text-yellow-400">
-              Rhennie Tasty Shack
+      <div className="pointer-events-none absolute -right-40 bottom-0 h-80 w-80 rounded-full bg-yellow-500/10 blur-3xl" />
+
+      <div className="relative mx-auto max-w-7xl px-5 pb-8 pt-16 sm:px-6 md:pt-20">
+
+        {/* ================= MAIN FOOTER ================= */}
+        <div className="grid gap-12 md:grid-cols-2 lg:grid-cols-4">
+
+          {/* ================= BRAND ================= */}
+          <div className="lg:pr-6">
+
+            <Link href="/" className="inline-block">
+
+              <Image
+                src="/images/logo.png"
+                alt="Rhennie Tasty Shack"
+                width={90}
+                height={90}
+                className="mb-5 rounded-full"
+              />
+
+            </Link>
+
+            <h2 className="font-serif text-2xl font-bold text-white">
+              Rhennie Tasty{" "}
+              <span className="text-yellow-500">
+                Shack
+              </span>
             </h2>
 
-            <p className="text-gray-300 mt-4 leading-7">
+            <div className="mt-3 flex items-center gap-3">
+              <span className="h-px w-8 bg-yellow-500" />
+
+              <span className="text-[9px] font-bold uppercase tracking-[0.3em] text-yellow-500">
+                Luxury Dining At Your Doorstep
+              </span>
+            </div>
+
+            <p className="mt-5 text-sm leading-7 text-gray-400">
               Luxury meals crafted with passion. From everyday lunches to
               premium catering for birthdays, weddings, conferences and
-              corporate events, we serve unforgettable flavors.
+              corporate events, we create unforgettable dining experiences.
             </p>
+
           </div>
 
-          {/* Quick Links */}
+          {/* ================= QUICK LINKS ================= */}
           <div>
-            <h3 className="text-xl font-semibold text-yellow-400 mb-5">
+
+            <p className="text-xs font-bold uppercase tracking-[0.3em] text-yellow-500">
+              Explore
+            </p>
+
+            <h3 className="mt-3 text-xl font-bold">
               Quick Links
             </h3>
 
-            <ul className="space-y-3">
+            <ul className="mt-6 space-y-4">
+
               <li>
-                <Link href="/" className="hover:text-yellow-400 transition">
+                <Link
+                  href="/"
+                  className="text-sm text-gray-400 transition-colors hover:text-yellow-500"
+                >
                   Home
                 </Link>
               </li>
 
               <li>
-                <Link href="/menu" className="hover:text-yellow-400 transition">
-                  Menu
+                <Link
+                  href="/menu"
+                  className="text-sm text-gray-400 transition-colors hover:text-yellow-500"
+                >
+                  Our Menu
+                </Link>
+              </li>
+
+              <li>
+                <Link
+                  href="/#foodboxes"
+                  className="text-sm text-gray-400 transition-colors hover:text-yellow-500"
+                >
+                  Food Boxes
+                </Link>
+              </li>
+
+              <li>
+                <Link
+                  href="/#litre"
+                  className="text-sm text-gray-400 transition-colors hover:text-yellow-500"
+                >
+                  Party Orders
                 </Link>
               </li>
 
               <li>
                 <Link
                   href="/subscription"
-                  className="hover:text-yellow-400 transition"
+                  className="text-sm text-gray-400 transition-colors hover:text-yellow-500"
                 >
                   Meal Plans
                 </Link>
@@ -70,67 +125,139 @@ export default function Footer() {
               <li>
                 <Link
                   href="/orders"
-                  className="hover:text-yellow-400 transition"
+                  className="text-sm text-gray-400 transition-colors hover:text-yellow-500"
                 >
                   Orders
                 </Link>
               </li>
 
-              <li>
-                <Link
-                  href="/profile"
-                  className="hover:text-yellow-400 transition"
-                >
-                  Profile
-                </Link>
-              </li>
             </ul>
+
           </div>
 
-          {/* Contact */}
+          {/* ================= CONTACT ================= */}
           <div>
-            <h3 className="text-xl font-semibold text-yellow-400 mb-5">
-              Contact
+
+            <p className="text-xs font-bold uppercase tracking-[0.3em] text-yellow-500">
+              Get In Touch
+            </p>
+
+            <h3 className="mt-3 text-xl font-bold">
+              Contact Us
             </h3>
 
-            <div className="space-y-4">
+            <div className="mt-6 space-y-5">
 
-              <div className="flex items-center gap-3">
-                <FaPhone className="text-yellow-400" />
-                <span>07049180363</span>
-              </div>
+              {/* Phone */}
+              <a
+                href="tel:07049180363"
+                className="group flex items-start gap-4"
+              >
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-yellow-500/20 bg-[#111111] text-yellow-500 transition-colors group-hover:border-yellow-500">
+                  <FaPhone className="text-sm" />
+                </span>
 
-              <div className="flex items-center gap-3">
-                <FaWhatsapp className="text-green-500" />
-                <span>08121577759</span>
-              </div>
+                <div>
+                  <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-gray-500">
+                    Phone
+                  </p>
 
-              <div className="flex items-center gap-3">
-                <FaEnvelope className="text-yellow-400" />
-                <span>mohrhennie567@gmail.com</span>
-              </div>
+                  <p className="mt-1 text-sm text-gray-300 transition-colors group-hover:text-yellow-500">
+                    07049180363
+                  </p>
+                </div>
+              </a>
 
-              <div className="flex items-start gap-3">
-                <FaLocationDot className="text-yellow-400 mt-1" />
-                <span>Alimosho, Lagos, Nigeria</span>
+              {/* WhatsApp */}
+              <a
+                href="https://wa.me/2348121577759"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group flex items-start gap-4"
+              >
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-green-500/20 bg-[#111111] text-green-500 transition-colors group-hover:border-green-500">
+                  <FaWhatsapp className="text-sm" />
+                </span>
+
+                <div>
+                  <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-gray-500">
+                    WhatsApp
+                  </p>
+
+                  <p className="mt-1 text-sm text-gray-300 transition-colors group-hover:text-green-500">
+                    08121577759
+                  </p>
+                </div>
+              </a>
+
+              {/* Email */}
+              <a
+                href="mailto:mohrhennie567@gmail.com"
+                className="group flex items-start gap-4"
+              >
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-yellow-500/20 bg-[#111111] text-yellow-500 transition-colors group-hover:border-yellow-500">
+                  <FaEnvelope className="text-sm" />
+                </span>
+
+                <div>
+                  <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-gray-500">
+                    Email
+                  </p>
+
+                  <p className="mt-1 break-all text-sm text-gray-300 transition-colors group-hover:text-yellow-500">
+                    mohrhennie567@gmail.com
+                  </p>
+                </div>
+              </a>
+
+              {/* Location */}
+              <div className="flex items-start gap-4">
+
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-yellow-500/20 bg-[#111111] text-yellow-500">
+                  <FaLocationDot className="text-sm" />
+                </span>
+
+                <div>
+                  <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-gray-500">
+                    Location
+                  </p>
+
+                  <p className="mt-1 text-sm text-gray-300">
+                    Alimosho, Lagos, Nigeria
+                  </p>
+                </div>
+
               </div>
 
             </div>
+
           </div>
 
-          {/* Follow Us */}
+          {/* ================= SOCIALS ================= */}
           <div>
-            <h3 className="text-xl font-semibold text-yellow-400 mb-5">
+
+            <p className="text-xs font-bold uppercase tracking-[0.3em] text-yellow-500">
+              Stay Connected
+            </p>
+
+            <h3 className="mt-3 text-xl font-bold">
               Follow Us
             </h3>
 
-            <div className="flex gap-4">
+            <p className="mt-5 text-sm leading-7 text-gray-400">
+              Follow Rhennie Tasty Shack for new meals, special offers,
+              behind-the-scenes moments and catering updates.
+            </p>
+
+            {/* Social icons */}
+            <div className="mt-7 flex flex-wrap gap-3">
 
               <a
                 href="https://facebook.com"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="bg-yellow-500 hover:bg-yellow-400 text-black p-3 rounded-full transition"
+                aria-label="Facebook"
+                className="flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-[#111111] text-gray-300 transition-all duration-300 hover:border-yellow-500 hover:bg-yellow-500 hover:text-black"
               >
                 <FaFacebookF />
               </a>
@@ -139,7 +266,8 @@ export default function Footer() {
                 href="https://instagram.com/rhennietastyshack"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="bg-yellow-500 hover:bg-yellow-400 text-black p-3 rounded-full transition"
+                aria-label="Instagram"
+                className="flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-[#111111] text-gray-300 transition-all duration-300 hover:border-yellow-500 hover:bg-yellow-500 hover:text-black"
               >
                 <FaInstagram />
               </a>
@@ -148,7 +276,8 @@ export default function Footer() {
                 href="https://tiktok.com/@rhennietastyshack"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="bg-yellow-500 hover:bg-yellow-400 text-black p-3 rounded-full transition"
+                aria-label="TikTok"
+                className="flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-[#111111] text-gray-300 transition-all duration-300 hover:border-yellow-500 hover:bg-yellow-500 hover:text-black"
               >
                 <FaTiktok />
               </a>
@@ -157,25 +286,77 @@ export default function Footer() {
                 href="https://wa.me/2348121577759"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="bg-green-500 hover:bg-green-400 text-white p-3 rounded-full transition"
+                aria-label="WhatsApp"
+                className="flex h-11 w-11 items-center justify-center rounded-full border border-green-500/20 bg-[#111111] text-green-500 transition-all duration-300 hover:border-green-500 hover:bg-green-500 hover:text-white"
               >
                 <FaWhatsapp />
               </a>
 
             </div>
 
-            <p className="text-gray-400 mt-6">
-              Follow us for new meals, offers, and catering updates.
-            </p>
+            {/* WhatsApp CTA */}
+            <a
+              href="https://wa.me/2348121577759"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-7 inline-flex items-center gap-2 rounded-full bg-yellow-500 px-6 py-3 text-sm font-bold text-black transition-all duration-300 hover:bg-yellow-400 hover:shadow-lg"
+            >
+              Chat With Us
+              <span>→</span>
+            </a>
 
           </div>
 
         </div>
 
-        <hr className="border-gray-700 my-10" />
+        {/* ================= GOLD DIVIDER ================= */}
+        <div className="my-12 flex items-center gap-4">
 
-        <div className="text-center text-gray-400">
-          © {new Date().getFullYear()} Rhennie Tasty Shack. All Rights Reserved.
+          <span className="h-px flex-1 bg-gradient-to-r from-transparent to-yellow-500/30" />
+
+          <span className="h-1.5 w-1.5 rounded-full bg-yellow-500" />
+
+          <span className="h-px flex-1 bg-gradient-to-l from-transparent to-yellow-500/30" />
+
+        </div>
+
+        {/* ================= BOTTOM ================= */}
+        <div className="flex flex-col items-center justify-between gap-4 text-center md:flex-row md:text-left">
+
+          <p className="text-xs text-gray-500">
+            © {new Date().getFullYear()} Rhennie Tasty Shack. All Rights Reserved.
+          </p>
+
+          <div className="flex items-center gap-5 text-xs text-gray-500">
+
+            <Link
+              href="/"
+              className="transition-colors hover:text-yellow-500"
+            >
+              Privacy
+            </Link>
+
+            <span className="text-gray-700">
+              •
+            </span>
+
+            <Link
+              href="/"
+              className="transition-colors hover:text-yellow-500"
+            >
+              Terms
+            </Link>
+
+            <span className="text-gray-700">
+              •
+            </span>
+
+            <span>
+              Premium Taste • Fast Delivery
+            </span>
+
+          </div>
+
         </div>
 
       </div>
