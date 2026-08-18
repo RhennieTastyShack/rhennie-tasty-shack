@@ -2,34 +2,41 @@
 
 import { useEffect, useState } from "react";
 
-interface Consultation {
-  id?: string;
-  full_name?: string;
-  email?: string;
-  phone?: string;
-  event_type?: string;
-  event_date?: string | null;
-  event_time?: string;
-  guest_count?: number;
-  venue?: string;
-  budget?: string;
-  special_request?: string;
-}
+type Consultation = {
+  id: string;
+  full_name: string | null;
+  email: string | null;
+  phone: string | null;
+  event_type: string | null;
+  event_date: string | null;
+  event_time: string | null;
+  guest_count: number | null;
+  venue: string | null;
+  budget: number | null;
+  special_request: string | null;
+};
 
-interface Order {
+type Order = {
   id: string;
   order_no: string;
   customer_id: string | null;
   title: string;
   order_date: string | null;
-  amount: number;
-  status: string;
+  amount: number | null;
+  status: string | null;
   created_at: string;
-  consultation_id?: string | null;
-  consultation?: Consultation | null;
-}
+  consultation?: Consultation | Consultation[] | null;
+};
 
-const ORDER_STATUSES = [
+const STATUS_STEPS = [
+  "IN REVIEW",
+  "CONFIRMED",
+  "PREPARING",
+  "OUT FOR DELIVERY",
+  "COMPLETED",
+];
+
+const STATUS_OPTIONS = [
   "IN REVIEW",
   "CONFIRMED",
   "PREPARING",
@@ -38,626 +45,615 @@ const ORDER_STATUSES = [
   "CANCELLED",
 ];
 
-export default function OrdersPage() {
+export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
-  const [updatingStatus, setUpdatingStatus] = useState(false);
-  const [statusMessage, setStatusMessage] = useState("");
+  const [updatingOrder, setUpdatingOrder] = useState<string | null>(null);
+
+  async function loadOrders() {
+    try {
+      setLoading(true);
+      setError("");
+
+      const response = await fetch("/api/orders", {
+        cache: "no-store",
+      });
+
+      const text = await response.text();
+
+      let result: unknown = [];
+
+      if (text) {
+        try {
+          result = JSON.parse(text);
+        } catch {
+          throw new Error("The server returned an invalid response.");
+        }
+      }
+
+      if (!response.ok) {
+        const errorMessage =
+          typeof result === "object" &&
+          result !== null &&
+          "error" in result
+            ? String(
+                (result as { error?: unknown }).error ||
+                  "Unable to load orders."
+              )
+            : "Unable to load orders.";
+
+        throw new Error(errorMessage);
+      }
+
+      if (!Array.isArray(result)) {
+        throw new Error("Invalid orders response.");
+      }
+
+      setOrders(result as Order[]);
+    } catch (error) {
+      console.error("Orders loading error:", error);
+
+      setError(
+        error instanceof Error
+          ? error.message
+          : "Unable to load orders."
+      );
+    } finally {
+      setLoading(false);
+    }
+  }
 
   useEffect(() => {
-    async function loadOrders() {
-      try {
-        const response = await fetch("/api/orders", {
-          cache: "no-store",
-        });
-
-        const result = await response.json();
-
-        if (!response.ok) {
-          throw new Error(
-            result?.error || "Unable to load orders."
-          );
-        }
-
-        setOrders(result);
-      } catch (err) {
-        console.error("Orders loading error:", err);
-
-        setError(
-          err instanceof Error
-            ? err.message
-            : "Unable to load orders."
-        );
-      } finally {
-        setLoading(false);
-      }
-    }
-
     loadOrders();
   }, []);
 
-  function formatAmount(amount: number) {
-    return `₦${Number(amount || 0).toLocaleString("en-NG")}`;
-  }
-
-  function formatDate(date: string | null | undefined) {
-    if (!date) return "—";
-
-    return new Date(date).toLocaleDateString("en-NG", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
-  }
-
-  function getStatusClass(status: string) {
-    switch (status?.toUpperCase()) {
-      case "COMPLETED":
-        return "bg-green-100 text-green-700";
-
-      case "CONFIRMED":
-        return "bg-blue-100 text-blue-700";
-
-      case "PREPARING":
-        return "bg-yellow-100 text-yellow-700";
-
-      case "OUT FOR DELIVERY":
-        return "bg-indigo-100 text-indigo-700";
-
-      case "IN REVIEW":
-        return "bg-purple-100 text-purple-700";
-
-      case "CANCELLED":
-        return "bg-red-100 text-red-700";
-
-      default:
-        return "bg-gray-100 text-gray-700";
-    }
-  }
-
-  async function updateOrderStatus(newStatus: string) {
-    if (!selectedOrder) return;
-
-    if (newStatus === selectedOrder.status) {
-      return;
-    }
-
-    setUpdatingStatus(true);
-    setStatusMessage("");
-    setError("");
-
+  async function updateOrderStatus(
+    orderId: string,
+    status: string
+  ) {
     try {
+      setUpdatingOrder(orderId);
+      setError("");
+
       const response = await fetch("/api/orders/status", {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          orderId: selectedOrder.id,
-          status: newStatus,
+          orderId,
+          status,
         }),
       });
 
-      const result = await response.json();
+      const text = await response.text();
+
+      let result: {
+        success?: boolean;
+        message?: string;
+        error?: string;
+        order?: Order;
+      } = {};
+
+      if (text) {
+        try {
+          result = JSON.parse(text);
+        } catch {
+          throw new Error(
+            "The server returned an invalid response."
+          );
+        }
+      }
 
       if (!response.ok) {
         throw new Error(
-          result?.error || "Unable to update order status."
+          result.error || "Unable to update order status."
         );
       }
 
-      const updatedOrder: Order = result.order;
+      if (!result.success) {
+        throw new Error(
+          result.error || "Unable to update order status."
+        );
+      }
 
-      // Update the orders table
-      setOrders((currentOrders) =>
-        currentOrders.map((order) =>
-          order.id === updatedOrder.id
+      setOrders((currentOrders: Order[]) =>
+        currentOrders.map((order: Order) =>
+          order.id === orderId
             ? {
                 ...order,
-                ...updatedOrder,
-                consultation: order.consultation,
+                status: status,
               }
             : order
         )
       );
-
-      // Update the open modal
-      setSelectedOrder((currentOrder) =>
-        currentOrder
-          ? {
-              ...currentOrder,
-              ...updatedOrder,
-              consultation: currentOrder.consultation,
-            }
-          : null
+    } catch (error) {
+      console.error(
+        "Update order status error:",
+        error
       );
-
-      setStatusMessage(
-        `Order status changed to ${newStatus}.`
-      );
-    } catch (err) {
-      console.error("Status update error:", err);
 
       setError(
-        err instanceof Error
-          ? err.message
+        error instanceof Error
+          ? error.message
           : "Unable to update order status."
       );
     } finally {
-      setUpdatingStatus(false);
+      setUpdatingOrder(null);
     }
   }
 
-  function exportOrders() {
-    if (!orders.length) return;
+  function formatAmount(amount: number | null) {
+    if (amount === null || amount === undefined) {
+      return "₦0";
+    }
 
-    const headers = [
-      "Order Number",
-      "Customer",
-      "Phone",
-      "Email",
-      "Service",
-      "Event Date",
-      "Guests",
-      "Venue",
-      "Budget",
-      "Amount",
-      "Status",
-    ];
+    return `₦${Number(amount).toLocaleString("en-NG")}`;
+  }
 
-    const rows = orders.map((order) => [
-      order.order_no,
-      order.consultation?.full_name || "Guest",
-      order.consultation?.phone || "",
-      order.consultation?.email || "",
-      order.title,
-      order.order_date || "",
-      order.consultation?.guest_count || "",
-      order.consultation?.venue || "",
-      order.consultation?.budget || "",
-      order.amount,
-      order.status,
-    ]);
+  function formatDate(date: string | null) {
+    if (!date) return "No date";
 
-    const csv = [headers, ...rows]
-      .map((row) =>
-        row
-          .map((value) =>
-            `"${String(value).replace(/"/g, '""')}"`
-          )
-          .join(",")
-      )
-      .join("\n");
-
-    const blob = new Blob([csv], {
-      type: "text/csv;charset=utf-8;",
+    return new Date(date).toLocaleDateString("en-NG", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
     });
+  }
 
-    const url = URL.createObjectURL(blob);
+  function getStatusIndex(status: string | null) {
+    if (!status) return 0;
 
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "rhennie-orders.csv";
-    link.click();
+    const index = STATUS_STEPS.indexOf(
+      status.toUpperCase()
+    );
 
-    URL.revokeObjectURL(url);
+    return index === -1 ? 0 : index;
+  }
+
+  function getStatusLabel(status: string | null) {
+    if (!status) return "In Review";
+
+    return status
+      .toLowerCase()
+      .replace(/\b\w/g, (letter) =>
+        letter.toUpperCase()
+      );
+  }
+
+  function getConsultation(
+    consultation:
+      | Consultation
+      | Consultation[]
+      | null
+      | undefined
+  ) {
+    if (Array.isArray(consultation)) {
+      return consultation[0] || null;
+    }
+
+    return consultation || null;
+  }
+
+  function getStatusBadgeClass(status: string | null) {
+    switch (status?.toUpperCase()) {
+      case "CONFIRMED":
+        return "border-blue-500/30 bg-blue-500/10 text-blue-300";
+
+      case "PREPARING":
+        return "border-orange-500/30 bg-orange-500/10 text-orange-300";
+
+      case "OUT FOR DELIVERY":
+        return "border-purple-500/30 bg-purple-500/10 text-purple-300";
+
+      case "COMPLETED":
+        return "border-green-500/30 bg-green-500/10 text-green-300";
+
+      case "CANCELLED":
+        return "border-red-500/30 bg-red-500/10 text-red-300";
+
+      default:
+        return "border-[#D4AF37]/30 bg-[#D4AF37]/10 text-[#D4AF37]";
+    }
+  }
+
+  if (loading) {
+    return (
+      <main className="min-h-screen bg-[#080808] px-6 py-16 text-white">
+        <div className="mx-auto max-w-7xl text-center">
+          <p className="text-sm uppercase tracking-[0.3em] text-[#D4AF37]">
+            Admin Orders
+          </p>
+
+          <h1 className="mt-4 text-4xl font-bold">
+            Loading Orders...
+          </h1>
+
+          <p className="mt-3 text-[#888888]">
+            Please wait while we load your orders.
+          </p>
+        </div>
+      </main>
+    );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      {/* HEADER */}
-      <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
-          <p className="text-sm font-semibold uppercase tracking-[0.35em] text-[#D4AF37]">
-            Rhennie Tasty Shack
-          </p>
+    <main className="min-h-screen bg-[#080808] px-5 py-10 text-white md:px-8 lg:px-12">
+      <div className="mx-auto max-w-7xl">
 
-          <h1 className="mt-2 text-4xl font-bold text-black">
-            Orders
-          </h1>
+        {/* HEADER */}
+        <div className="mb-10 flex flex-col justify-between gap-6 md:flex-row md:items-end">
+          <div>
+            <span className="inline-block rounded-full border border-[#D4AF37]/30 bg-[#111111] px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-[#D4AF37]">
+              Rhennie Studio
+            </span>
 
-          <p className="mt-2 text-gray-600">
-            View and manage customer orders and Event Concierge requests.
-          </p>
+            <h1 className="mt-5 text-4xl font-bold md:text-5xl">
+              Orders
+            </h1>
+
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-[#999999]">
+              Manage customer orders, update order progress
+              and keep track of every request.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={loadOrders}
+            className="rounded-xl border border-[#D4AF37]/30 bg-[#111111] px-5 py-3 text-sm font-semibold text-[#D4AF37] transition hover:bg-[#D4AF37] hover:text-black"
+          >
+            ↻ Refresh Orders
+          </button>
         </div>
 
-        <button
-          onClick={exportOrders}
-          className="rounded-lg bg-[#D4AF37] px-6 py-3 font-semibold text-black transition hover:bg-[#c19b2f]"
-        >
-          Export Orders
-        </button>
-      </div>
+        {/* ERROR */}
+        {error && (
+          <div className="mb-6 rounded-2xl border border-red-500/30 bg-red-500/10 p-5">
+            <p className="text-sm font-semibold text-red-300">
+              {error}
+            </p>
+          </div>
+        )}
 
-      {/* ERROR */}
-      {error && (
-        <div className="mb-6 rounded-xl border border-red-200 bg-red-50 p-4 text-red-700">
-          {error}
+        {/* ORDER COUNT */}
+        <div className="mb-6 flex items-center justify-between border-b border-white/10 pb-5">
+          <div>
+            <p className="text-xs uppercase tracking-[0.25em] text-[#777777]">
+              Total Orders
+            </p>
+
+            <p className="mt-1 text-2xl font-bold text-[#D4AF37]">
+              {orders.length}
+            </p>
+          </div>
         </div>
-      )}
 
-      {/* LOADING */}
-      {loading ? (
-        <div className="rounded-xl bg-white p-10 text-center shadow">
-          <p className="text-gray-600">
-            Loading orders...
-          </p>
-        </div>
-      ) : orders.length === 0 ? (
-        <div className="rounded-xl bg-white p-10 text-center shadow">
-          <h2 className="text-xl font-semibold text-black">
-            No orders yet
-          </h2>
+        {/* EMPTY */}
+        {orders.length === 0 && (
+          <div className="rounded-3xl border border-white/10 bg-[#111111] px-6 py-20 text-center">
+            <div className="text-4xl">
+              📦
+            </div>
 
-          <p className="mt-2 text-gray-500">
-            New customer orders will appear here automatically.
-          </p>
-        </div>
-      ) : (
-        /* ORDERS TABLE */
-        <div className="overflow-hidden rounded-xl bg-white shadow-lg">
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[1100px]">
-              <thead className="bg-black text-white">
-                <tr>
-                  <th className="p-4 text-left">Order</th>
-                  <th className="p-4 text-left">Customer</th>
-                  <th className="p-4 text-left">Phone</th>
-                  <th className="p-4 text-left">Service</th>
-                  <th className="p-4 text-left">Date</th>
-                  <th className="p-4 text-left">Amount</th>
-                  <th className="p-4 text-left">Status</th>
-                  <th className="p-4 text-left">Action</th>
-                </tr>
-              </thead>
+            <h2 className="mt-5 text-2xl font-bold">
+              No Orders Yet
+            </h2>
 
-              <tbody>
-                {orders.map((order) => (
-                  <tr
-                    key={order.id}
-                    className="border-t border-gray-200 transition hover:bg-gray-50"
-                  >
-                    <td className="p-4 font-semibold text-black">
-                      {order.order_no}
-                    </td>
+            <p className="mt-3 text-sm text-[#888888]">
+              New customer orders will appear here.
+            </p>
+          </div>
+        )}
 
-                    <td className="p-4">
-                      <div className="font-semibold text-black">
-                        {order.consultation?.full_name || "Guest"}
-                      </div>
+        {/* ORDERS */}
+        <div className="space-y-6">
+          {orders.map((order) => {
+            const consultation =
+              getConsultation(order.consultation);
 
-                      {order.customer_id && (
-                        <div className="text-xs text-gray-500">
-                          {order.customer_id}
-                        </div>
-                      )}
-                    </td>
+            const statusIndex =
+              getStatusIndex(order.status);
 
-                    <td className="p-4 text-gray-700">
-                      {order.consultation?.phone || "—"}
-                    </td>
+            const isCancelled =
+              order.status?.toUpperCase() ===
+              "CANCELLED";
 
-                    <td className="p-4 font-medium text-black">
-                      {order.title}
-                    </td>
+            return (
+              <div
+                key={order.id}
+                className="overflow-hidden rounded-3xl border border-[#D4AF37]/20 bg-[#111111]"
+              >
 
-                    <td className="p-4 text-gray-600">
-                      {formatDate(order.order_date)}
-                    </td>
+                {/* ORDER TOP */}
+                <div className="border-b border-white/10 p-6 md:p-8">
+                  <div className="flex flex-col justify-between gap-6 lg:flex-row lg:items-start">
 
-                    <td className="p-4 font-semibold text-black">
-                      {formatAmount(order.amount)}
-                    </td>
+                    <div>
+                      <p className="text-xs font-bold uppercase tracking-[0.25em] text-[#D4AF37]">
+                        {order.order_no}
+                      </p>
 
-                    <td className="p-4">
+                      <h2 className="mt-3 text-2xl font-bold md:text-3xl">
+                        {order.title}
+                      </h2>
+
+                      <p className="mt-2 text-sm text-[#777777]">
+                        Created{" "}
+                        {formatDate(order.created_at)}
+                      </p>
+                    </div>
+
+                    <div className="lg:text-right">
+                      <p className="text-xs uppercase tracking-[0.25em] text-[#666666]">
+                        Order Value
+                      </p>
+
+                      <p className="mt-1 text-3xl font-bold text-[#D4AF37]">
+                        {formatAmount(order.amount)}
+                      </p>
+
                       <span
-                        className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold uppercase ${getStatusClass(
+                        className={`mt-3 inline-block rounded-full border px-4 py-1.5 text-xs font-bold uppercase tracking-wider ${getStatusBadgeClass(
                           order.status
                         )}`}
                       >
-                        {order.status}
+                        {getStatusLabel(order.status)}
                       </span>
-                    </td>
+                    </div>
 
-                    <td className="p-4">
-                      <button
-                        onClick={() => {
-                          setStatusMessage("");
-                          setError("");
-                          setSelectedOrder(order);
+                  </div>
+                </div>
+
+                {/* CUSTOMER / EVENT DETAILS */}
+                {consultation && (
+                  <div className="grid gap-6 border-b border-white/10 p-6 md:grid-cols-2 md:p-8 lg:grid-cols-3">
+
+                    <div>
+                      <p className="text-[10px] uppercase tracking-[0.25em] text-[#666666]">
+                        Customer
+                      </p>
+
+                      <p className="mt-2 font-semibold">
+                        {consultation.full_name ||
+                          "Not provided"}
+                      </p>
+
+                      <p className="mt-1 text-sm text-[#888888]">
+                        {consultation.email ||
+                          "No email"}
+                      </p>
+
+                      <p className="mt-1 text-sm text-[#888888]">
+                        {consultation.phone ||
+                          "No phone"}
+                      </p>
+                    </div>
+
+                    <div>
+                      <p className="text-[10px] uppercase tracking-[0.25em] text-[#666666]">
+                        Event
+                      </p>
+
+                      <p className="mt-2 font-semibold">
+                        {consultation.event_type ||
+                          "Not specified"}
+                      </p>
+
+                      <p className="mt-1 text-sm text-[#888888]">
+                        {consultation.event_date
+                          ? formatDate(
+                              consultation.event_date
+                            )
+                          : "Date not specified"}
+                      </p>
+
+                      <p className="mt-1 text-sm text-[#888888]">
+                        {consultation.event_time ||
+                          "Time not specified"}
+                      </p>
+                    </div>
+
+                    <div>
+                      <p className="text-[10px] uppercase tracking-[0.25em] text-[#666666]">
+                        Guests / Venue
+                      </p>
+
+                      <p className="mt-2 font-semibold">
+                        {consultation.guest_count
+                          ? `${consultation.guest_count} guests`
+                          : "Guest count not provided"}
+                      </p>
+
+                      <p className="mt-1 text-sm text-[#888888]">
+                        {consultation.venue ||
+                          "Venue not provided"}
+                      </p>
+                    </div>
+
+                    {consultation.budget && (
+                      <div>
+                        <p className="text-[10px] uppercase tracking-[0.25em] text-[#666666]">
+                          Budget
+                        </p>
+
+                        <p className="mt-2 font-semibold text-[#D4AF37]">
+                          {formatAmount(
+                            consultation.budget
+                          )}
+                        </p>
+                      </div>
+                    )}
+
+                    {consultation.special_request && (
+                      <div className="md:col-span-2">
+                        <p className="text-[10px] uppercase tracking-[0.25em] text-[#666666]">
+                          Special Requests
+                        </p>
+
+                        <p className="mt-2 text-sm leading-6 text-[#AAAAAA]">
+                          {consultation.special_request}
+                        </p>
+                      </div>
+                    )}
+
+                  </div>
+                )}
+
+                {/* PROGRESS */}
+                {!isCancelled && (
+                  <div className="p-6 md:p-8">
+
+                    <div className="mb-6 flex items-center justify-between">
+                      <div>
+                        <p className="text-xs uppercase tracking-[0.25em] text-[#666666]">
+                          Order Progress
+                        </p>
+
+                        <p className="mt-1 font-semibold">
+                          {getStatusLabel(
+                            order.status
+                          )}
+                        </p>
+                      </div>
+
+                      <div className="text-right">
+                        <p className="text-[10px] uppercase tracking-[0.2em] text-[#666666]">
+                          Stage
+                        </p>
+
+                        <p className="mt-1 font-bold text-[#D4AF37]">
+                          {statusIndex + 1} of{" "}
+                          {STATUS_STEPS.length}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* BAR */}
+                    <div className="relative h-1 overflow-hidden rounded-full bg-[#2A2A2A]">
+                      <div
+                        className="h-full bg-[#D4AF37] transition-all duration-500"
+                        style={{
+                          width: `${
+                            ((statusIndex + 1) /
+                              STATUS_STEPS.length) *
+                            100
+                          }%`,
                         }}
-                        className="rounded-lg bg-black px-4 py-2 text-sm font-medium text-white transition hover:bg-gray-800"
-                      >
-                        View
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
+                      />
+                    </div>
 
-      {/* ORDER DETAILS MODAL */}
-      {selectedOrder && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
-          onClick={() => setSelectedOrder(null)}
-        >
-          <div
-            className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-2xl bg-white shadow-2xl"
-            onClick={(event) => event.stopPropagation()}
-          >
-            {/* MODAL HEADER */}
-            <div className="flex items-center justify-between border-b border-gray-200 bg-black px-6 py-5">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#D4AF37]">
-                  Rhennie Tasty Shack
-                </p>
+                    {/* STEPS */}
+                    <div className="mt-5 grid grid-cols-5 gap-2">
+                      {STATUS_STEPS.map(
+                        (step, index) => {
+                          const completed =
+                            statusIndex >= index;
 
-                <h2 className="mt-1 text-2xl font-bold text-white">
-                  Order Details
-                </h2>
-              </div>
+                          return (
+                            <div
+                              key={step}
+                              className="text-center"
+                            >
+                              <div
+                                className={`mx-auto flex h-8 w-8 items-center justify-center rounded-full border text-xs font-bold ${
+                                  completed
+                                    ? "border-[#D4AF37] bg-[#D4AF37] text-black"
+                                    : "border-[#333333] bg-[#181818] text-[#666666]"
+                                }`}
+                              >
+                                {completed
+                                  ? "✓"
+                                  : index + 1}
+                              </div>
 
-              <button
-                onClick={() => setSelectedOrder(null)}
-                className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-2xl text-white transition hover:bg-white/20"
-              >
-                ×
-              </button>
-            </div>
-
-            {/* MODAL CONTENT */}
-            <div className="space-y-6 p-6">
-
-              {/* ORDER SUMMARY */}
-              <section>
-                <div className="mb-4 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">
-                      Order
-                    </p>
-
-                    <h3 className="text-xl font-bold text-black">
-                      {selectedOrder.order_no}
-                    </h3>
-                  </div>
-
-                  <span
-                    className={`w-fit rounded-full px-4 py-2 text-xs font-bold uppercase ${getStatusClass(
-                      selectedOrder.status
-                    )}`}
-                  >
-                    {selectedOrder.status}
-                  </span>
-                </div>
-
-                <div className="grid gap-4 rounded-xl bg-gray-50 p-5 md:grid-cols-2">
-                  <div>
-                    <p className="text-sm text-gray-500">
-                      Service
-                    </p>
-
-                    <p className="mt-1 font-semibold text-black">
-                      {selectedOrder.title}
-                    </p>
-                  </div>
-
-                  <div>
-                    <p className="text-sm text-gray-500">
-                      Amount
-                    </p>
-
-                    <p className="mt-1 text-xl font-bold text-[#B08D22]">
-                      {formatAmount(selectedOrder.amount)}
-                    </p>
-                  </div>
-
-                  <div>
-                    <p className="text-sm text-gray-500">
-                      Order Date
-                    </p>
-
-                    <p className="mt-1 font-semibold text-black">
-                      {formatDate(selectedOrder.order_date)}
-                    </p>
-                  </div>
-
-                  <div>
-                    <p className="text-sm text-gray-500">
-                      Event Type
-                    </p>
-
-                    <p className="mt-1 font-semibold text-black">
-                      {selectedOrder.consultation?.event_type ||
-                        "—"}
-                    </p>
-                  </div>
-                </div>
-              </section>
-
-              {/* CHANGE STATUS */}
-              <section className="rounded-xl border border-[#D4AF37]/30 bg-[#D4AF37]/5 p-5">
-                <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-                  <div>
-                    <h3 className="text-lg font-bold text-black">
-                      Update Order Status
-                    </h3>
-
-                    <p className="mt-1 text-sm text-gray-600">
-                      Change the current progress of this order.
-                    </p>
-                  </div>
-
-                  <div className="w-full md:w-64">
-                    <select
-                      value={selectedOrder.status}
-                      disabled={updatingStatus}
-                      onChange={(event) =>
-                        updateOrderStatus(event.target.value)
-                      }
-                      className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 font-semibold text-black outline-none transition focus:border-[#D4AF37] focus:ring-2 focus:ring-[#D4AF37]/20 disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      {ORDER_STATUSES.map((status) => (
-                        <option key={status} value={status}>
-                          {status}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                {updatingStatus && (
-                  <p className="mt-3 text-sm font-medium text-[#B08D22]">
-                    Updating order status...
-                  </p>
-                )}
-
-                {statusMessage && (
-                  <p className="mt-3 text-sm font-semibold text-green-600">
-                    {statusMessage}
-                  </p>
-                )}
-              </section>
-
-              {/* CUSTOMER */}
-              <section>
-                <h3 className="mb-4 text-lg font-bold text-black">
-                  Customer Information
-                </h3>
-
-                <div className="grid gap-4 rounded-xl border border-gray-200 p-5 md:grid-cols-2">
-                  <div>
-                    <p className="text-sm text-gray-500">
-                      Full Name
-                    </p>
-
-                    <p className="mt-1 font-semibold text-black">
-                      {selectedOrder.consultation?.full_name ||
-                        "Guest"}
-                    </p>
-                  </div>
-
-                  <div>
-                    <p className="text-sm text-gray-500">
-                      Phone
-                    </p>
-
-                    <p className="mt-1 font-semibold text-black">
-                      {selectedOrder.consultation?.phone ||
-                        "—"}
-                    </p>
-                  </div>
-
-                  <div>
-                    <p className="text-sm text-gray-500">
-                      Email
-                    </p>
-
-                    <p className="mt-1 break-all font-semibold text-black">
-                      {selectedOrder.consultation?.email ||
-                        "—"}
-                    </p>
-                  </div>
-                </div>
-              </section>
-
-              {/* EVENT */}
-              <section>
-                <h3 className="mb-4 text-lg font-bold text-black">
-                  Event Information
-                </h3>
-
-                <div className="grid gap-4 rounded-xl border border-gray-200 p-5 md:grid-cols-2">
-                  <div>
-                    <p className="text-sm text-gray-500">
-                      Event Date
-                    </p>
-
-                    <p className="mt-1 font-semibold text-black">
-                      {formatDate(
-                        selectedOrder.consultation?.event_date
+                              <p
+                                className={`mt-2 text-[8px] uppercase tracking-wider md:text-[10px] ${
+                                  completed
+                                    ? "text-[#D4AF37]"
+                                    : "text-[#555555]"
+                                }`}
+                              >
+                                {step}
+                              </p>
+                            </div>
+                          );
+                        }
                       )}
-                    </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* CANCELLED */}
+                {isCancelled && (
+                  <div className="p-6 md:p-8">
+                    <div className="rounded-2xl border border-red-500/20 bg-red-500/5 p-5">
+                      <p className="text-sm font-semibold text-red-300">
+                        This order has been cancelled.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* STATUS CONTROL */}
+                <div className="border-t border-white/10 bg-[#0D0D0D] p-6 md:p-8">
+                  <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.25em] text-[#666666]">
+                        Update Order Status
+                      </p>
+
+                      <p className="mt-1 text-sm text-[#888888]">
+                        Changing this will also update the
+                        customer's order tracker.
+                      </p>
+                    </div>
+
+                    <select
+                      value={
+                        order.status || "IN REVIEW"
+                      }
+                      disabled={
+                        updatingOrder === order.id
+                      }
+                      onChange={(event) =>
+                        updateOrderStatus(
+                          order.id,
+                          event.target.value
+                        )
+                      }
+                      className="min-w-[220px] rounded-xl border border-[#D4AF37]/30 bg-[#151515] px-4 py-3 text-sm font-semibold text-[#D4AF37] outline-none transition focus:border-[#D4AF37]"
+                    >
+                      {STATUS_OPTIONS.map(
+                        (status) => (
+                          <option
+                            key={status}
+                            value={status}
+                            className="bg-[#151515] text-white"
+                          >
+                            {getStatusLabel(status)}
+                          </option>
+                        )
+                      )}
+                    </select>
+
                   </div>
 
-                  <div>
-                    <p className="text-sm text-gray-500">
-                      Event Time
+                  {updatingOrder === order.id && (
+                    <p className="mt-4 text-right text-xs text-[#D4AF37]">
+                      Updating order status...
                     </p>
-
-                    <p className="mt-1 font-semibold text-black">
-                      {selectedOrder.consultation?.event_time ||
-                        "—"}
-                    </p>
-                  </div>
-
-                  <div>
-                    <p className="text-sm text-gray-500">
-                      Number of Guests
-                    </p>
-
-                    <p className="mt-1 font-semibold text-black">
-                      {selectedOrder.consultation?.guest_count ||
-                        "—"}
-                    </p>
-                  </div>
-
-                  <div>
-                    <p className="text-sm text-gray-500">
-                      Venue
-                    </p>
-
-                    <p className="mt-1 font-semibold text-black">
-                      {selectedOrder.consultation?.venue ||
-                        "—"}
-                    </p>
-                  </div>
-
-                  <div className="md:col-span-2">
-                    <p className="text-sm text-gray-500">
-                      Budget
-                    </p>
-
-                    <p className="mt-1 font-semibold text-black">
-                      {selectedOrder.consultation?.budget ||
-                        "—"}
-                    </p>
-                  </div>
+                  )}
                 </div>
-              </section>
 
-              {/* SPECIAL REQUEST */}
-              <section>
-                <h3 className="mb-4 text-lg font-bold text-black">
-                  Special Request
-                </h3>
-
-                <div className="rounded-xl border border-[#D4AF37]/30 bg-[#D4AF37]/5 p-5">
-                  <p className="whitespace-pre-wrap text-gray-700">
-                    {selectedOrder.consultation?.special_request ||
-                      "No special request provided."}
-                  </p>
-                </div>
-              </section>
-            </div>
-
-            {/* MODAL FOOTER */}
-            <div className="flex justify-end gap-3 border-t border-gray-200 bg-gray-50 px-6 py-4">
-              <button
-                onClick={() => setSelectedOrder(null)}
-                className="rounded-lg border border-gray-300 bg-white px-5 py-2.5 font-semibold text-gray-700 transition hover:bg-gray-100"
-              >
-                Close
-              </button>
-            </div>
-          </div>
+              </div>
+            );
+          })}
         </div>
-      )}
-    </div>
+
+      </div>
+    </main>
   );
 }

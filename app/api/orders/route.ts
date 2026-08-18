@@ -43,12 +43,18 @@ export async function GET() {
       console.error("Orders API Error:", error);
 
       return NextResponse.json(
-        { error: error.message },
-        { status: 500 }
+        {
+          error: error.message,
+        },
+        {
+          status: 500,
+        }
       );
     }
 
-    return NextResponse.json(data);
+    return NextResponse.json(data ?? [], {
+      status: 200,
+    });
   } catch (error) {
     console.error("Orders API Error:", error);
 
@@ -56,7 +62,9 @@ export async function GET() {
       {
         error: "Unable to load orders.",
       },
-      { status: 500 }
+      {
+        status: 500,
+      }
     );
   }
 }

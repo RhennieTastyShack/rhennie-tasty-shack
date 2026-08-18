@@ -17,46 +17,117 @@ const supabaseAdmin = createClient(
   serviceRoleKey
 );
 
-export async function GET() {
+const VALID_STATUSES = [
+  "IN REVIEW",
+  "CONFIRMED",
+  "PREPARING",
+  "OUT FOR DELIVERY",
+  "COMPLETED",
+  "CANCELLED",
+];
+
+export async function PATCH(request: Request) {
   try {
-    const { data, error } = await supabaseAdmin
-      .from("orders")
-      .select(`
-        *,
-        consultation:consultations (
-          id,
-          full_name,
-          email,
-          phone,
-          event_type,
-          event_date,
-          event_time,
-          guest_count,
-          venue,
-          budget,
-          special_request
-        )
-      `)
-      .order("created_at", { ascending: false });
+    const body = await request.json();
 
-    if (error) {
-      console.error("Orders API Error:", error);
+    const orderId = body.orderId;
+    const status = body.status;
 
+    if (!orderId) {
       return NextResponse.json(
-        { error: error.message },
-        { status: 500 }
+        {
+          error: "Order ID is required.",
+        },
+        {
+          status: 400,
+        }
       );
     }
 
-    return NextResponse.json(data ?? []);
-  } catch (error) {
-    console.error("Orders API Error:", error);
+    if (!status) {
+      return NextResponse.json(
+        {
+          error: "Order status is required.",
+        },
+        {
+          status: 400,
+        }
+      );
+    }
+
+    const normalizedStatus = String(status)
+      .trim()
+      .toUpperCase();
+
+    if (!VALID_STATUSES.includes(normalizedStatus)) {
+      return NextResponse.json(
+        {
+          error: `Invalid order status: ${normalizedStatus}`,
+        },
+        {
+          status: 400,
+        }
+      );
+    }
+
+    const { data, error } = await supabaseAdmin
+      .from("orders")
+      .update({
+        status: normalizedStatus,
+      })
+      .eq("id", orderId)
+      .select()
+      .single();
+
+    if (error) {
+      console.error(
+        "Order Status Update Error:",
+        error
+      );
+
+      return NextResponse.json(
+        {
+          error: error.message,
+        },
+        {
+          status: 500,
+        }
+      );
+    }
+
+    if (!data) {
+      return NextResponse.json(
+        {
+          error: "Order not found.",
+        },
+        {
+          status: 404,
+        }
+      );
+    }
 
     return NextResponse.json(
       {
-        error: "Unable to load orders.",
+        success: true,
+        order: data,
       },
-      { status: 500 }
+      {
+        status: 200,
+      }
+    );
+  } catch (error) {
+    console.error(
+      "Order Status API Error:",
+      error
+    );
+
+    return NextResponse.json(
+      {
+        error: "Unable to update order status.",
+      },
+      {
+        status: 500,
+      }
     );
   }
 }
