@@ -21,7 +21,7 @@ const quickLinks = [
     href: "/subscription",
     icon: "🍽️",
   },
-];
+]
 
 export default function ClientPortalPage() {
   return (
