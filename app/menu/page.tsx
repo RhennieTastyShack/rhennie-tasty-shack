@@ -1,35 +1,34 @@
 import { Suspense } from "react";
+import MenuGrid from "@/app/components/menu/MenuGrid";
 
-import Navbar from "../components/Navbar";
-import Footer from "../components/Footer";
+export const dynamic = "force-dynamic";
 
-import MenuHero from "../components/menu/MenuHero";
-import MenuSearch from "../components/menu/MenuSearch";
-import CategoryTabs from "../components/menu/CategoryTabs";
-import CollectionCard from "../components/menu/CollectionCard";
-import MenuGrid from "../components/menu/MenuGrid";
+function MenuLoading() {
+  return (
+    <main className="min-h-screen bg-[#F8F6F2]">
+      <section className="flex min-h-[70vh] items-center justify-center px-6">
+        <div className="text-center">
+          <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-black/10 border-t-[#F26A21]" />
+
+          <p className="mt-5 text-xs font-bold uppercase tracking-[0.25em] text-black/40">
+            Preparing Our Menu
+          </p>
+
+          <p className="mt-2 text-sm text-black/50">
+            Please wait while we load our latest meals.
+          </p>
+        </div>
+      </section>
+    </main>
+  );
+}
 
 export default function MenuPage() {
   return (
-    <main className="min-h-screen bg-[#0B0B0B] text-white">
-      <Navbar />
-
-      <MenuHero />
-
-      <Suspense
-        fallback={
-          <div className="mx-auto max-w-7xl px-6 py-8 text-center text-[#D4AF37]">
-            Loading menu...
-          </div>
-        }
-      >
-        <MenuSearch />
-        <CategoryTabs />
-        <CollectionCard />
+    <main className="min-h-screen overflow-x-hidden bg-[#F8F6F2]">
+      <Suspense fallback={<MenuLoading />}>
         <MenuGrid />
       </Suspense>
-
-      <Footer />
     </main>
   );
 }

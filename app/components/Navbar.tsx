@@ -1,125 +1,246 @@
 "use client";
 
-import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useState } from "react";
 import { Menu, X } from "lucide-react";
+
+const navLinks = [
+  {
+    label: "Home",
+    href: "/",
+  },
+  {
+    label: "Our Menu",
+    href: "/menu",
+  },
+  {
+    label: "Food Boxes",
+    href: "/#foodboxes",
+  },
+  {
+    label: "Catering",
+    href: "/menu?category=catering",
+  },
+  {
+    label: "Event Concierge",
+    href: "/client-portal/event-concierge",
+  },
+  {
+    label: "Reviews",
+    href: "/#reviews",
+  },
+  {
+    label: "Meal Plans",
+    href: "/subscription",
+  },
+  {
+    label: "Contact",
+    href: "/#footer",
+  },
+];
 
 export default function Navbar() {
   const [open, setOpen] = useState(false);
 
+  const closeMenu = () => {
+    setOpen(false);
+  };
+
   return (
-    <header className="sticky top-0 z-50 backdrop-blur-xl bg-black/40 border-b border-[#D4AF37]/10">
-      <div className="max-w-7xl mx-auto px-6 h-24 flex items-center justify-between">
+    <header className="relative z-[9999] w-full border-b border-white/10 bg-[#080808]/95 text-white backdrop-blur-xl">
 
-        {/* Logo */}
-        <Link href="/" className="flex items-center gap-4">
-          <Image
-            src="/images/logo.png"
-            alt="Rhennie Tasty Shack"
-            width={60}
-            height={60}
-            priority
-          />
+      {/* =====================================================
+          MAIN NAVBAR
+      ====================================================== */}
 
-          <div>
-            <h2 className="text-xl md:text-2xl font-bold text-white">
+      <div className="mx-auto flex h-[76px] max-w-7xl items-center justify-between px-4 sm:px-6 lg:h-24 lg:px-8">
+
+        {/* =================================================
+            LOGO
+        ================================================== */}
+
+        <Link
+          href="/"
+          onClick={closeMenu}
+          className="flex min-w-0 items-center gap-3"
+        >
+          <div className="relative h-14 w-14 shrink-0 sm:h-16 sm:w-16">
+            <Image
+              src="/images/logo.png"
+              alt="Rhennie Tasty Shack"
+              fill
+              priority
+              sizes="64px"
+              className="object-contain"
+            />
+          </div>
+
+          {/* Brand name - hidden on very small screens */}
+
+          <div className="hidden min-w-0 sm:block">
+            <h1 className="truncate text-base font-bold leading-tight text-white md:text-lg">
               Rhennie Tasty Shack
-            </h2>
+            </h1>
 
-            <p className="text-xs md:text-sm tracking-widest text-[#D4AF37] uppercase">
+            <p className="mt-1 text-[8px] font-bold uppercase tracking-[0.28em] text-[#F26A21] md:text-[9px]">
               Premium Catering
             </p>
           </div>
         </Link>
 
-        {/* Desktop Menu */}
-        <nav className="hidden lg:flex items-center gap-10">
-          <Link href="/" className="text-white hover:text-[#D4AF37]">
-            Home
-          </Link>
+        {/* =================================================
+            DESKTOP NAVIGATION
+        ================================================== */}
 
-          <a href="#featured" className="text-white hover:text-[#D4AF37]">
-            Our Menu
-          </a>
+        <nav className="hidden items-center gap-5 lg:flex xl:gap-7">
 
-          <a href="#foodboxes" className="text-white hover:text-[#D4AF37]">
-            Food Boxes
-          </a>
+          {navLinks.map((link) => (
+            <Link
+              key={link.label}
+              href={link.href}
+              className="relative whitespace-nowrap text-sm font-medium text-white/80 transition-colors duration-300 hover:text-[#F26A21]"
+            >
+              {link.label}
+            </Link>
+          ))}
 
-          <a href="#catering" className="text-white hover:text-[#D4AF37]">
-            Catering
-          </a>
-
-          <a href="#reviews" className="text-white hover:text-[#D4AF37]">
-            Reviews
-          </a>
-
-          <a href="#footer" className="text-white hover:text-[#D4AF37]">
-            Contact
-          </a>
         </nav>
 
-        {/* Desktop Button */}
+        {/* =================================================
+            DESKTOP ORDER BUTTON
+        ================================================== */}
+
         <a
           href="https://wa.me/2348121577759"
           target="_blank"
           rel="noopener noreferrer"
-          className="gold-btn px-7 py-3 hidden lg:inline-flex"
+          className="hidden rounded-full bg-[#F26A21] px-6 py-3 text-sm font-bold text-white shadow-[0_10px_30px_rgba(242,106,33,0.18)] transition-all duration-300 hover:-translate-y-1 hover:bg-[#D95512] hover:shadow-[0_15px_40px_rgba(242,106,33,0.28)] lg:inline-flex"
         >
           Order Now
         </a>
 
-        {/* Mobile Menu Button */}
+        {/* =================================================
+            MOBILE MENU BUTTON
+        ================================================== */}
+
         <button
-          onClick={() => setOpen(!open)}
-          className="lg:hidden text-white"
+          type="button"
+          aria-label={open ? "Close navigation menu" : "Open navigation menu"}
+          aria-expanded={open}
+          onClick={() => setOpen((previous) => !previous)}
+          className="relative z-[10000] flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-white/20 bg-white/5 text-white backdrop-blur-md transition-all duration-300 hover:border-[#F26A21] hover:bg-[#F26A21] lg:hidden"
         >
-          {open ? <X size={32} /> : <Menu size={32} />}
+          {open ? (
+            <X
+              size={24}
+              strokeWidth={2}
+            />
+          ) : (
+            <Menu
+              size={24}
+              strokeWidth={2}
+            />
+          )}
         </button>
+
       </div>
 
-      {/* Mobile Menu */}
-      {open && (
-        <div className="lg:hidden bg-black/95 border-t border-[#D4AF37]/20">
-          <nav className="flex flex-col p-6 space-y-5">
+      {/* =====================================================
+          MOBILE MENU
+      ====================================================== */}
 
-            <Link href="/" onClick={() => setOpen(false)} className="text-white">
-              Home
-            </Link>
+      <div
+        className={`absolute left-0 right-0 top-full z-[9998] border-b border-[#F26A21]/20 bg-[#080808]/98 shadow-[0_20px_60px_rgba(0,0,0,0.55)] backdrop-blur-2xl transition-all duration-300 lg:hidden ${
+          open
+            ? "visible translate-y-0 opacity-100"
+            : "invisible pointer-events-none -translate-y-3 opacity-0"
+        }`}
+      >
 
-            <a href="#featured" onClick={() => setOpen(false)} className="text-white">
-              Our Menu
-            </a>
+        <nav className="mx-auto max-w-7xl px-5 pb-8 pt-5">
 
-            <a href="#foodboxes" onClick={() => setOpen(false)} className="text-white">
-              Food Boxes
-            </a>
+          {/* =================================================
+              MOBILE MENU HEADER
+          ================================================== */}
 
-            <a href="#catering" onClick={() => setOpen(false)} className="text-white">
-              Catering
-            </a>
+          <div className="mb-5 flex items-center gap-3">
 
-            <a href="#reviews" onClick={() => setOpen(false)} className="text-white">
-              Reviews
-            </a>
+            <span className="h-px w-8 bg-[#F26A21]" />
 
-            <a href="#footer" onClick={() => setOpen(false)} className="text-white">
-              Contact
-            </a>
+            <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-[#F26A21]">
+              Explore Rhennie
+            </span>
 
-            <a
-              href="https://wa.me/2348121577759"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="gold-btn text-center py-3"
-            >
-              Order Now
-            </a>
+          </div>
 
-          </nav>
-        </div>
-      )}
+          {/* =================================================
+              MOBILE NAVIGATION LINKS
+          ================================================== */}
+
+          <div className="flex flex-col">
+
+            {navLinks.map((link) => (
+              <Link
+                key={link.label}
+                href={link.href}
+                onClick={closeMenu}
+                className="flex min-h-[52px] items-center justify-between border-b border-white/[0.08] text-[15px] font-medium text-white transition-colors duration-300 hover:text-[#F26A21]"
+              >
+
+                <span>
+                  {link.label}
+                </span>
+
+                <span className="text-lg text-[#F26A21]">
+                  →
+                </span>
+
+              </Link>
+            ))}
+
+          </div>
+
+          {/* =================================================
+              MOBILE ORDER BUTTON
+          ================================================== */}
+
+          <a
+            href="https://wa.me/2348121577759"
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={closeMenu}
+            className="mt-6 flex min-h-[54px] w-full items-center justify-center rounded-full bg-[#F26A21] text-[14px] font-bold text-white shadow-[0_15px_40px_rgba(242,106,33,0.22)] transition-all duration-300 hover:bg-[#D95512]"
+          >
+            Order Your Meal
+
+            <span className="ml-2 text-lg">
+              →
+            </span>
+          </a>
+
+          {/* =================================================
+              MOBILE BRAND DETAILS
+          ================================================== */}
+
+          <div className="mt-7 flex items-center justify-center gap-3">
+
+            <span className="text-[9px] font-semibold uppercase tracking-[0.25em] text-white/40">
+              Premium Taste
+            </span>
+
+            <span className="h-1 w-1 rounded-full bg-[#F26A21]" />
+
+            <span className="text-[9px] font-semibold uppercase tracking-[0.25em] text-white/40">
+              Fast Delivery
+            </span>
+
+          </div>
+
+        </nav>
+
+      </div>
+
     </header>
   );
 }

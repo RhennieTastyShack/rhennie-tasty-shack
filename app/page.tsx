@@ -1,17 +1,22 @@
-import Hero from "./components/Hero";
-import FoodBoxes from "./components/FoodBoxes";
-import FoodByLitre from "./components/FoodByLitre";
-import Gallery from "./components/Gallery";
-import Footer from "./components/Footer";
+import Hero from "@/app/components/Hero";
+import FeaturedMeals from "@/app/components/FeaturedMeals";
+import ChefSpecial from "@/app/components/ChefSpecial";
+import FoodBoxes from "@/app/components/FoodBoxes";
 
 export default function HomePage() {
   return (
-    <main>
+    <main className="min-h-screen overflow-x-hidden bg-white">
+      {/* Hero */}
       <Hero />
+
+      {/* Featured Meals */}
+      <FeaturedMeals />
+
+      {/* Chef's Special */}
+      <ChefSpecial />
+
+      {/* Signature Food Boxes */}
       <FoodBoxes />
-      <FoodByLitre />
-      <Gallery />
-      <Footer />
     </main>
   );
 }

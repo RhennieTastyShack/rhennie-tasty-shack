@@ -1,15 +1,26 @@
 @import "tailwindcss";
 
 :root {
-  --background: #0b0b0b;
-  --surface: #141414;
-  --card: #1a1a1a;
-  --gold: #d4af37;
-  --gold-light: #e7c75f;
-  --text: #fafafa;
-  --muted: #b8b8b8;
-  --border: rgba(212, 175, 55, 0.15);
+  --background: #f8f6f1;
+  --surface: #ffffff;
+  --surface-soft: #f1eee7;
+  --card: #ffffff;
+
+  --orange: #f26a21;
+  --orange-light: #ff8a47;
+  --orange-dark: #d95512;
+
+  --text: #171717;
+  --text-soft: #383838;
+  --muted: #77736d;
+
+  --border: rgba(23, 23, 23, 0.09);
+  --border-orange: rgba(242, 106, 33, 0.22);
 }
+
+/* =========================================================
+   RESET
+========================================================= */
 
 * {
   margin: 0;
@@ -19,18 +30,38 @@
 
 html {
   scroll-behavior: smooth;
+  background: var(--background);
 }
 
 body {
+  min-height: 100vh;
+
   background:
-    radial-gradient(circle at top right, rgba(212,175,55,.08), transparent 35%),
-    radial-gradient(circle at bottom left, rgba(212,175,55,.05), transparent 35%),
+    radial-gradient(
+      circle at 90% 0%,
+      rgba(242, 106, 33, 0.08),
+      transparent 30%
+    ),
+    radial-gradient(
+      circle at 0% 80%,
+      rgba(242, 106, 33, 0.045),
+      transparent 28%
+    ),
     var(--background);
 
   color: var(--text);
+
   font-family: var(--font-inter), sans-serif;
+
   overflow-x: hidden;
+
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
+
+/* =========================================================
+   HEADINGS
+========================================================= */
 
 h1,
 h2,
@@ -39,31 +70,42 @@ h4,
 h5,
 h6 {
   font-family: var(--font-playfair), serif;
+  letter-spacing: -0.025em;
 }
+
+/* =========================================================
+   TEXT SELECTION
+========================================================= */
 
 ::selection {
-  background: var(--gold);
-  color: black;
+  background: var(--orange);
+  color: #ffffff;
 }
 
-/* Scrollbar */
+/* =========================================================
+   SCROLLBAR
+========================================================= */
 
 ::-webkit-scrollbar {
   width: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #101010;
+  background: #eeeae2;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--gold);
+  background: var(--orange);
   border-radius: 999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--gold-light);
+  background: var(--orange-dark);
 }
+
+/* =========================================================
+   GLOBAL ELEMENTS
+========================================================= */
 
 section {
   position: relative;
@@ -71,56 +113,361 @@ section {
 
 img {
   user-select: none;
+  -webkit-user-drag: none;
 }
 
 button {
   cursor: pointer;
-  transition: .35s ease;
+
+  transition:
+    transform 0.35s ease,
+    background-color 0.35s ease,
+    border-color 0.35s ease,
+    color 0.35s ease,
+    box-shadow 0.35s ease;
 }
 
 a {
-  transition: .35s ease;
   text-decoration: none;
+
+  transition:
+    transform 0.35s ease,
+    background-color 0.35s ease,
+    border-color 0.35s ease,
+    color 0.35s ease,
+    box-shadow 0.35s ease;
 }
+
+/* =========================================================
+   PREMIUM CARD
+========================================================= */
 
 .card {
   background: var(--card);
+
   border: 1px solid var(--border);
+
   border-radius: 30px;
+
+  box-shadow:
+    0 15px 50px rgba(23, 23, 23, 0.045);
 }
 
+.card:hover {
+  border-color: var(--border-orange);
+
+  box-shadow:
+    0 20px 60px rgba(23, 23, 23, 0.08);
+}
+
+/* =========================================================
+   PRIMARY ORANGE BUTTON
+   Keeping .gold-btn temporarily so existing components
+   continue working without breaking.
+========================================================= */
+
 .gold-btn {
-  background: var(--gold);
-  color: black;
+  display: inline-flex;
+
+  align-items: center;
+  justify-content: center;
+
+  background: var(--orange);
+
+  color: #ffffff;
+
   border-radius: 999px;
+
   font-weight: 700;
-  transition: .35s ease;
+
+  box-shadow:
+    0 12px 30px rgba(242, 106, 33, 0.16);
+
+  transition:
+    transform 0.35s ease,
+    background-color 0.35s ease,
+    box-shadow 0.35s ease;
 }
 
 .gold-btn:hover {
-  background: var(--gold-light);
+  background: var(--orange-dark);
+
+  color: #ffffff;
+
   transform: translateY(-3px);
-  box-shadow: 0 20px 40px rgba(212,175,55,.25);
+
+  box-shadow:
+    0 20px 45px rgba(242, 106, 33, 0.24);
 }
+
+/* =========================================================
+   ORANGE BUTTON
+========================================================= */
+
+.orange-btn {
+  display: inline-flex;
+
+  align-items: center;
+  justify-content: center;
+
+  background: var(--orange);
+
+  color: #ffffff;
+
+  border-radius: 999px;
+
+  font-weight: 700;
+
+  transition:
+    transform 0.35s ease,
+    background-color 0.35s ease,
+    box-shadow 0.35s ease;
+}
+
+.orange-btn:hover {
+  background: var(--orange-dark);
+
+  transform: translateY(-3px);
+
+  box-shadow:
+    0 18px 40px rgba(242, 106, 33, 0.22);
+}
+
+/* =========================================================
+   OUTLINE BUTTON
+========================================================= */
+
+.orange-outline {
+  display: inline-flex;
+
+  align-items: center;
+  justify-content: center;
+
+  border: 1px solid var(--orange);
+
+  color: var(--orange);
+
+  border-radius: 999px;
+
+  font-weight: 700;
+
+  background: transparent;
+}
+
+.orange-outline:hover {
+  background: var(--orange);
+
+  color: #ffffff;
+
+  transform: translateY(-2px);
+}
+
+/* =========================================================
+   GLASS
+========================================================= */
 
 .glass {
-  background: rgba(255,255,255,.03);
+  background: rgba(255, 255, 255, 0.72);
+
   backdrop-filter: blur(18px);
-  border: 1px solid rgba(255,255,255,.08);
+
+  -webkit-backdrop-filter: blur(18px);
+
+  border: 1px solid rgba(23, 23, 23, 0.08);
+
+  box-shadow:
+    0 12px 40px rgba(23, 23, 23, 0.06);
 }
 
+/* =========================================================
+   DARK SECTION
+========================================================= */
+
+.dark-section {
+  background: #171717;
+
+  color: #ffffff;
+}
+
+.dark-section h1,
+.dark-section h2,
+.dark-section h3,
+.dark-section h4,
+.dark-section h5,
+.dark-section h6 {
+  color: #ffffff;
+}
+
+/* =========================================================
+   ORANGE TEXT
+========================================================= */
+
+.orange-text {
+  color: var(--orange);
+}
+
+/* =========================================================
+   EDITORIAL EYEBROW
+========================================================= */
+
+.eyebrow {
+  color: var(--orange);
+
+  font-size: 10px;
+
+  font-weight: 800;
+
+  letter-spacing: 0.3em;
+
+  text-transform: uppercase;
+}
+
+/* =========================================================
+   EDITORIAL IMAGE
+========================================================= */
+
+.editorial-image {
+  overflow: hidden;
+
+  border-radius: 28px;
+}
+
+.editorial-image img {
+  transition:
+    transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.editorial-image:hover img {
+  transform: scale(1.045);
+}
+
+/* =========================================================
+   PREMIUM CONTAINER
+========================================================= */
+
+.container-premium {
+  width: min(100% - 2rem, 1280px);
+
+  margin-inline: auto;
+}
+
+@media (min-width: 640px) {
+  .container-premium {
+    width: min(100% - 3rem, 1280px);
+  }
+}
+
+@media (min-width: 1024px) {
+  .container-premium {
+    width: min(100% - 4rem, 1280px);
+  }
+}
+
+/* =========================================================
+   FADE ANIMATION
+========================================================= */
+
 .fade {
-  animation: fadeUp .8s ease forwards;
+  animation: fadeUp 0.8s ease forwards;
 }
 
 @keyframes fadeUp {
   from {
     opacity: 0;
+
     transform: translateY(35px);
   }
 
   to {
     opacity: 1;
+
     transform: translateY(0);
+  }
+}
+
+/* =========================================================
+   SOFT REVEAL
+========================================================= */
+
+.reveal {
+  animation: reveal 0.9s ease forwards;
+}
+
+@keyframes reveal {
+  from {
+    opacity: 0;
+
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+
+    transform: translateY(0);
+  }
+}
+
+/* =========================================================
+   MOBILE FOUNDATION
+========================================================= */
+
+@media (max-width: 640px) {
+  html {
+    overflow-x: hidden;
+  }
+
+  body {
+    overflow-x: hidden;
+  }
+
+  h1,
+  h2,
+  h3 {
+    letter-spacing: -0.035em;
+  }
+
+  button,
+  a {
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+/* =========================================================
+   TABLET
+========================================================= */
+
+@media (min-width: 641px) and (max-width: 1023px) {
+  body {
+    overflow-x: hidden;
+  }
+}
+
+/* =========================================================
+   LARGE SCREENS
+========================================================= */
+
+@media (min-width: 1440px) {
+  body {
+    font-size: 16px;
+  }
+}
+
+/* =========================================================
+   REDUCED MOTION
+========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+
+    animation-iteration-count: 1 !important;
+
+    transition-duration: 0.01ms !important;
   }
 }
