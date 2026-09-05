@@ -6,15 +6,32 @@ import { useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import MenuFilters from "./MenuFilters";
 import MealCard from "./MealCard";
+import FoodByLitreCard from "./FoodByLitreCard";
 
 type MenuItem = {
   id: string;
   name: string;
   collection: string;
+  collectionSlug: string;
   description: string;
   price: number;
-  image_url: string | null;
   available: boolean;
+  featured: boolean;
+  display_order: number;
+  sort_order: number;
+};
+
+type LitreOption = {
+  size: string;
+  price: number;
+};
+
+type GroupedLitreMeal = {
+  id: string;
+  name: string;
+  description: string;
+  available: boolean;
+  options: LitreOption[];
 };
 
 /* =========================================================
@@ -23,27 +40,35 @@ type MenuItem = {
 
 function matchesCategory(
   collection: string,
+  collectionSlug: string,
   category: string
 ) {
-  const value = collection.toLowerCase().trim();
+  const name = collection.toLowerCase().trim();
+  const slug = collectionSlug.toLowerCase().trim();
+
+  if (!category) {
+    return true;
+  }
 
   const categoryMap: Record<string, string[]> = {
     signature: [
       "signature",
-      "signature meal",
-      "signature meals",
       "signature feast",
+      "signature feast collection",
     ],
 
     "build-your-plate": [
       "build your plate",
       "build-your-plate",
+      "main meals",
+      "main meal",
     ],
 
     "executive-lunch": [
       "executive lunch",
       "executive",
-      "lunch",
+      "combo",
+      "combo collection",
     ],
 
     breakfast: [
@@ -51,9 +76,12 @@ function matchesCategory(
       "sunrise",
     ],
 
-    "street-kitchen": [
+    "street-kitchen-wraps": [
       "street kitchen",
       "street",
+      "wraps",
+      "shawarma",
+      "sharwarma",
     ],
 
     "grill-house": [
@@ -62,8 +90,22 @@ function matchesCategory(
     ],
 
     "food-boxes": [
-      "food box",
+      "luxury food boxes",
       "food boxes",
+      "food box",
+    ],
+
+    "soups-swallow": [
+      "soups & swallows",
+      "soups and swallows",
+      "soups",
+      "swallows",
+      "soup",
+    ],
+
+    sauces: [
+      "sauces",
+      "sauce",
     ],
 
     "grand-pot": [
@@ -79,13 +121,52 @@ function matchesCategory(
   const matches = categoryMap[category];
 
   if (!matches) {
-    return true;
+    return (
+      name.includes(category) ||
+      slug.includes(category)
+    );
   }
 
-  return matches.some((item) =>
-    value.includes(item)
+  return matches.some(
+    (value) =>
+      name.includes(value) ||
+      slug.includes(value)
   );
 }
+
+/* =========================================================
+   CHECK FOOD BY LITRE
+========================================================= */
+
+function isFoodByLitre(
+  collection: string,
+  collectionSlug: string
+) {
+  const name = collection.toLowerCase().trim();
+  const slug = collectionSlug.toLowerCase().trim();
+
+  return (
+    name.includes("grand pot") ||
+    name.includes("food by litre") ||
+    name.includes("food by liter") ||
+    slug.includes("grand-pot") ||
+    slug.includes("food-by-litre") ||
+    slug.includes("food-by-liter")
+  );
+}
+
+/* =========================================================
+   SIZE LIST
+========================================================= */
+
+const litreSizes = [
+  "1L",
+  "2L",
+  "2.5L",
+  "3L",
+  "4L",
+  "5L",
+];
 
 /* =========================================================
    MAIN COMPONENT
@@ -110,23 +191,45 @@ export default function MenuGrid() {
     useState("");
 
   /* =======================================================
-     LOAD MENU FROM SUPABASE
+     LOAD MENU
   ======================================================= */
 
   useEffect(() => {
+    let mounted = true;
+
     async function loadMeals() {
       setLoading(true);
       setError("");
 
       const { data, error } = await supabase
-        .from("menu")
-        .select(
-          "id, name, collection, description, price, image_url, available"
-        )
-        .eq("available", true)
-        .order("created_at", {
-          ascending: false,
+        .from("menu_items")
+        .select(`
+          id,
+          name,
+          description,
+          price,
+          available,
+          featured,
+          display_order,
+          sort_order,
+          collections!inner (
+            name,
+            slug,
+            active,
+            display_order
+          )
+        `)
+        .eq("collections.active", true)
+        .order("display_order", {
+          ascending: true,
+        })
+        .order("sort_order", {
+          ascending: true,
         });
+
+      if (!mounted) {
+        return;
+      }
 
       if (error) {
         console.error(
@@ -139,14 +242,51 @@ export default function MenuGrid() {
         );
 
         setMeals([]);
-      } else {
-        setMeals(data || []);
+        setLoading(false);
+
+        return;
       }
 
+      const formattedMeals: MenuItem[] =
+        (data || []).map((item: any) => ({
+          id: item.id,
+
+          name: item.name || "",
+
+          collection:
+            item.collections?.name || "",
+
+          collectionSlug:
+            item.collections?.slug || "",
+
+          description:
+            item.description || "",
+
+          price:
+            Number(item.price) || 0,
+
+          available:
+            item.available ?? true,
+
+          featured:
+            item.featured ?? false,
+
+          display_order:
+            Number(item.display_order) || 0,
+
+          sort_order:
+            Number(item.sort_order) || 0,
+        }));
+
+      setMeals(formattedMeals);
       setLoading(false);
     }
 
     loadMeals();
+
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   /* =======================================================
@@ -162,6 +302,7 @@ export default function MenuGrid() {
         !category ||
         matchesCategory(
           meal.collection,
+          meal.collectionSlug,
           category
         );
 
@@ -189,18 +330,131 @@ export default function MenuGrid() {
   ]);
 
   /* =======================================================
-     LOADING SKELETON
+     GROUP FOOD BY LITRE
+     
+     The database can contain several rows for the
+     same meal, one row for each litre size.
+
+     Example:
+
+     Party Jollof Rice - 1L
+     Party Jollof Rice - 2L
+     Party Jollof Rice - 2.5L
+     Party Jollof Rice - 3L
+     Party Jollof Rice - 4L
+     Party Jollof Rice - 5L
+
+     The website displays ONE card.
+  ======================================================= */
+
+  const groupedLitreMeals =
+    useMemo<GroupedLitreMeal[]>(() => {
+      const litreMeals =
+        filteredMeals.filter((meal) =>
+          isFoodByLitre(
+            meal.collection,
+            meal.collectionSlug
+          )
+        );
+
+      const groups =
+        new Map<string, MenuItem[]>();
+
+      litreMeals.forEach((meal) => {
+        const key = meal.name
+          .toLowerCase()
+          .trim();
+
+        const existing =
+          groups.get(key) || [];
+
+        existing.push(meal);
+
+        groups.set(key, existing);
+      });
+
+      return Array.from(groups.values())
+        .map((items) => {
+          const sorted = [...items].sort(
+            (a, b) =>
+              a.display_order -
+                b.display_order ||
+              a.sort_order -
+                b.sort_order
+          );
+
+          const options: LitreOption[] =
+            sorted
+              .slice(0, litreSizes.length)
+              .map((item, index) => ({
+                size:
+                  litreSizes[index],
+                price: item.price,
+              }));
+
+          return {
+            id:
+              sorted[0]?.id || "",
+
+            name:
+              sorted[0]?.name || "",
+
+            description:
+              sorted[0]?.description ||
+              "Premium bulk order, freshly prepared.",
+
+            available:
+              sorted.some(
+                (item) => item.available
+              ),
+
+            options,
+          };
+        })
+        .filter(
+          (meal) =>
+            meal.id &&
+            meal.name &&
+            meal.options.length > 0
+        );
+    }, [filteredMeals]);
+
+  /* =======================================================
+     NORMAL MEALS
+  ======================================================= */
+
+  const normalMeals = useMemo(() => {
+    return filteredMeals.filter(
+      (meal) =>
+        !isFoodByLitre(
+          meal.collection,
+          meal.collectionSlug
+        )
+    );
+  }, [filteredMeals]);
+
+  /* =======================================================
+     DISPLAY COUNT
+  ======================================================= */
+
+  const displayCount =
+    category === "grand-pot"
+      ? groupedLitreMeals.length
+      : normalMeals.length +
+        groupedLitreMeals.length;
+
+  /* =======================================================
+     LOADING
   ======================================================= */
 
   if (loading) {
     return (
       <section className="bg-[#F8F6F2] px-4 py-10 sm:px-6 lg:px-8">
-
         <div className="mx-auto max-w-7xl">
 
           <MenuFilters />
 
-          <div className="mb-7 flex items-end justify-between gap-4">
+          <div className="mb-7 mt-8 flex items-end justify-between gap-4">
 
             <div>
               <div className="h-3 w-24 animate-pulse rounded bg-black/10" />
@@ -209,7 +463,6 @@ export default function MenuGrid() {
             </div>
 
             <div className="h-9 w-20 animate-pulse rounded-full bg-black/10" />
-
           </div>
 
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -218,11 +471,17 @@ export default function MenuGrid() {
               (_, index) => (
                 <div
                   key={index}
-                  className="overflow-hidden rounded-[26px] border border-black/5 bg-white shadow-sm"
+                  className="
+                    overflow-hidden
+                    rounded-[26px]
+                    border border-black/5
+                    bg-white
+                    shadow-sm
+                  "
                 >
-                  <div className="aspect-[4/3] animate-pulse bg-black/10" />
+                  <div className="h-1.5 animate-pulse bg-black/10" />
 
-                  <div className="space-y-4 p-5">
+                  <div className="space-y-4 p-6">
 
                     <div className="h-6 animate-pulse rounded bg-black/10" />
 
@@ -256,7 +515,7 @@ export default function MenuGrid() {
 
           <MenuFilters />
 
-          <div className="rounded-[28px] border border-red-200 bg-white px-6 py-20 text-center shadow-sm">
+          <div className="mt-8 rounded-[28px] border border-red-200 bg-white px-6 py-20 text-center shadow-sm">
 
             <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-red-50 text-2xl text-red-500">
               !
@@ -275,7 +534,18 @@ export default function MenuGrid() {
               onClick={() =>
                 window.location.reload()
               }
-              className="mt-7 rounded-full bg-[#F26A21] px-7 py-3 text-sm font-bold text-white transition-all hover:-translate-y-0.5 hover:bg-[#D95512]"
+              className="
+                mt-7
+                rounded-full
+                bg-[#F26A21]
+                px-7 py-3
+                text-sm
+                font-bold
+                text-white
+                transition-all
+                hover:-translate-y-0.5
+                hover:bg-[#D95512]
+              "
             >
               Try Again
             </button>
@@ -283,84 +553,24 @@ export default function MenuGrid() {
           </div>
 
         </div>
+
       </section>
     );
   }
 
   /* =======================================================
-     MAIN MENU GRID
+     EMPTY
   ======================================================= */
 
-  return (
-    <section
-      id="meals"
-      className="relative overflow-hidden bg-[#F8F6F2] px-4 pb-20 pt-0 text-[#171717] sm:px-6 lg:px-8"
-    >
+  if (displayCount === 0) {
+    return (
+      <section className="bg-[#F8F6F2] px-4 pb-20 sm:px-6 lg:px-8">
 
-      {/* Decorative orange atmosphere */}
+        <div className="mx-auto max-w-7xl">
 
-      <div className="pointer-events-none absolute -left-40 top-40 h-80 w-80 rounded-full bg-[#F26A21]/5 blur-[100px]" />
+          <MenuFilters />
 
-      <div className="pointer-events-none absolute -right-40 bottom-40 h-80 w-80 rounded-full bg-[#F26A21]/5 blur-[100px]" />
-
-      <div className="relative mx-auto max-w-7xl">
-
-        {/* ===================================================
-            FILTERS
-        =================================================== */}
-
-        <MenuFilters />
-
-        {/* ===================================================
-            RESULT HEADER
-        =================================================== */}
-
-        <div className="mb-8 mt-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-
-          <div>
-
-            <p className="text-[9px] font-bold uppercase tracking-[0.3em] text-[#F26A21]">
-              Freshly Prepared
-            </p>
-
-            <h2 className="mt-2 font-serif text-2xl font-bold text-[#171717] sm:text-3xl">
-              {category
-                ? "Explore This Collection"
-                : "Our Signature Menu"}
-            </h2>
-
-            {search && (
-              <p className="mt-2 text-sm text-gray-500">
-                Showing results for{" "}
-                <span className="font-semibold text-[#F26A21]">
-                  "{search}"
-                </span>
-              </p>
-            )}
-
-          </div>
-
-          <div className="flex w-fit items-center rounded-full border border-black/10 bg-white px-4 py-2.5 shadow-sm">
-
-            <span className="mr-2 h-2 w-2 rounded-full bg-[#F26A21]" />
-
-            <span className="text-xs font-semibold text-gray-500">
-              {filteredMeals.length}{" "}
-              {filteredMeals.length === 1
-                ? "meal"
-                : "meals"}
-            </span>
-
-          </div>
-
-        </div>
-
-        {/* ===================================================
-            EMPTY STATE
-        =================================================== */}
-
-        {filteredMeals.length === 0 ? (
-          <div className="rounded-[30px] border border-black/10 bg-white px-6 py-20 text-center shadow-sm">
+          <div className="mt-8 rounded-[30px] border border-black/10 bg-white px-6 py-20 text-center shadow-sm">
 
             <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-[#FFF1E9] text-3xl">
               🍽️
@@ -377,49 +587,275 @@ export default function MenuGrid() {
             </p>
 
           </div>
+
+        </div>
+
+      </section>
+    );
+  }
+
+  /* =======================================================
+     MAIN
+  ======================================================= */
+
+  return (
+    <section
+      id="meals"
+      className="
+        relative
+        overflow-hidden
+        bg-[#F8F6F2]
+        px-4
+        pb-20
+        pt-0
+        text-[#171717]
+        sm:px-6
+        lg:px-8
+      "
+    >
+
+      {/* ===================================================
+          DECORATIVE ATMOSPHERE
+      ==================================================== */}
+
+      <div
+        className="
+          pointer-events-none
+          absolute
+          -left-40
+          top-40
+          h-80
+          w-80
+          rounded-full
+          bg-[#F26A21]/5
+          blur-[100px]
+        "
+      />
+
+      <div
+        className="
+          pointer-events-none
+          absolute
+          -right-40
+          bottom-40
+          h-80
+          w-80
+          rounded-full
+          bg-[#F26A21]/5
+          blur-[100px]
+        "
+      />
+
+      <div className="relative mx-auto max-w-7xl">
+
+        {/* =================================================
+            FILTERS
+        ================================================== */}
+
+        <MenuFilters />
+
+        {/* =================================================
+            RESULT HEADER
+        ================================================== */}
+
+        <div
+          className="
+            mb-8
+            mt-8
+            flex
+            flex-col
+            gap-4
+            sm:flex-row
+            sm:items-end
+            sm:justify-between
+          "
+        >
+
+          <div>
+
+            <p
+              className="
+                text-[9px]
+                font-bold
+                uppercase
+                tracking-[0.3em]
+                text-[#F26A21]
+              "
+            >
+              Freshly Prepared
+            </p>
+
+            <h2
+              className="
+                mt-2
+                font-serif
+                text-2xl
+                font-bold
+                text-[#171717]
+                sm:text-3xl
+              "
+            >
+              {category
+                ? "Explore This Collection"
+                : "Our Signature Menu"}
+            </h2>
+
+            {search && (
+              <p className="mt-2 text-sm text-gray-500">
+                Showing results for{" "}
+                <span className="font-semibold text-[#F26A21]">
+                  "{search}"
+                </span>
+              </p>
+            )}
+
+          </div>
+
+          <div
+            className="
+              flex
+              w-fit
+              items-center
+              rounded-full
+              border
+              border-black/10
+              bg-white
+              px-4
+              py-2.5
+              shadow-sm
+            "
+          >
+
+            <span className="mr-2 h-2 w-2 rounded-full bg-[#F26A21]" />
+
+            <span className="text-xs font-semibold text-gray-500">
+              {displayCount}{" "}
+              {displayCount === 1
+                ? "meal"
+                : "meals"}
+            </span>
+
+          </div>
+
+        </div>
+
+        {/* =================================================
+            FOOD BY LITRE ONLY
+        ================================================== */}
+
+        {category === "grand-pot" ? (
+          <div
+            className="
+              grid
+              items-stretch
+              gap-5
+              sm:grid-cols-2
+              lg:grid-cols-3
+              xl:grid-cols-4
+            "
+          >
+
+            {groupedLitreMeals.map(
+              (meal) => (
+                <FoodByLitreCard
+                  key={meal.id}
+                  id={meal.id}
+                  name={meal.name}
+                  description={meal.description}
+                  options={meal.options}
+                  available={meal.available}
+                />
+              )
+            )}
+
+          </div>
         ) : (
 
           /* =================================================
-             MEAL GRID
+             NORMAL MENU + GROUPED LITRE PRODUCTS
           ================================================= */
 
-          <div className="grid items-stretch gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <div
+            className="
+              grid
+              items-stretch
+              gap-5
+              sm:grid-cols-2
+              lg:grid-cols-3
+              xl:grid-cols-4
+            "
+          >
 
-            {filteredMeals.map((meal) => (
-
+            {normalMeals.map((meal) => (
               <MealCard
                 key={meal.id}
+                id={meal.id}
                 name={meal.name}
                 collection={meal.collection}
                 description={meal.description}
                 price={meal.price}
-                imageUrl={meal.image_url}
                 available={meal.available}
               />
-
             ))}
+
+            {groupedLitreMeals.map(
+              (meal) => (
+                <FoodByLitreCard
+                  key={`litre-${meal.id}`}
+                  id={meal.id}
+                  name={meal.name}
+                  description={meal.description}
+                  options={meal.options}
+                  available={meal.available}
+                />
+              )
+            )}
 
           </div>
         )}
 
-        {/* ===================================================
+        {/* =================================================
             BOTTOM BRAND MESSAGE
-        =================================================== */}
+        ================================================== */}
 
-        {filteredMeals.length > 0 && (
+        {displayCount > 0 && (
           <div className="mt-16 text-center">
 
-            <div className="mx-auto mb-5 h-px max-w-xs bg-gradient-to-r from-transparent via-[#F26A21]/40 to-transparent" />
+            <div
+              className="
+                mx-auto
+                mb-5
+                h-px
+                max-w-xs
+                bg-gradient-to-r
+                from-transparent
+                via-[#F26A21]/40
+                to-transparent
+              "
+            />
 
-            <p className="text-[8px] font-bold uppercase tracking-[0.4em] text-gray-400 sm:text-[9px]">
+            <p
+              className="
+                text-[8px]
+                font-bold
+                uppercase
+                tracking-[0.4em]
+                text-gray-400
+                sm:text-[9px]
+              "
+            >
               Premium Taste
+
               <span className="mx-3 text-[#F26A21]">
                 •
               </span>
+
               Freshly Prepared
+
               <span className="mx-3 text-[#F26A21]">
                 •
               </span>
+
               Fast Delivery
             </p>
 

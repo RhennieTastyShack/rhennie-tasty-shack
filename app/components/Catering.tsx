@@ -47,9 +47,9 @@ export default function Catering() {
           </h2>
 
           <p className="mx-auto mt-6 max-w-3xl text-base leading-8 text-[#B8B8B8] md:text-lg">
-            Whether you're hosting an intimate gathering or a grand celebration,
-            Rhennie Tasty Shack delivers exceptional meals and unforgettable
-            experiences tailored to your event.
+            Whether you're hosting an intimate gathering or a grand
+            celebration, Rhennie Tasty Shack delivers exceptional meals and
+            unforgettable experiences tailored to your event.
           </p>
 
         </div>
@@ -64,6 +64,8 @@ export default function Catering() {
               key={service.title}
               className="group overflow-hidden rounded-3xl border border-[#D4AF37]/15 bg-[#171717] shadow-xl transition-all duration-500 hover:-translate-y-3 hover:border-[#D4AF37] hover:shadow-2xl"
             >
+
+              {/* Image */}
 
               <div className="relative overflow-hidden">
 
@@ -80,6 +82,8 @@ export default function Catering() {
                 </span>
 
               </div>
+
+              {/* Content */}
 
               <div className="p-8">
 

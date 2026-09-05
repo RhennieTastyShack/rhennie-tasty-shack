@@ -23,6 +23,18 @@ export async function GET() {
       .from("orders")
       .select(`
         *,
+        order_items (
+          id,
+          order_id,
+          menu_item_id,
+          name,
+          collection,
+          quantity,
+          unit_price,
+          selected_size,
+          item_total,
+          created_at
+        ),
         consultation:consultations (
           id,
           full_name,
@@ -37,7 +49,9 @@ export async function GET() {
           special_request
         )
       `)
-      .order("created_at", { ascending: false });
+      .order("created_at", {
+        ascending: false,
+      });
 
     if (error) {
       console.error("Orders API Error:", error);
@@ -52,9 +66,12 @@ export async function GET() {
       );
     }
 
-    return NextResponse.json(data ?? [], {
-      status: 200,
-    });
+    return NextResponse.json(
+      data ?? [],
+      {
+        status: 200,
+      }
+    );
   } catch (error) {
     console.error("Orders API Error:", error);
 

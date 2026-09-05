@@ -2,523 +2,633 @@
 
 import { FormEvent, useState } from "react";
 import Link from "next/link";
-import { supabase } from "@/lib/supabase";
 
-export default function EventRequestPage() {
-  const [submitted, setSubmitted] = useState(false);
+export default function EventConciergePage() {
   const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState("");
   const [error, setError] = useState("");
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  const [form, setForm] = useState({
+    full_name: "",
+    email: "",
+    phone: "",
+    event_type: "",
+    event_date: "",
+    event_time: "",
+    guest_count: "",
+    venue: "",
+    budget: "",
+    special_request: "",
+  });
+
+  function handleChange(
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
+  ) {
+    const { name, value } = e.target;
+
+    setForm((current) => ({
+      ...current,
+      [name]: value,
+    }));
+  }
+
+  async function handleSubmit(
+    e: FormEvent<HTMLFormElement>
+  ) {
+    e.preventDefault();
 
     setLoading(true);
+    setSuccess("");
     setError("");
 
-    const form = event.currentTarget;
-    const formData = new FormData(form);
-
-    const name = String(formData.get("name") || "").trim();
-    const phone = String(formData.get("phone") || "").trim();
-    const email = String(formData.get("email") || "").trim();
-    const eventType = String(formData.get("eventType") || "").trim();
-    const eventDate = String(formData.get("eventDate") || "").trim();
-    const guestCount = Number(formData.get("guestCount") || 0);
-    const location = String(formData.get("location") || "").trim();
-    const budget = String(formData.get("budget") || "").trim();
-    const service = String(formData.get("service") || "").trim();
-    const message = String(formData.get("message") || "").trim();
-
-    if (
-      !name ||
-      !phone ||
-      !eventType ||
-      !eventDate ||
-      !guestCount ||
-      !location ||
-      !message
-    ) {
-      setError("Please complete all required fields.");
-      setLoading(false);
-      return;
-    }
-
     try {
-      const { error: insertError } = await supabase
-        .from("event_requests")
-        .insert({
-          name,
-          phone,
-          email: email || null,
-          event_type: eventType,
-          event_date: eventDate,
-          guest_count: guestCount,
-          location,
-          budget: budget || null,
-          service: service || null,
-          message,
-          status: "new",
-        });
+      const response = await fetch(
+        "/api/consultations",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(form),
+        }
+      );
 
-      if (insertError) {
-        console.error("Event request error:", insertError);
+      const data = await response.json();
 
-        setError(
-          insertError.message ||
-            "We couldn't submit your request. Please try again."
+      if (!response.ok) {
+        throw new Error(
+          data?.error ||
+            "Unable to submit your request."
         );
-
-        setLoading(false);
-        return;
       }
 
-      setSubmitted(true);
-      form.reset();
+      setSuccess(
+        "Your Event Concierge request has been submitted successfully. Our team will contact you shortly."
+      );
+
+      setForm({
+        full_name: "",
+        email: "",
+        phone: "",
+        event_type: "",
+        event_date: "",
+        event_time: "",
+        guest_count: "",
+        venue: "",
+        budget: "",
+        special_request: "",
+      });
     } catch (err) {
-      console.error("Unexpected event request error:", err);
+      console.error(
+        "Event Concierge submission error:",
+        err
+      );
 
       setError(
-        "Something went wrong while submitting your request. Please try again."
+        err instanceof Error
+          ? err.message
+          : "Something went wrong. Please try again."
       );
     } finally {
       setLoading(false);
     }
   }
 
-  /* =========================
-     SUCCESS SCREEN
-  ========================= */
-
-  if (submitted) {
-    return (
-      <main className="min-h-screen bg-[#F8F6F2] px-5 py-20 text-[#171717]">
-        <div className="mx-auto flex min-h-[70vh] max-w-3xl items-center justify-center">
-          <div className="w-full rounded-[32px] border border-black/[0.06] bg-white px-6 py-14 text-center shadow-[0_20px_60px_rgba(0,0,0,0.06)] sm:px-12">
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[#FFF0E8] text-2xl font-bold text-[#F26A21]">
-              ✓
-            </div>
-
-            <p className="mt-7 text-[9px] font-bold uppercase tracking-[0.35em] text-[#F26A21]">
-              Request Received
-            </p>
-
-            <h1 className="mt-4 font-serif text-3xl font-bold sm:text-4xl">
-              Thank You.
-            </h1>
-
-            <p className="mx-auto mt-5 max-w-xl text-sm leading-7 text-black/55 sm:text-base">
-              We&apos;ve received your event details. Our Event Concierge
-              team will review your request and get back to you with the
-              next steps.
-            </p>
-
-            <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
-              <Link
-                href="/event-concierge"
-                className="inline-flex min-h-[50px] items-center justify-center rounded-full bg-[#F26A21] px-7 text-sm font-bold text-white transition hover:bg-[#D95512]"
-              >
-                Back To Event Concierge
-              </Link>
-
-              <Link
-                href="/menu"
-                className="inline-flex min-h-[50px] items-center justify-center rounded-full border border-black/10 px-7 text-sm font-bold text-[#171717] transition hover:border-[#F26A21] hover:text-[#F26A21]"
-              >
-                Explore Menu
-              </Link>
-            </div>
-          </div>
-        </div>
-      </main>
-    );
-  }
-
-  /* =========================
-     REQUEST FORM
-  ========================= */
-
   return (
-    <main className="min-h-screen bg-[#F8F6F2] text-[#171717]">
-      {/* HERO */}
+    <main className="min-h-screen bg-[#f8f6f1] text-[#111111]">
 
-      <section className="bg-[#0B0B0B] px-5 py-20 text-white sm:px-8 sm:py-24 lg:px-12">
-        <div className="mx-auto max-w-4xl text-center">
-          <div className="mb-6 flex items-center justify-center gap-3">
-            <span className="h-px w-10 bg-[#F26A21]" />
+      {/* =====================================================
+          HERO
+      ====================================================== */}
 
-            <span className="text-[9px] font-bold uppercase tracking-[0.4em] text-[#F26A21]">
-              Event Concierge
-            </span>
+      <section className="relative overflow-hidden bg-[#111111] px-6 py-24 text-white sm:px-10 lg:px-16 lg:py-32">
 
-            <span className="h-px w-10 bg-[#F26A21]" />
-          </div>
+        <div className="absolute -right-32 -top-32 h-80 w-80 rounded-full bg-[#D4AF37]/10 blur-3xl" />
 
-          <h1 className="font-serif text-4xl font-bold leading-tight sm:text-5xl md:text-6xl">
-            Let&apos;s Plan Your
-            <span className="block text-[#F26A21]">
-              Perfect Event.
-            </span>
+        <div className="absolute -bottom-40 -left-40 h-96 w-96 rounded-full bg-orange-500/10 blur-3xl" />
+
+        <div className="relative mx-auto max-w-6xl">
+
+          <p className="text-[10px] font-bold uppercase tracking-[0.45em] text-[#D4AF37]">
+            Rhennie Tasty Shack
+          </p>
+
+          <h1 className="mt-5 max-w-4xl font-serif text-5xl font-bold leading-[1.05] sm:text-6xl lg:text-7xl">
+            Event Concierge
           </h1>
 
-          <p className="mx-auto mt-6 max-w-2xl text-sm leading-7 text-white/60 sm:text-base sm:leading-8">
-            Tell us about your event, your guests and what you have in
-            mind. We&apos;ll use these details to help create the right
-            culinary experience for you.
+          <p className="mt-7 max-w-2xl text-base leading-8 text-white/60 sm:text-lg">
+            Your celebration deserves more than
+            ordinary catering. Tell us about your
+            event and let our team create a premium
+            dining experience tailored to you.
           </p>
+
+          <div className="mt-8 flex flex-wrap gap-3">
+
+            <span className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-white/60">
+              Premium Catering
+            </span>
+
+            <span className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-white/60">
+              Bespoke Menus
+            </span>
+
+            <span className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-white/60">
+              Event Planning
+            </span>
+
+          </div>
+
         </div>
       </section>
 
-      {/* FORM */}
+      {/* =====================================================
+          INTRO
+      ====================================================== */}
 
-      <section className="px-5 py-14 sm:px-8 sm:py-20 lg:px-12">
-        <div className="mx-auto max-w-4xl">
-          <form
-            onSubmit={handleSubmit}
-            className="rounded-[32px] border border-black/[0.06] bg-white p-6 shadow-[0_20px_60px_rgba(0,0,0,0.06)] sm:p-10 md:p-12"
-          >
-            {/* ERROR */}
+      <section className="px-6 py-16 sm:px-10 lg:px-16">
 
-            {error && (
-              <div className="mb-8 rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-700">
-                <p className="font-bold">Unable to submit request</p>
-                <p className="mt-1">{error}</p>
+        <div className="mx-auto grid max-w-6xl gap-10 lg:grid-cols-[0.8fr_1.2fr]">
+
+          <div>
+
+            <p className="text-[10px] font-bold uppercase tracking-[0.35em] text-[#D4AF37]">
+              Let's plan it
+            </p>
+
+            <h2 className="mt-4 font-serif text-4xl font-bold leading-tight sm:text-5xl">
+              Tell us what you're
+              <br />
+              celebrating.
+            </h2>
+
+            <p className="mt-6 max-w-md text-sm leading-7 text-black/55">
+              From intimate birthdays to large
+              celebrations, conferences and special
+              occasions, our Event Concierge team
+              will review your requirements and
+              prepare the right catering experience
+              for your event.
+            </p>
+
+            <div className="mt-8 space-y-4">
+
+              <div className="flex gap-4">
+
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#111111] text-sm font-bold text-[#D4AF37]">
+                  01
+                </div>
+
+                <div>
+                  <h3 className="font-bold">
+                    Share your requirements
+                  </h3>
+
+                  <p className="mt-1 text-xs leading-5 text-black/45">
+                    Give us the details of your
+                    event, guest count and venue.
+                  </p>
+                </div>
+
+              </div>
+
+              <div className="flex gap-4">
+
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#111111] text-sm font-bold text-[#D4AF37]">
+                  02
+                </div>
+
+                <div>
+                  <h3 className="font-bold">
+                    We review your request
+                  </h3>
+
+                  <p className="mt-1 text-xs leading-5 text-black/45">
+                    Our team will assess your event
+                    and catering requirements.
+                  </p>
+                </div>
+
+              </div>
+
+              <div className="flex gap-4">
+
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#111111] text-sm font-bold text-[#D4AF37]">
+                  03
+                </div>
+
+                <div>
+                  <h3 className="font-bold">
+                    Receive your proposal
+                  </h3>
+
+                  <p className="mt-1 text-xs leading-5 text-black/45">
+                    We'll contact you to discuss
+                    your quotation and next steps.
+                  </p>
+                </div>
+
+              </div>
+
+            </div>
+
+          </div>
+
+          {/* =================================================
+              FORM
+          ================================================== */}
+
+          <div className="rounded-[28px] border border-black/10 bg-white p-6 shadow-[0_25px_80px_rgba(0,0,0,0.08)] sm:p-8 lg:p-10">
+
+            <div className="mb-8">
+
+              <p className="text-[9px] font-bold uppercase tracking-[0.3em] text-[#D4AF37]">
+                Event Enquiry
+              </p>
+
+              <h2 className="mt-2 font-serif text-3xl font-bold">
+                Plan your event
+              </h2>
+
+              <p className="mt-2 text-sm text-black/45">
+                Fill in the details below and
+                our team will get back to you.
+              </p>
+
+            </div>
+
+            {/* SUCCESS */}
+
+            {success && (
+              <div className="mb-6 rounded-2xl border border-green-200 bg-green-50 p-5">
+
+                <p className="text-sm font-semibold text-green-700">
+                  Request submitted successfully.
+                </p>
+
+                <p className="mt-1 text-xs leading-5 text-green-600">
+                  {success}
+                </p>
+
+                <Link
+                  href="/"
+                  className="mt-4 inline-block text-xs font-bold uppercase tracking-wider text-green-700 underline"
+                >
+                  Back to Home
+                </Link>
+
               </div>
             )}
 
-            {/* =========================
-                01 CONTACT DETAILS
-            ========================= */}
+            {/* ERROR */}
 
-            <div>
-              <p className="text-[9px] font-bold uppercase tracking-[0.3em] text-[#F26A21]">
-                01 — Your Details
-              </p>
+            {error && (
+              <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 p-5">
 
-              <h2 className="mt-3 font-serif text-2xl font-bold sm:text-3xl">
-                Tell Us Who You Are
-              </h2>
+                <p className="text-sm font-semibold text-red-700">
+                  Unable to submit request
+                </p>
 
-              <div className="mt-7 grid gap-5 sm:grid-cols-2">
-                <div>
-                  <label
-                    htmlFor="name"
-                    className="mb-2 block text-xs font-bold"
-                  >
-                    Full Name *
-                  </label>
+                <p className="mt-1 text-xs leading-5 text-red-600">
+                  {error}
+                </p>
 
-                  <input
-                    id="name"
-                    name="name"
-                    type="text"
-                    required
-                    autoComplete="name"
-                    placeholder="Your full name"
-                    className="h-12 w-full rounded-xl border border-black/10 bg-[#FAF9F6] px-4 text-sm outline-none transition focus:border-[#F26A21]"
-                  />
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="phone"
-                    className="mb-2 block text-xs font-bold"
-                  >
-                    Phone Number *
-                  </label>
-
-                  <input
-                    id="phone"
-                    name="phone"
-                    type="tel"
-                    required
-                    autoComplete="tel"
-                    placeholder="080..."
-                    className="h-12 w-full rounded-xl border border-black/10 bg-[#FAF9F6] px-4 text-sm outline-none transition focus:border-[#F26A21]"
-                  />
-                </div>
-
-                <div className="sm:col-span-2">
-                  <label
-                    htmlFor="email"
-                    className="mb-2 block text-xs font-bold"
-                  >
-                    Email Address
-                  </label>
-
-                  <input
-                    id="email"
-                    name="email"
-                    type="email"
-                    autoComplete="email"
-                    placeholder="you@example.com"
-                    className="h-12 w-full rounded-xl border border-black/10 bg-[#FAF9F6] px-4 text-sm outline-none transition focus:border-[#F26A21]"
-                  />
-                </div>
               </div>
-            </div>
+            )}
 
-            {/* =========================
-                02 EVENT DETAILS
-            ========================= */}
+            <form
+              onSubmit={handleSubmit}
+              className="space-y-6"
+            >
 
-            <div className="mt-12 border-t border-black/[0.07] pt-10">
-              <p className="text-[9px] font-bold uppercase tracking-[0.3em] text-[#F26A21]">
-                02 — Event Details
-              </p>
+              {/* NAME + PHONE */}
 
-              <h2 className="mt-3 font-serif text-2xl font-bold sm:text-3xl">
-                Tell Us About The Occasion
-              </h2>
+              <div className="grid gap-5 sm:grid-cols-2">
 
-              <div className="mt-7 grid gap-5 sm:grid-cols-2">
-                <div>
-                  <label
-                    htmlFor="eventType"
-                    className="mb-2 block text-xs font-bold"
-                  >
-                    Event Type *
-                  </label>
+                <Field
+                  label="Full Name"
+                  name="full_name"
+                  value={form.full_name}
+                  onChange={handleChange}
+                  placeholder="Your full name"
+                  required
+                />
 
-                  <select
-                    id="eventType"
-                    name="eventType"
-                    required
-                    defaultValue=""
-                    className="h-12 w-full rounded-xl border border-black/10 bg-[#FAF9F6] px-4 text-sm outline-none transition focus:border-[#F26A21]"
-                  >
-                    <option value="" disabled>
-                      Select event type
-                    </option>
+                <Field
+                  label="Phone Number"
+                  name="phone"
+                  value={form.phone}
+                  onChange={handleChange}
+                  placeholder="080..."
+                  required
+                />
 
-                    <option value="Wedding">Wedding</option>
-                    <option value="Birthday">Birthday</option>
-                    <option value="Corporate Event">
-                      Corporate Event
-                    </option>
-                    <option value="Conference">Conference</option>
-                    <option value="Private Dining">
-                      Private Dining
-                    </option>
-                    <option value="Anniversary">Anniversary</option>
-                    <option value="Graduation">Graduation</option>
-                    <option value="Baby Shower">Baby Shower</option>
-                    <option value="Engagement">Engagement</option>
-                    <option value="Other">Other</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="eventDate"
-                    className="mb-2 block text-xs font-bold"
-                  >
-                    Event Date *
-                  </label>
-
-                  <input
-                    id="eventDate"
-                    name="eventDate"
-                    type="date"
-                    required
-                    min={new Date().toISOString().split("T")[0]}
-                    className="h-12 w-full rounded-xl border border-black/10 bg-[#FAF9F6] px-4 text-sm outline-none transition focus:border-[#F26A21]"
-                  />
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="guestCount"
-                    className="mb-2 block text-xs font-bold"
-                  >
-                    Number of Guests *
-                  </label>
-
-                  <input
-                    id="guestCount"
-                    name="guestCount"
-                    type="number"
-                    min="1"
-                    required
-                    placeholder="e.g. 50"
-                    className="h-12 w-full rounded-xl border border-black/10 bg-[#FAF9F6] px-4 text-sm outline-none transition focus:border-[#F26A21]"
-                  />
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="location"
-                    className="mb-2 block text-xs font-bold"
-                  >
-                    Event Location *
-                  </label>
-
-                  <input
-                    id="location"
-                    name="location"
-                    type="text"
-                    required
-                    placeholder="Event venue / location"
-                    className="h-12 w-full rounded-xl border border-black/10 bg-[#FAF9F6] px-4 text-sm outline-none transition focus:border-[#F26A21]"
-                  />
-                </div>
               </div>
-            </div>
 
-            {/* =========================
-                03 BUDGET & SERVICE
-            ========================= */}
+              {/* EMAIL */}
 
-            <div className="mt-12 border-t border-black/[0.07] pt-10">
-              <p className="text-[9px] font-bold uppercase tracking-[0.3em] text-[#F26A21]">
-                03 — Budget & Service
-              </p>
+              <Field
+                label="Email Address"
+                name="email"
+                type="email"
+                value={form.email}
+                onChange={handleChange}
+                placeholder="you@example.com"
+                required
+              />
 
-              <h2 className="mt-3 font-serif text-2xl font-bold sm:text-3xl">
-                Help Us Understand Your Needs
-              </h2>
+              {/* EVENT TYPE */}
 
-              <div className="mt-7 grid gap-5 sm:grid-cols-2">
-                <div>
-                  <label
-                    htmlFor="budget"
-                    className="mb-2 block text-xs font-bold"
-                  >
-                    Estimated Budget
-                  </label>
+              <div>
 
-                  <select
-                    id="budget"
-                    name="budget"
-                    defaultValue=""
-                    className="h-12 w-full rounded-xl border border-black/10 bg-[#FAF9F6] px-4 text-sm outline-none transition focus:border-[#F26A21]"
-                  >
-                    <option value="">Select budget range</option>
-                    <option value="Below ₦100,000">
-                      Below ₦100,000
-                    </option>
-                    <option value="₦100,000 - ₦250,000">
-                      ₦100,000 - ₦250,000
-                    </option>
-                    <option value="₦250,000 - ₦500,000">
-                      ₦250,000 - ₦500,000
-                    </option>
-                    <option value="₦500,000 - ₦1,000,000">
-                      ₦500,000 - ₦1,000,000
-                    </option>
-                    <option value="₦1,000,000+">
-                      ₦1,000,000+
-                    </option>
-                    <option value="Not Sure">Not Sure</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="service"
-                    className="mb-2 block text-xs font-bold"
-                  >
-                    Service Required
-                  </label>
-
-                  <select
-                    id="service"
-                    name="service"
-                    defaultValue=""
-                    className="h-12 w-full rounded-xl border border-black/10 bg-[#FAF9F6] px-4 text-sm outline-none transition focus:border-[#F26A21]"
-                  >
-                    <option value="">Select service</option>
-                    <option value="Full Catering">
-                      Full Catering
-                    </option>
-                    <option value="Food Boxes">Food Boxes</option>
-                    <option value="Party Orders">
-                      Party Orders
-                    </option>
-                    <option value="Small Chops">Small Chops</option>
-                    <option value="Corporate Meals">
-                      Corporate Meals
-                    </option>
-                    <option value="Custom Menu">Custom Menu</option>
-                    <option value="Private Dining">
-                      Private Dining
-                    </option>
-                  </select>
-                </div>
-              </div>
-            </div>
-
-            {/* =========================
-                04 MESSAGE
-            ========================= */}
-
-            <div className="mt-12 border-t border-black/[0.07] pt-10">
-              <p className="text-[9px] font-bold uppercase tracking-[0.3em] text-[#F26A21]">
-                04 — Your Vision
-              </p>
-
-              <h2 className="mt-3 font-serif text-2xl font-bold sm:text-3xl">
-                Tell Us What You Have In Mind
-              </h2>
-
-              <div className="mt-7">
                 <label
-                  htmlFor="message"
-                  className="mb-2 block text-xs font-bold"
+                  htmlFor="event_type"
+                  className="mb-2 block text-[9px] font-bold uppercase tracking-[0.2em] text-black/45"
                 >
-                  Event Details *
+                  Event Type
+                </label>
+
+                <select
+                  id="event_type"
+                  name="event_type"
+                  value={form.event_type}
+                  onChange={handleChange}
+                  required
+                  className="min-h-[50px] w-full rounded-xl border border-black/10 bg-[#fafafa] px-4 text-sm text-black outline-none transition focus:border-[#D4AF37]"
+                >
+
+                  <option value="">
+                    Select event type
+                  </option>
+
+                  <option value="Birthday">
+                    Birthday
+                  </option>
+
+                  <option value="Wedding">
+                    Wedding
+                  </option>
+
+                  <option value="Naming Ceremony">
+                    Naming Ceremony
+                  </option>
+
+                  <option value="Conference">
+                    Conference
+                  </option>
+
+                  <option value="Corporate Event">
+                    Corporate Event
+                  </option>
+
+                  <option value="Dinner">
+                    Dinner
+                  </option>
+
+                  <option value="Anniversary">
+                    Anniversary
+                  </option>
+
+                  <option value="Private Celebration">
+                    Private Celebration
+                  </option>
+
+                  <option value="Other">
+                    Other
+                  </option>
+
+                </select>
+
+              </div>
+
+              {/* DATE + TIME */}
+
+              <div className="grid gap-5 sm:grid-cols-2">
+
+                <Field
+                  label="Event Date"
+                  name="event_date"
+                  type="date"
+                  value={form.event_date}
+                  onChange={handleChange}
+                  required
+                />
+
+                <Field
+                  label="Event Time"
+                  name="event_time"
+                  type="time"
+                  value={form.event_time}
+                  onChange={handleChange}
+                />
+
+              </div>
+
+              {/* GUESTS */}
+
+              <Field
+                label="Number of Guests"
+                name="guest_count"
+                type="number"
+                min="1"
+                value={form.guest_count}
+                onChange={handleChange}
+                placeholder="e.g. 50"
+                required
+              />
+
+              {/* VENUE */}
+
+              <Field
+                label="Venue / Location"
+                name="venue"
+                value={form.venue}
+                onChange={handleChange}
+                placeholder="Event venue or area"
+                required
+              />
+
+              {/* BUDGET */}
+
+              <div>
+
+                <label
+                  htmlFor="budget"
+                  className="mb-2 block text-[9px] font-bold uppercase tracking-[0.2em] text-black/45"
+                >
+                  Estimated Budget
+                </label>
+
+                <select
+                  id="budget"
+                  name="budget"
+                  value={form.budget}
+                  onChange={handleChange}
+                  className="min-h-[50px] w-full rounded-xl border border-black/10 bg-[#fafafa] px-4 text-sm text-black outline-none transition focus:border-[#D4AF37]"
+                >
+
+                  <option value="">
+                    Select estimated budget
+                  </option>
+
+                  <option value="₦100,000 - ₦250,000">
+                    ₦100,000 - ₦250,000
+                  </option>
+
+                  <option value="₦250,000 - ₦500,000">
+                    ₦250,000 - ₦500,000
+                  </option>
+
+                  <option value="₦500,000 - ₦1,000,000">
+                    ₦500,000 - ₦1,000,000
+                  </option>
+
+                  <option value="₦1,000,000+">
+                    ₦1,000,000+
+                  </option>
+
+                  <option value="Not sure yet">
+                    Not sure yet
+                  </option>
+
+                </select>
+
+              </div>
+
+              {/* SPECIAL REQUEST */}
+
+              <div>
+
+                <label
+                  htmlFor="special_request"
+                  className="mb-2 block text-[9px] font-bold uppercase tracking-[0.2em] text-black/45"
+                >
+                  Tell Us More
                 </label>
 
                 <textarea
-                  id="message"
-                  name="message"
-                  required
-                  rows={7}
-                  placeholder="Tell us about your event, preferred meals, special requests, dietary requirements or anything else we should know..."
-                  className="w-full resize-none rounded-2xl border border-black/10 bg-[#FAF9F6] p-4 text-sm leading-7 outline-none transition focus:border-[#F26A21]"
+                  id="special_request"
+                  name="special_request"
+                  value={form.special_request}
+                  onChange={handleChange}
+                  rows={5}
+                  placeholder="Tell us about your menu preferences, theme, dietary requirements or anything else we should know..."
+                  className="w-full resize-none rounded-xl border border-black/10 bg-[#fafafa] px-4 py-3 text-sm text-black outline-none transition focus:border-[#D4AF37]"
                 />
+
               </div>
-            </div>
 
-            {/* =========================
-                SUBMIT
-            ========================= */}
+              {/* SUBMIT */}
 
-            <div className="mt-10 border-t border-black/[0.07] pt-8">
               <button
                 type="submit"
                 disabled={loading}
-                className="flex min-h-[56px] w-full items-center justify-center rounded-full bg-[#F26A21] px-8 text-sm font-bold text-white shadow-[0_15px_40px_rgba(242,106,33,0.18)] transition-all duration-300 hover:-translate-y-1 hover:bg-[#D95512] disabled:cursor-not-allowed disabled:opacity-60"
+                className="w-full rounded-xl bg-[#111111] px-6 py-4 text-xs font-bold uppercase tracking-[0.2em] text-white transition hover:bg-[#D4AF37] hover:text-black disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {loading ? (
-                  <>
-                    <span className="mr-3 h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                    Submitting Request...
-                  </>
-                ) : (
-                  <>
-                    Submit Event Request
-                    <span className="ml-2">→</span>
-                  </>
-                )}
+                {loading
+                  ? "Submitting Request..."
+                  : "Request Event Consultation"}
               </button>
 
-              <p className="mt-4 text-center text-[11px] leading-5 text-black/40">
-                By submitting this request, you are asking Rhennie Tasty
-                Shack to contact you regarding your event.
+              <p className="text-center text-[10px] leading-5 text-black/35">
+                By submitting this form, you
+                agree for Rhennie Tasty Shack
+                to contact you regarding your
+                event enquiry.
               </p>
-            </div>
-          </form>
 
-          <div className="mt-8 text-center">
-            <Link
-              href="/event-concierge"
-              className="text-xs font-bold uppercase tracking-[0.15em] text-black/40 transition-colors hover:text-[#F26A21]"
-            >
-              ← Back To Event Concierge
-            </Link>
+            </form>
+
           </div>
+
         </div>
+
       </section>
+
+      {/* =====================================================
+          FOOTER CTA
+      ====================================================== */}
+
+      <section className="bg-[#111111] px-6 py-16 text-center text-white sm:px-10">
+
+        <p className="text-[9px] font-bold uppercase tracking-[0.35em] text-[#D4AF37]">
+          Rhennie Tasty Shack
+        </p>
+
+        <h2 className="mx-auto mt-4 max-w-2xl font-serif text-3xl font-bold sm:text-4xl">
+          Premium taste for moments
+          worth celebrating.
+        </h2>
+
+        <p className="mx-auto mt-4 max-w-xl text-sm leading-7 text-white/45">
+          Whether it's an intimate gathering or
+          a major celebration, we're ready to
+          make your event memorable.
+        </p>
+
+        <Link
+          href="/"
+          className="mt-7 inline-flex rounded-xl border border-white/15 px-6 py-3 text-xs font-bold uppercase tracking-[0.15em] text-white transition hover:border-[#D4AF37] hover:text-[#D4AF37]"
+        >
+          Back to Home
+        </Link>
+
+      </section>
+
     </main>
+  );
+}
+
+/* =============================================================
+   REUSABLE FIELD
+============================================================= */
+
+function Field({
+  label,
+  name,
+  value,
+  onChange,
+  placeholder,
+  type = "text",
+  required = false,
+  min,
+}: {
+  label: string;
+  name: string;
+  value: string;
+  onChange: (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => void;
+  placeholder?: string;
+  type?: string;
+  required?: boolean;
+  min?: string;
+}) {
+  return (
+    <div>
+
+      <label
+        htmlFor={name}
+        className="mb-2 block text-[9px] font-bold uppercase tracking-[0.2em] text-black/45"
+      >
+        {label}
+      </label>
+
+      <input
+        id={name}
+        name={name}
+        type={type}
+        value={value}
+        onChange={onChange}
+        placeholder={placeholder}
+        required={required}
+        min={min}
+        className="min-h-[50px] w-full rounded-xl border border-black/10 bg-[#fafafa] px-4 text-sm text-black outline-none transition placeholder:text-black/25 focus:border-[#D4AF37]"
+      />
+
+    </div>
   );
 }

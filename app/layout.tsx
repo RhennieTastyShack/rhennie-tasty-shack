@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import "./globals.css";
+
 import Navbar from "@/app/components/Navbar";
+import CartDrawer from "@/app/components/cart/CartDrawer";
+import { CartProvider } from "@/app/context/CartContext";
 
 export const metadata: Metadata = {
   title: "Rhennie Tasty Shack",
@@ -14,10 +17,18 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" data-scroll-behavior="smooth">
+    <html
+      lang="en"
+      data-scroll-behavior="smooth"
+    >
       <body>
-        <Navbar />
-        {children}
+        <CartProvider>
+          <Navbar />
+
+          {children}
+
+          <CartDrawer />
+        </CartProvider>
       </body>
     </html>
   );

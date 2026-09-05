@@ -1,41 +1,63 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import {
+  usePathname,
+  useRouter,
+  useSearchParams,
+} from "next/navigation";
 
 const categories = [
   {
     label: "All Meals",
     value: "",
   },
+
   {
-    label: "Signature Meals",
+    label: "Signature Feast",
     value: "signature",
   },
+
   {
     label: "Build Your Plate",
     value: "build-your-plate",
   },
+
   {
     label: "Executive Lunch",
     value: "executive-lunch",
   },
+
   {
     label: "Breakfast",
     value: "breakfast",
   },
+
   {
-    label: "Street Kitchen",
-    value: "street-kitchen",
+    label: "Street Kitchen & Wraps",
+    value: "street-kitchen-wraps",
   },
+
   {
     label: "Grill House",
     value: "grill-house",
   },
+
   {
     label: "Food Boxes",
     value: "food-boxes",
   },
+
+  {
+    label: "Soups & Swallows",
+    value: "soups-swallow",
+  },
+
+  {
+    label: "Sauces",
+    value: "sauces",
+  },
+
   {
     label: "Food by Litre",
     value: "grand-pot",
@@ -47,23 +69,31 @@ export default function MenuFilters() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  const activeCategory = searchParams.get("category") || "";
-  const urlSearch = searchParams.get("search") || "";
+  const activeCategory =
+    searchParams.get("category") || "";
 
-  const [search, setSearch] = useState(urlSearch);
+  const urlSearch =
+    searchParams.get("search") || "";
 
-  /*
-   * Keep input synchronized with URL
-   */
+  const [search, setSearch] =
+    useState(urlSearch);
+
+  /* =========================================================
+     KEEP SEARCH INPUT SYNCHRONIZED WITH URL
+  ========================================================= */
+
   useEffect(() => {
     setSearch(urlSearch);
   }, [urlSearch]);
 
-  /*
-   * Select category
-   */
+  /* =========================================================
+     SELECT CATEGORY
+  ========================================================= */
+
   function handleCategory(value: string) {
-    const params = new URLSearchParams(searchParams.toString());
+    const params = new URLSearchParams(
+      searchParams.toString()
+    );
 
     if (value) {
       params.set("category", value);
@@ -71,41 +101,56 @@ export default function MenuFilters() {
       params.delete("category");
     }
 
-    /*
-     * Keep the current search when changing category.
-     */
-
     const query = params.toString();
 
-    router.push(query ? `${pathname}?${query}` : pathname, {
-      scroll: false,
-    });
+    router.push(
+      query
+        ? `${pathname}?${query}`
+        : pathname,
+      {
+        scroll: false,
+      }
+    );
   }
 
-  /*
-   * Search
-   */
+  /* =========================================================
+     SEARCH
+  ========================================================= */
+
   function handleSearch(value: string) {
     setSearch(value);
 
-    const params = new URLSearchParams(searchParams.toString());
+    const params = new URLSearchParams(
+      searchParams.toString()
+    );
 
-    if (value.trim()) {
-      params.set("search", value.trim());
+    const trimmedValue = value.trim();
+
+    if (trimmedValue) {
+      params.set(
+        "search",
+        trimmedValue
+      );
     } else {
       params.delete("search");
     }
 
     const query = params.toString();
 
-    router.replace(query ? `${pathname}?${query}` : pathname, {
-      scroll: false,
-    });
+    router.replace(
+      query
+        ? `${pathname}?${query}`
+        : pathname,
+      {
+        scroll: false,
+      }
+    );
   }
 
-  /*
-   * Clear all filters
-   */
+  /* =========================================================
+     CLEAR ALL FILTERS
+  ========================================================= */
+
   function clearFilters() {
     setSearch("");
 
@@ -114,23 +159,27 @@ export default function MenuFilters() {
     });
   }
 
-  /*
-   * Active category label
-   */
+  /* =========================================================
+     ACTIVE CATEGORY LABEL
+  ========================================================= */
+
   const activeCategoryLabel =
     categories.find(
-      (category) => category.value === activeCategory
+      (category) =>
+        category.value === activeCategory
     )?.label || "All Meals";
 
-  const hasFilters = Boolean(activeCategory || urlSearch);
+  const hasFilters =
+    Boolean(
+      activeCategory || urlSearch
+    );
 
   return (
     <section className="relative z-30 border-y border-black/[0.06] bg-white px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
-
       <div className="mx-auto max-w-7xl">
 
         {/* =====================================================
-            SEARCH AREA
+            HEADER
         ====================================================== */}
 
         <div className="flex flex-col items-center">
@@ -165,9 +214,10 @@ export default function MenuFilters() {
 
           <div className="group relative">
 
-            {/* Search icon */}
+            {/* Search Icon */}
 
             <div className="pointer-events-none absolute left-5 top-1/2 z-10 -translate-y-1/2 text-gray-400 transition-colors group-focus-within:text-[#F26A21]">
+
               <svg
                 width="19"
                 height="19"
@@ -178,28 +228,38 @@ export default function MenuFilters() {
                 strokeLinecap="round"
                 strokeLinejoin="round"
               >
-                <circle cx="11" cy="11" r="7" />
+                <circle
+                  cx="11"
+                  cy="11"
+                  r="7"
+                />
+
                 <path d="m20 20-3.5-3.5" />
               </svg>
+
             </div>
 
             <input
               type="search"
               value={search}
               onChange={(event) =>
-                handleSearch(event.target.value)
+                handleSearch(
+                  event.target.value
+                )
               }
               placeholder="Search meals, dishes or collections..."
               aria-label="Search meals"
               className="h-14 w-full rounded-full border border-black/10 bg-[#F8F6F2] pl-12 pr-12 text-sm text-[#171717] outline-none transition-all duration-300 placeholder:text-gray-400 focus:border-[#F26A21] focus:bg-white focus:ring-4 focus:ring-[#F26A21]/10"
             />
 
-            {/* Clear search */}
+            {/* Clear Search */}
 
             {search && (
               <button
                 type="button"
-                onClick={() => handleSearch("")}
+                onClick={() =>
+                  handleSearch("")
+                }
                 aria-label="Clear search"
                 className="absolute right-4 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-[#F26A21] hover:text-white"
               >
@@ -223,46 +283,55 @@ export default function MenuFilters() {
               Collections
             </p>
 
-            {/* Mobile hint */}
-
             <p className="text-[9px] text-gray-400 sm:hidden">
               Swipe →
             </p>
 
           </div>
 
-          {/* Horizontal scroll container */}
+          {/* Horizontal Scroll */}
 
           <div className="overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
 
             <div className="flex min-w-max items-center gap-2 sm:flex-wrap sm:justify-center sm:gap-3">
 
-              {categories.map((category) => {
-                const isActive =
-                  activeCategory === category.value;
+              {categories.map(
+                (category) => {
 
-                return (
-                  <button
-                    key={category.value || "all"}
-                    type="button"
-                    onClick={() =>
-                      handleCategory(category.value)
-                    }
-                    aria-pressed={isActive}
-                    className={`group relative flex min-h-[42px] items-center justify-center whitespace-nowrap rounded-full border px-5 text-[9px] font-bold uppercase tracking-[0.12em] transition-all duration-300 sm:min-h-[44px] sm:px-6 ${
-                      isActive
-                        ? "border-[#F26A21] bg-[#F26A21] text-white shadow-[0_8px_25px_rgba(242,106,33,0.22)]"
-                        : "border-black/10 bg-white text-gray-600 hover:border-[#F26A21]/50 hover:text-[#F26A21] hover:shadow-sm"
-                    }`}
-                  >
-                    {category.label}
+                  const isActive =
+                    activeCategory ===
+                    category.value;
 
-                    {isActive && (
-                      <span className="ml-2 h-1.5 w-1.5 rounded-full bg-white" />
-                    )}
-                  </button>
-                );
-              })}
+                  return (
+                    <button
+                      key={
+                        category.value ||
+                        "all"
+                      }
+                      type="button"
+                      onClick={() =>
+                        handleCategory(
+                          category.value
+                        )
+                      }
+                      aria-pressed={
+                        isActive
+                      }
+                      className={`group relative flex min-h-[42px] items-center justify-center whitespace-nowrap rounded-full border px-5 text-[9px] font-bold uppercase tracking-[0.12em] transition-all duration-300 sm:min-h-[44px] sm:px-6 ${
+                        isActive
+                          ? "border-[#F26A21] bg-[#F26A21] text-white shadow-[0_8px_25px_rgba(242,106,33,0.22)]"
+                          : "border-black/10 bg-white text-gray-600 hover:border-[#F26A21]/50 hover:text-[#F26A21] hover:shadow-sm"
+                      }`}
+                    >
+                      {category.label}
+
+                      {isActive && (
+                        <span className="ml-2 h-1.5 w-1.5 rounded-full bg-white" />
+                      )}
+                    </button>
+                  );
+                }
+              )}
 
             </div>
 
@@ -283,11 +352,15 @@ export default function MenuFilters() {
                 Showing
               </span>
 
+              {/* Active Category */}
+
               {activeCategory && (
                 <span className="rounded-full bg-[#FFF1E9] px-3 py-1.5 text-[9px] font-bold uppercase tracking-wider text-[#F26A21]">
                   {activeCategoryLabel}
                 </span>
               )}
+
+              {/* Active Search */}
 
               {urlSearch && (
                 <span className="max-w-[220px] truncate rounded-full bg-[#FFF1E9] px-3 py-1.5 text-[9px] font-bold text-[#F26A21]">
@@ -296,6 +369,8 @@ export default function MenuFilters() {
               )}
 
             </div>
+
+            {/* Clear Filters */}
 
             <button
               type="button"
@@ -309,7 +384,6 @@ export default function MenuFilters() {
         )}
 
       </div>
-
     </section>
   );
 }

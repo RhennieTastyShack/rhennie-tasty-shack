@@ -1,22 +1,35 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
-type Consultation = {
+interface OrderItem {
   id: string;
-  full_name: string | null;
-  email: string | null;
-  phone: string | null;
-  event_type: string | null;
-  event_date: string | null;
-  event_time: string | null;
-  guest_count: number | null;
-  venue: string | null;
-  budget: number | null;
-  special_request: string | null;
-};
+  order_id: string;
+  menu_item_id: string | null;
+  name: string;
+  collection: string | null;
+  quantity: number;
+  unit_price: number;
+  selected_size: string | null;
+  item_total: number;
+  created_at: string;
+}
 
-type Order = {
+interface Consultation {
+  id?: string;
+  full_name?: string;
+  email?: string;
+  phone?: string;
+  event_type?: string;
+  event_date?: string | null;
+  event_time?: string | null;
+  guest_count?: number | null;
+  venue?: string;
+  budget?: string | null;
+  special_request?: string | null;
+}
+
+interface Order {
   id: string;
   order_no: string;
   customer_id: string | null;
@@ -25,8 +38,33 @@ type Order = {
   amount: number | null;
   status: string | null;
   created_at: string;
-  consultation?: Consultation | Consultation[] | null;
-};
+
+  quotation_status?: string | null;
+  quotation_notes?: string | null;
+  quoted_at?: string | null;
+
+  subtotal?: number | null;
+  delivery_fee?: number | null;
+  total?: number | null;
+
+  customer_name?: string | null;
+  customer_email?: string | null;
+  customer_phone?: string | null;
+
+  delivery_type?: string | null;
+  delivery_address?: string | null;
+  notes?: string | null;
+
+  payment_status?: string | null;
+  payment_reference?: string | null;
+  payment_channel?: string | null;
+
+  consultation_id?: string | null;
+
+  consultation?: Consultation | null;
+
+  order_items?: OrderItem[];
+}
 
 const STATUS_STEPS = [
   "IN REVIEW",
@@ -45,62 +83,79 @@ const STATUS_OPTIONS = [
   "CANCELLED",
 ];
 
-export default function AdminOrdersPage() {
+export default function OrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
-  const [updatingOrder, setUpdatingOrder] = useState<string | null>(null);
 
-  async function loadOrders() {
+  const [selectedOrder, setSelectedOrder] =
+    useState<Order | null>(null);
+
+  const [updatingStatus, setUpdatingStatus] =
+    useState<string | null>(null);
+
+  const [search, setSearch] = useState("");
+
+  // ============================================================
+  // QUOTATION STATE
+  // ============================================================
+
+  const [quotationAmount, setQuotationAmount] =
+    useState("");
+
+  const [quotationDeliveryFee, setQuotationDeliveryFee] =
+    useState("");
+
+  const [quotationStatus, setQuotationStatus] =
+    useState("QUOTED");
+
+  const [quotationNotes, setQuotationNotes] =
+    useState("");
+
+  const [savingQuotation, setSavingQuotation] =
+    useState(false);
+
+  // ============================================================
+  // LOAD ORDERS
+  // ============================================================
+
+  async function loadOrders(showRefreshing = false) {
     try {
-      setLoading(true);
+      if (showRefreshing) {
+        setRefreshing(true);
+      } else {
+        setLoading(true);
+      }
+
       setError("");
 
       const response = await fetch("/api/orders", {
         cache: "no-store",
       });
 
-      const text = await response.text();
-
-      let result: unknown = [];
-
-      if (text) {
-        try {
-          result = JSON.parse(text);
-        } catch {
-          throw new Error("The server returned an invalid response.");
-        }
-      }
+      const result = await response.json();
 
       if (!response.ok) {
-        const errorMessage =
-          typeof result === "object" &&
-          result !== null &&
-          "error" in result
-            ? String(
-                (result as { error?: unknown }).error ||
-                  "Unable to load orders."
-              )
-            : "Unable to load orders.";
-
-        throw new Error(errorMessage);
+        throw new Error(
+          result?.error || "Unable to load orders."
+        );
       }
 
-      if (!Array.isArray(result)) {
-        throw new Error("Invalid orders response.");
-      }
-
-      setOrders(result as Order[]);
-    } catch (error) {
-      console.error("Orders loading error:", error);
+      setOrders(
+        Array.isArray(result) ? result : []
+      );
+    } catch (err) {
+      console.error("Orders loading error:", err);
 
       setError(
-        error instanceof Error
-          ? error.message
+        err instanceof Error
+          ? err.message
           : "Unable to load orders."
       );
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   }
 
@@ -108,101 +163,110 @@ export default function AdminOrdersPage() {
     loadOrders();
   }, []);
 
-  async function updateOrderStatus(
-    orderId: string,
-    status: string
+  // ============================================================
+  // FORMATTERS
+  // ============================================================
+
+  function formatAmount(
+    amount: number | null | undefined
   ) {
-    try {
-      setUpdatingOrder(orderId);
-      setError("");
+    return `₦${Number(amount || 0).toLocaleString(
+      "en-NG"
+    )}`;
+  }
 
-      const response = await fetch("/api/orders/status", {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          orderId,
-          status,
-        }),
-      });
+  function formatDate(
+    date: string | null | undefined
+  ) {
+    if (!date) return "—";
 
-      const text = await response.text();
+    const parsed = new Date(date);
 
-      let result: {
-        success?: boolean;
-        message?: string;
-        error?: string;
-        order?: Order;
-      } = {};
+    if (Number.isNaN(parsed.getTime())) {
+      return "—";
+    }
 
-      if (text) {
-        try {
-          result = JSON.parse(text);
-        } catch {
-          throw new Error(
-            "The server returned an invalid response."
-          );
-        }
+    return parsed.toLocaleDateString(
+      "en-NG",
+      {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
       }
+    );
+  }
 
-      if (!response.ok) {
-        throw new Error(
-          result.error || "Unable to update order status."
-        );
+  function formatDateTime(
+    date: string | null | undefined
+  ) {
+    if (!date) return "—";
+
+    const parsed = new Date(date);
+
+    if (Number.isNaN(parsed.getTime())) {
+      return "—";
+    }
+
+    return parsed.toLocaleString(
+      "en-NG",
+      {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
       }
+    );
+  }
 
-      if (!result.success) {
-        throw new Error(
-          result.error || "Unable to update order status."
-        );
-      }
+  function getStatusLabel(
+    status: string | null | undefined
+  ) {
+    if (!status) {
+      return "In Review";
+    }
 
-      setOrders((currentOrders: Order[]) =>
-        currentOrders.map((order: Order) =>
-          order.id === orderId
-            ? {
-                ...order,
-                status: status,
-              }
-            : order
-        )
+    return status
+      .toLowerCase()
+      .replace(/\b\w/g, (letter) =>
+        letter.toUpperCase()
       );
-    } catch (error) {
-      console.error(
-        "Update order status error:",
-        error
-      );
+  }
 
-      setError(
-        error instanceof Error
-          ? error.message
-          : "Unable to update order status."
-      );
-    } finally {
-      setUpdatingOrder(null);
+  function getStatusClass(
+    status: string | null | undefined
+  ) {
+    switch (status?.toUpperCase()) {
+      case "COMPLETED":
+        return "bg-green-100 text-green-700";
+
+      case "CONFIRMED":
+        return "bg-blue-100 text-blue-700";
+
+      case "PREPARING":
+        return "bg-yellow-100 text-yellow-700";
+
+      case "OUT FOR DELIVERY":
+        return "bg-orange-100 text-orange-700";
+
+      case "IN REVIEW":
+        return "bg-purple-100 text-purple-700";
+
+      case "CANCELLED":
+        return "bg-red-100 text-red-700";
+
+      default:
+        return "bg-gray-100 text-gray-700";
     }
   }
 
-  function formatAmount(amount: number | null) {
-    if (amount === null || amount === undefined) {
-      return "₦0";
-    }
+  // ============================================================
+  // STATUS PROGRESS
+  // ============================================================
 
-    return `₦${Number(amount).toLocaleString("en-NG")}`;
-  }
-
-  function formatDate(date: string | null) {
-    if (!date) return "No date";
-
-    return new Date(date).toLocaleDateString("en-NG", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
-  }
-
-  function getStatusIndex(status: string | null) {
+  function getStatusIndex(
+    status: string | null | undefined
+  ) {
     if (!status) return 0;
 
     const index = STATUS_STEPS.indexOf(
@@ -212,448 +276,2210 @@ export default function AdminOrdersPage() {
     return index === -1 ? 0 : index;
   }
 
-  function getStatusLabel(status: string | null) {
-    if (!status) return "In Review";
-
-    return status
-      .toLowerCase()
-      .replace(/\b\w/g, (letter) =>
-        letter.toUpperCase()
-      );
-  }
-
-  function getConsultation(
-    consultation:
-      | Consultation
-      | Consultation[]
-      | null
-      | undefined
+  function getProgressWidth(
+    status: string | null | undefined
   ) {
-    if (Array.isArray(consultation)) {
-      return consultation[0] || null;
-    }
+    const index = getStatusIndex(status);
 
-    return consultation || null;
-  }
+    switch (index) {
+      case 0:
+        return "w-1/5";
 
-  function getStatusBadgeClass(status: string | null) {
-    switch (status?.toUpperCase()) {
-      case "CONFIRMED":
-        return "border-blue-500/30 bg-blue-500/10 text-blue-300";
+      case 1:
+        return "w-2/5";
 
-      case "PREPARING":
-        return "border-orange-500/30 bg-orange-500/10 text-orange-300";
+      case 2:
+        return "w-3/5";
 
-      case "OUT FOR DELIVERY":
-        return "border-purple-500/30 bg-purple-500/10 text-purple-300";
+      case 3:
+        return "w-4/5";
 
-      case "COMPLETED":
-        return "border-green-500/30 bg-green-500/10 text-green-300";
-
-      case "CANCELLED":
-        return "border-red-500/30 bg-red-500/10 text-red-300";
+      case 4:
+        return "w-full";
 
       default:
-        return "border-[#D4AF37]/30 bg-[#D4AF37]/10 text-[#D4AF37]";
+        return "w-1/5";
     }
   }
+
+  function isStepCompleted(
+    status: string | null | undefined,
+    stepIndex: number
+  ) {
+    return (
+      getStatusIndex(status) >= stepIndex
+    );
+  }
+
+  // ============================================================
+  // UPDATE ORDER STATUS
+  // ============================================================
+
+  async function updateOrderStatus(
+    orderId: string,
+    status: string
+  ) {
+    try {
+      setUpdatingStatus(orderId);
+      setError("");
+
+      const response = await fetch(
+        "/api/orders/status",
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            orderId,
+            status,
+          }),
+        }
+      );
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          result?.error ||
+            "Unable to update order status."
+        );
+      }
+
+      setOrders((current) =>
+        current.map((order) =>
+          order.id === orderId
+            ? {
+                ...order,
+                status,
+              }
+            : order
+        )
+      );
+
+      setSelectedOrder((current) =>
+        current &&
+        current.id === orderId
+          ? {
+              ...current,
+              status,
+            }
+          : current
+      );
+    } catch (err) {
+      console.error(
+        "Status update error:",
+        err
+      );
+
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Unable to update order status."
+      );
+    } finally {
+      setUpdatingStatus(null);
+    }
+  }
+
+
+  // ============================================================
+  // QUOTATION
+  // ============================================================
+
+  function getCustomerBudget(order: Order | null) {
+    return order?.consultation?.budget || "Not specified";
+  }
+
+  function openOrder(order: Order) {
+    setSelectedOrder(order);
+
+    setQuotationAmount(
+      order.quotation_status &&
+      order.amount !== null &&
+      order.amount !== undefined
+        ? String(order.amount)
+        : ""
+    );
+
+    setQuotationDeliveryFee(
+      order.delivery_fee !== null &&
+      order.delivery_fee !== undefined
+        ? String(order.delivery_fee)
+        : "0"
+    );
+
+    setQuotationStatus(
+      order.quotation_status || "QUOTED"
+    );
+
+    setQuotationNotes(
+      order.quotation_notes || ""
+    );
+
+    setError("");
+  }
+
+  async function saveQuotation() {
+    if (!selectedOrder) return;
+
+    const quotedAmount = Number(quotationAmount);
+    const deliveryFee = Number(
+      quotationDeliveryFee || 0
+    );
+
+    if (
+      !Number.isFinite(quotedAmount) ||
+      quotedAmount < 0
+    ) {
+      setError("Please enter a valid quotation amount.");
+      return;
+    }
+
+    if (
+      !Number.isFinite(deliveryFee) ||
+      deliveryFee < 0
+    ) {
+      setError("Please enter a valid delivery fee.");
+      return;
+    }
+
+    try {
+      setSavingQuotation(true);
+      setError("");
+
+      const response = await fetch(
+        `/api/orders/${encodeURIComponent(
+          selectedOrder.id
+        )}/quotation`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            quoted_amount: quotedAmount,
+            delivery_fee: deliveryFee,
+            quotation_status: quotationStatus,
+            quotation_notes: quotationNotes.trim(),
+          }),
+        }
+      );
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          result?.error || "Unable to save quotation."
+        );
+      }
+
+      if (!result?.order) {
+        throw new Error(
+          "Quotation saved, but the updated order was not returned."
+        );
+      }
+
+      const updatedOrder: Order = result.order;
+
+      setOrders((current) =>
+        current.map((order) =>
+          order.id === updatedOrder.id
+            ? { ...order, ...updatedOrder }
+            : order
+        )
+      );
+
+      setSelectedOrder((current) =>
+        current && current.id === updatedOrder.id
+          ? { ...current, ...updatedOrder }
+          : current
+      );
+
+      setQuotationAmount(
+        String(updatedOrder.amount ?? quotedAmount)
+      );
+
+      setQuotationDeliveryFee(
+        String(updatedOrder.delivery_fee ?? deliveryFee)
+      );
+
+      setQuotationStatus(
+        updatedOrder.quotation_status ||
+          quotationStatus
+      );
+
+      setQuotationNotes(
+        updatedOrder.quotation_notes ||
+          quotationNotes.trim()
+      );
+    } catch (err) {
+      console.error("Quotation save error:", err);
+
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Unable to save quotation."
+      );
+    } finally {
+      setSavingQuotation(false);
+    }
+  }
+
+  // ============================================================
+  // SEARCH
+  // ============================================================
+
+  const filteredOrders = useMemo(() => {
+    const value =
+      search.trim().toLowerCase();
+
+    if (!value) {
+      return orders;
+    }
+
+    return orders.filter((order) => {
+      return (
+        order.order_no
+          ?.toLowerCase()
+          .includes(value) ||
+
+        order.title
+          ?.toLowerCase()
+          .includes(value) ||
+
+        order.status
+          ?.toLowerCase()
+          .includes(value) ||
+
+        order.customer_name
+          ?.toLowerCase()
+          .includes(value) ||
+
+        order.customer_email
+          ?.toLowerCase()
+          .includes(value) ||
+
+        order.customer_phone
+          ?.toLowerCase()
+          .includes(value) ||
+
+        order.consultation?.full_name
+          ?.toLowerCase()
+          .includes(value) ||
+
+        order.consultation?.phone
+          ?.toLowerCase()
+          .includes(value) ||
+
+        order.consultation?.event_type
+          ?.toLowerCase()
+          .includes(value) ||
+
+        order.consultation?.venue
+          ?.toLowerCase()
+          .includes(value) ||
+
+        order.order_items?.some(
+          (item) =>
+            item.name
+              ?.toLowerCase()
+              .includes(value)
+        )
+      );
+    });
+  }, [orders, search]);
+
+  // ============================================================
+  // STATISTICS
+  // ============================================================
+
+  const totalOrders = orders.length;
+
+  const pendingOrders = orders.filter(
+    (order) =>
+      order.status?.toUpperCase() ===
+      "IN REVIEW"
+  ).length;
+
+  const preparingOrders = orders.filter(
+    (order) =>
+      order.status?.toUpperCase() ===
+      "PREPARING"
+  ).length;
+
+  const completedOrders = orders.filter(
+    (order) =>
+      order.status?.toUpperCase() ===
+      "COMPLETED"
+  ).length;
+
+  // ============================================================
+  // EXPORT
+  // ============================================================
+
+  function exportOrders() {
+    if (!orders.length) {
+      return;
+    }
+
+    const headers = [
+      "Order Number",
+      "Customer",
+      "Phone",
+      "Email",
+      "Service",
+      "Items",
+      "Order Date",
+      "Delivery Type",
+      "Delivery Address",
+      "Amount",
+      "Customer Budget",
+      "Quotation Status",
+      "Quotation Notes",
+      "Quoted Amount",
+      "Delivery Fee",
+      "Total",
+      "Payment Status",
+      "Status",
+    ];
+
+    const rows = orders.map((order) => {
+      const items =
+        order.order_items
+          ?.map(
+            (item) =>
+              `${item.name} ${
+                item.selected_size
+                  ? `(${item.selected_size})`
+                  : ""
+              } x${item.quantity}`
+          )
+          .join(" | ") ||
+        (order.consultation
+          ? `Event Concierge - ${
+              order.consultation.event_type ||
+              "Catering"
+            }`
+          : "");
+
+      return [
+        order.order_no,
+
+        order.customer_name ||
+          order.consultation?.full_name ||
+          "Guest",
+
+        order.customer_phone ||
+          order.consultation?.phone ||
+          "",
+
+        order.customer_email ||
+          order.consultation?.email ||
+          "",
+
+        order.title,
+
+        items,
+
+        order.order_date || "",
+
+        order.delivery_type || "",
+
+        order.delivery_address ||
+          order.consultation?.venue ||
+          "",
+
+        order.total ??
+          order.amount ??
+          0,
+
+        order.consultation?.budget || "",
+
+        order.quotation_status || "",
+
+        order.quotation_notes || "",
+
+        order.amount ?? 0,
+
+        order.delivery_fee ?? 0,
+
+        order.total ??
+          order.amount ??
+          0,
+
+        order.payment_status || "",
+
+        order.status || "",
+      ];
+    });
+
+    const csv = [
+      headers,
+      ...rows,
+    ]
+      .map((row) =>
+        row
+          .map(
+            (value) =>
+              `"${String(
+                value ?? ""
+              ).replace(
+                /"/g,
+                '""'
+              )}"`
+          )
+          .join(",")
+      )
+      .join("\n");
+
+    const blob = new Blob(
+      [csv],
+      {
+        type:
+          "text/csv;charset=utf-8;",
+      }
+    );
+
+    const url =
+      URL.createObjectURL(blob);
+
+    const link =
+      document.createElement("a");
+
+    link.href = url;
+    link.download =
+      "rhennie-orders.csv";
+
+    document.body.appendChild(link);
+
+    link.click();
+
+    document.body.removeChild(link);
+
+    URL.revokeObjectURL(url);
+  }
+
+  // ============================================================
+  // LOADING
+  // ============================================================
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-[#080808] px-6 py-16 text-white">
-        <div className="mx-auto max-w-7xl text-center">
-          <p className="text-sm uppercase tracking-[0.3em] text-[#D4AF37]">
-            Admin Orders
-          </p>
+      <main className="min-h-screen bg-[#090909] px-4 py-12 text-white sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-7xl">
+          <div className="rounded-[28px] border border-white/10 bg-[#111111] p-12 text-center">
+            <div className="mx-auto h-10 w-10 animate-spin rounded-full border-2 border-[#D4AF37]/20 border-t-[#D4AF37]" />
 
-          <h1 className="mt-4 text-4xl font-bold">
-            Loading Orders...
-          </h1>
-
-          <p className="mt-3 text-[#888888]">
-            Please wait while we load your orders.
-          </p>
+            <p className="mt-5 text-sm text-white/60">
+              Loading Rhennie Studio orders...
+            </p>
+          </div>
         </div>
       </main>
     );
   }
 
+  // ============================================================
+  // MAIN PAGE
+  // ============================================================
+
   return (
-    <main className="min-h-screen bg-[#080808] px-5 py-10 text-white md:px-8 lg:px-12">
+    <main className="min-h-screen bg-[#090909] px-4 py-6 text-white sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl">
 
-        {/* HEADER */}
-        <div className="mb-10 flex flex-col justify-between gap-6 md:flex-row md:items-end">
-          <div>
-            <span className="inline-block rounded-full border border-[#D4AF37]/30 bg-[#111111] px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-[#D4AF37]">
-              Rhennie Studio
-            </span>
+        {/* ======================================================
+            HEADER
+        ======================================================= */}
 
-            <h1 className="mt-5 text-4xl font-bold md:text-5xl">
+        <div className="mb-8 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-[0.35em] text-[#D4AF37]">
+              Rhennie Studio
+            </p>
+
+            <h1 className="mt-2 font-serif text-4xl font-bold tracking-tight sm:text-5xl">
               Orders
             </h1>
 
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-[#999999]">
-              Manage customer orders, update order progress
-              and keep track of every request.
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-white/45">
+              Manage customer orders,
+              monitor payment and delivery
+              information, and keep track
+              of every request.
             </p>
           </div>
 
-          <button
-            type="button"
-            onClick={loadOrders}
-            className="rounded-xl border border-[#D4AF37]/30 bg-[#111111] px-5 py-3 text-sm font-semibold text-[#D4AF37] transition hover:bg-[#D4AF37] hover:text-black"
-          >
-            ↻ Refresh Orders
-          </button>
+          <div className="flex flex-wrap gap-3">
+
+            <button
+              type="button"
+              onClick={() =>
+                loadOrders(true)
+              }
+              disabled={refreshing}
+              className="rounded-xl border border-white/10 bg-[#111111] px-5 py-3 text-xs font-bold uppercase tracking-[0.15em] text-white transition hover:border-[#D4AF37]/50 hover:text-[#D4AF37] disabled:opacity-50"
+            >
+              {refreshing
+                ? "Refreshing..."
+                : "↻ Refresh Orders"}
+            </button>
+
+            <button
+              type="button"
+              onClick={exportOrders}
+              disabled={!orders.length}
+              className="rounded-xl bg-[#D4AF37] px-5 py-3 text-xs font-bold uppercase tracking-[0.15em] text-black transition hover:bg-[#E5C65A] disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Export Orders
+            </button>
+
+          </div>
         </div>
 
-        {/* ERROR */}
+        {/* ======================================================
+            ERROR
+        ======================================================= */}
+
         {error && (
-          <div className="mb-6 rounded-2xl border border-red-500/30 bg-red-500/10 p-5">
-            <p className="text-sm font-semibold text-red-300">
-              {error}
-            </p>
+          <div className="mb-6 rounded-2xl border border-red-500/20 bg-red-500/10 px-5 py-4 text-sm text-red-300">
+            {error}
           </div>
         )}
 
-        {/* ORDER COUNT */}
-        <div className="mb-6 flex items-center justify-between border-b border-white/10 pb-5">
-          <div>
-            <p className="text-xs uppercase tracking-[0.25em] text-[#777777]">
+        {/* ======================================================
+            STATS
+        ======================================================= */}
+
+        <div className="mb-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
+
+          <div className="rounded-2xl border border-white/10 bg-[#111111] p-5">
+            <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-white/35">
               Total Orders
             </p>
 
-            <p className="mt-1 text-2xl font-bold text-[#D4AF37]">
-              {orders.length}
+            <p className="mt-2 text-3xl font-bold text-white">
+              {totalOrders}
             </p>
           </div>
+
+          <div className="rounded-2xl border border-white/10 bg-[#111111] p-5">
+            <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-white/35">
+              In Review
+            </p>
+
+            <p className="mt-2 text-3xl font-bold text-[#D4AF37]">
+              {pendingOrders}
+            </p>
+          </div>
+
+          <div className="rounded-2xl border border-white/10 bg-[#111111] p-5">
+            <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-white/35">
+              Preparing
+            </p>
+
+            <p className="mt-2 text-3xl font-bold text-yellow-400">
+              {preparingOrders}
+            </p>
+          </div>
+
+          <div className="rounded-2xl border border-white/10 bg-[#111111] p-5">
+            <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-white/35">
+              Completed
+            </p>
+
+            <p className="mt-2 text-3xl font-bold text-green-400">
+              {completedOrders}
+            </p>
+          </div>
+
         </div>
 
-        {/* EMPTY */}
-        {orders.length === 0 && (
-          <div className="rounded-3xl border border-white/10 bg-[#111111] px-6 py-20 text-center">
-            <div className="text-4xl">
-              📦
-            </div>
+        {/* ======================================================
+            SEARCH
+        ======================================================= */}
 
-            <h2 className="mt-5 text-2xl font-bold">
-              No Orders Yet
+        <div className="mb-6">
+          <input
+            type="search"
+            value={search}
+            onChange={(event) =>
+              setSearch(
+                event.target.value
+              )
+            }
+            placeholder="Search order number, customer, phone, meal, event..."
+            className="min-h-[50px] w-full rounded-2xl border border-white/10 bg-[#111111] px-5 text-sm text-white outline-none placeholder:text-white/25 focus:border-[#D4AF37]"
+          />
+        </div>
+
+        {/* ======================================================
+            EMPTY
+        ======================================================= */}
+
+        {filteredOrders.length === 0 && (
+          <div className="rounded-[28px] border border-white/10 bg-[#111111] px-6 py-16 text-center">
+
+            <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-[#D4AF37]">
+              Rhennie Studio
+            </p>
+
+            <h2 className="mt-3 font-serif text-2xl font-bold">
+              {orders.length === 0
+                ? "No orders yet"
+                : "No matching orders"}
             </h2>
 
-            <p className="mt-3 text-sm text-[#888888]">
-              New customer orders will appear here.
+            <p className="mx-auto mt-3 max-w-lg text-sm leading-6 text-white/40">
+              {orders.length === 0
+                ? "New customer orders will appear here automatically."
+                : "Try another customer name, order number, phone number, meal name or event."}
             </p>
+
           </div>
         )}
 
-        {/* ORDERS */}
-        <div className="space-y-6">
-          {orders.map((order) => {
-            const consultation =
-              getConsultation(order.consultation);
+        {/* ======================================================
+            ORDER CARDS
+        ======================================================= */}
 
-            const statusIndex =
-              getStatusIndex(order.status);
+        {filteredOrders.length > 0 && (
+          <div className="space-y-5">
 
-            const isCancelled =
-              order.status?.toUpperCase() ===
-              "CANCELLED";
+            {filteredOrders.map((order) => {
+              const isCancelled =
+                order.status?.toUpperCase() ===
+                "CANCELLED";
 
-            return (
-              <div
-                key={order.id}
-                className="overflow-hidden rounded-3xl border border-[#D4AF37]/20 bg-[#111111]"
-              >
+              const isCatering =
+                !!order.consultation;
 
-                {/* ORDER TOP */}
-                <div className="border-b border-white/10 p-6 md:p-8">
-                  <div className="flex flex-col justify-between gap-6 lg:flex-row lg:items-start">
+              const customerName =
+                order.customer_name ||
+                order.consultation?.full_name ||
+                "Guest";
 
-                    <div>
-                      <p className="text-xs font-bold uppercase tracking-[0.25em] text-[#D4AF37]">
-                        {order.order_no}
-                      </p>
+              const customerPhone =
+                order.customer_phone ||
+                order.consultation?.phone ||
+                "—";
 
-                      <h2 className="mt-3 text-2xl font-bold md:text-3xl">
-                        {order.title}
-                      </h2>
+              const customerEmail =
+                order.customer_email ||
+                order.consultation?.email ||
+                "—";
 
-                      <p className="mt-2 text-sm text-[#777777]">
-                        Created{" "}
-                        {formatDate(order.created_at)}
-                      </p>
-                    </div>
+              const amount =
+                order.total ??
+                order.amount ??
+                0;
 
-                    <div className="lg:text-right">
-                      <p className="text-xs uppercase tracking-[0.25em] text-[#666666]">
-                        Order Value
-                      </p>
+              return (
+                <article
+                  key={order.id}
+                  className="overflow-hidden rounded-[28px] border border-white/10 bg-[#111111]"
+                >
 
-                      <p className="mt-1 text-3xl font-bold text-[#D4AF37]">
-                        {formatAmount(order.amount)}
-                      </p>
+                  {/* ==================================================
+                      ORDER TOP
+                  =================================================== */}
 
-                      <span
-                        className={`mt-3 inline-block rounded-full border px-4 py-1.5 text-xs font-bold uppercase tracking-wider ${getStatusBadgeClass(
-                          order.status
-                        )}`}
-                      >
-                        {getStatusLabel(order.status)}
-                      </span>
-                    </div>
+                  <div className="border-b border-white/10 p-5 sm:p-7">
 
-                  </div>
-                </div>
+                    <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
 
-                {/* CUSTOMER / EVENT DETAILS */}
-                {consultation && (
-                  <div className="grid gap-6 border-b border-white/10 p-6 md:grid-cols-2 md:p-8 lg:grid-cols-3">
+                      <div className="min-w-0">
 
-                    <div>
-                      <p className="text-[10px] uppercase tracking-[0.25em] text-[#666666]">
-                        Customer
-                      </p>
-
-                      <p className="mt-2 font-semibold">
-                        {consultation.full_name ||
-                          "Not provided"}
-                      </p>
-
-                      <p className="mt-1 text-sm text-[#888888]">
-                        {consultation.email ||
-                          "No email"}
-                      </p>
-
-                      <p className="mt-1 text-sm text-[#888888]">
-                        {consultation.phone ||
-                          "No phone"}
-                      </p>
-                    </div>
-
-                    <div>
-                      <p className="text-[10px] uppercase tracking-[0.25em] text-[#666666]">
-                        Event
-                      </p>
-
-                      <p className="mt-2 font-semibold">
-                        {consultation.event_type ||
-                          "Not specified"}
-                      </p>
-
-                      <p className="mt-1 text-sm text-[#888888]">
-                        {consultation.event_date
-                          ? formatDate(
-                              consultation.event_date
-                            )
-                          : "Date not specified"}
-                      </p>
-
-                      <p className="mt-1 text-sm text-[#888888]">
-                        {consultation.event_time ||
-                          "Time not specified"}
-                      </p>
-                    </div>
-
-                    <div>
-                      <p className="text-[10px] uppercase tracking-[0.25em] text-[#666666]">
-                        Guests / Venue
-                      </p>
-
-                      <p className="mt-2 font-semibold">
-                        {consultation.guest_count
-                          ? `${consultation.guest_count} guests`
-                          : "Guest count not provided"}
-                      </p>
-
-                      <p className="mt-1 text-sm text-[#888888]">
-                        {consultation.venue ||
-                          "Venue not provided"}
-                      </p>
-                    </div>
-
-                    {consultation.budget && (
-                      <div>
-                        <p className="text-[10px] uppercase tracking-[0.25em] text-[#666666]">
-                          Budget
+                        <p className="text-[9px] font-bold uppercase tracking-[0.25em] text-[#D4AF37]">
+                          {order.order_no}
                         </p>
 
-                        <p className="mt-2 font-semibold text-[#D4AF37]">
-                          {formatAmount(
-                            consultation.budget
+                        <h2 className="mt-2 font-serif text-2xl font-bold sm:text-3xl">
+                          {order.title ||
+                            "Online Food Order"}
+                        </h2>
+
+                        <p className="mt-2 text-xs text-white/35">
+                          Created{" "}
+                          {formatDateTime(
+                            order.created_at
                           )}
                         </p>
+
                       </div>
-                    )}
 
-                    {consultation.special_request && (
-                      <div className="md:col-span-2">
-                        <p className="text-[10px] uppercase tracking-[0.25em] text-[#666666]">
-                          Special Requests
+                      <div className="xl:text-right">
+
+                        <p className="text-[8px] font-bold uppercase tracking-[0.25em] text-white/30">
+                          Order Value
                         </p>
 
-                        <p className="mt-2 text-sm leading-6 text-[#AAAAAA]">
-                          {consultation.special_request}
-                        </p>
-                      </div>
-                    )}
-
-                  </div>
-                )}
-
-                {/* PROGRESS */}
-                {!isCancelled && (
-                  <div className="p-6 md:p-8">
-
-                    <div className="mb-6 flex items-center justify-between">
-                      <div>
-                        <p className="text-xs uppercase tracking-[0.25em] text-[#666666]">
-                          Order Progress
+                        <p className="mt-1 text-3xl font-extrabold text-[#D4AF37]">
+                          {formatAmount(
+                            amount
+                          )}
                         </p>
 
-                        <p className="mt-1 font-semibold">
+                        <span
+                          className={`mt-2 inline-flex rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-wider ${getStatusClass(
+                            order.status
+                          )}`}
+                        >
                           {getStatusLabel(
                             order.status
                           )}
-                        </p>
+                        </span>
+
                       </div>
 
-                      <div className="text-right">
-                        <p className="text-[10px] uppercase tracking-[0.2em] text-[#666666]">
-                          Stage
-                        </p>
+                    </div>
 
-                        <p className="mt-1 font-bold text-[#D4AF37]">
-                          {statusIndex + 1} of{" "}
-                          {STATUS_STEPS.length}
+                    {/* ==================================================
+                        PROGRESS
+                    =================================================== */}
+
+                    {!isCancelled && (
+                      <div className="mt-7">
+
+                        <div className="flex items-center justify-between">
+
+                          <p className="text-[8px] font-bold uppercase tracking-[0.25em] text-white/30">
+                            Order Progress
+                          </p>
+
+                          <p className="text-xs font-bold text-[#D4AF37]">
+                            Stage{" "}
+                            {getStatusIndex(
+                              order.status
+                            ) + 1}{" "}
+                            of{" "}
+                            {STATUS_STEPS.length}
+                          </p>
+
+                        </div>
+
+                        <div className="relative mt-3 h-1 overflow-hidden rounded-full bg-white/10">
+
+                          <div
+                            className={`h-full bg-[#D4AF37] transition-all duration-500 ${getProgressWidth(
+                              order.status
+                            )}`}
+                          />
+
+                        </div>
+
+                        <div className="mt-4 grid grid-cols-5 gap-2">
+
+                          {STATUS_STEPS.map(
+                            (
+                              step,
+                              index
+                            ) => {
+
+                              const completed =
+                                isStepCompleted(
+                                  order.status,
+                                  index
+                                );
+
+                              return (
+                                <div
+                                  key={step}
+                                  className="text-center"
+                                >
+
+                                  <div
+                                    className={`mx-auto flex h-7 w-7 items-center justify-center rounded-full border text-[10px] font-bold ${
+                                      completed
+                                        ? "border-[#D4AF37] bg-[#D4AF37] text-black"
+                                        : "border-white/10 bg-[#181818] text-white/30"
+                                    }`}
+                                  >
+                                    {completed
+                                      ? "✓"
+                                      : index + 1}
+                                  </div>
+
+                                  <p
+                                    className={`mt-2 text-[7px] uppercase tracking-wider sm:text-[8px] ${
+                                      completed
+                                        ? "text-[#D4AF37]"
+                                        : "text-white/25"
+                                    }`}
+                                  >
+                                    {step}
+                                  </p>
+
+                                </div>
+                              );
+                            }
+                          )}
+
+                        </div>
+
+                      </div>
+                    )}
+
+                    {isCancelled && (
+                      <div className="mt-6 rounded-2xl border border-red-500/20 bg-red-500/5 p-4">
+                        <p className="text-sm text-red-300">
+                          This order has been
+                          cancelled.
                         </p>
                       </div>
+                    )}
+
+                  </div>
+
+                  {/* ==================================================
+                      CUSTOMER + ORDER DETAILS
+                  =================================================== */}
+
+                  <div className="grid gap-0 lg:grid-cols-2">
+
+                    {/* ==================================================
+                        CUSTOMER
+                    =================================================== */}
+
+                    <div className="border-b border-white/10 p-5 lg:border-b-0 lg:border-r sm:p-7">
+
+                      <p className="text-[8px] font-bold uppercase tracking-[0.25em] text-[#D4AF37]">
+                        Customer
+                      </p>
+
+                      <h3 className="mt-2 text-lg font-bold">
+                        {customerName}
+                      </h3>
+
+                      <div className="mt-4 space-y-2 text-xs text-white/45">
+
+                        <p>
+                          <span className="text-white/25">
+                            Phone:
+                          </span>{" "}
+                          {customerPhone}
+                        </p>
+
+                        <p className="break-all">
+                          <span className="text-white/25">
+                            Email:
+                          </span>{" "}
+                          {customerEmail}
+                        </p>
+
+                      </div>
+
+                      {!isCatering ? (
+                        <div className="mt-5">
+
+                          <p className="text-[8px] font-bold uppercase tracking-[0.2em] text-white/25">
+                            Receive Method
+                          </p>
+
+                          <p className="mt-1 text-sm font-semibold">
+                            {order.delivery_type
+                              ? order.delivery_type
+                                  .toLowerCase()
+                                  .replace(
+                                    /^\w/,
+                                    (letter) =>
+                                      letter.toUpperCase()
+                                  )
+                              : "—"}
+                          </p>
+
+                        </div>
+                      ) : (
+                        <div className="mt-5">
+
+                          <p className="text-[8px] font-bold uppercase tracking-[0.2em] text-white/25">
+                            Service Type
+                          </p>
+
+                          <p className="mt-1 text-sm font-semibold text-[#D4AF37]">
+                            Event Concierge
+                          </p>
+
+                        </div>
+                      )}
+
                     </div>
 
-                    {/* BAR */}
-                    <div className="relative h-1 overflow-hidden rounded-full bg-[#2A2A2A]">
-                      <div
-                        className="h-full bg-[#D4AF37] transition-all duration-500"
-                        style={{
-                          width: `${
-                            ((statusIndex + 1) /
-                              STATUS_STEPS.length) *
-                            100
-                          }%`,
-                        }}
-                      />
-                    </div>
+                    {/* ==================================================
+                        FOOD ITEMS OR CATERING REQUEST
+                    =================================================== */}
 
-                    {/* STEPS */}
-                    <div className="mt-5 grid grid-cols-5 gap-2">
-                      {STATUS_STEPS.map(
-                        (step, index) => {
-                          const completed =
-                            statusIndex >= index;
+                    <div className="p-5 sm:p-7">
 
-                          return (
-                            <div
-                              key={step}
-                              className="text-center"
-                            >
-                              <div
-                                className={`mx-auto flex h-8 w-8 items-center justify-center rounded-full border text-xs font-bold ${
-                                  completed
-                                    ? "border-[#D4AF37] bg-[#D4AF37] text-black"
-                                    : "border-[#333333] bg-[#181818] text-[#666666]"
-                                }`}
-                              >
-                                {completed
-                                  ? "✓"
-                                  : index + 1}
+                      <div className="flex items-center justify-between">
+
+                        <p className="text-[8px] font-bold uppercase tracking-[0.25em] text-[#D4AF37]">
+                          {isCatering
+                            ? "Catering Request"
+                            : "Ordered Items"}
+                        </p>
+
+                        <span className="text-[10px] text-white/30">
+                          {isCatering
+                            ? "Event Concierge"
+                            : `${
+                                order.order_items
+                                  ?.length || 0
+                              } line ${
+                                order.order_items
+                                  ?.length ===
+                                1
+                                  ? "item"
+                                  : "items"
+                              }`}
+                        </span>
+
+                      </div>
+
+                      <div className="mt-4">
+
+                        {/* ==================================================
+                            NORMAL FOOD ORDER
+                        =================================================== */}
+
+                        {!isCatering &&
+                        order.order_items &&
+                        order.order_items.length >
+                          0 ? (
+                          <div className="space-y-3">
+
+                            {order.order_items
+                              .slice(0, 4)
+                              .map((item) => (
+                                <div
+                                  key={item.id}
+                                  className="flex items-start justify-between gap-4 rounded-xl border border-white/5 bg-white/[0.02] p-3"
+                                >
+
+                                  <div className="min-w-0">
+
+                                    <p className="text-sm font-semibold">
+                                      {item.name}
+                                    </p>
+
+                                    <p className="mt-1 text-[10px] text-white/35">
+                                      {item.selected_size &&
+                                        `Size: ${item.selected_size} • `}
+
+                                      Qty:{" "}
+                                      {
+                                        item.quantity
+                                      }
+                                    </p>
+
+                                  </div>
+
+                                  <p className="shrink-0 text-sm font-bold text-[#D4AF37]">
+                                    {formatAmount(
+                                      item.item_total
+                                    )}
+                                  </p>
+
+                                </div>
+                              ))}
+
+                            {order.order_items.length >
+                              4 && (
+                              <p className="text-center text-[10px] text-white/30">
+                                +
+                                {order.order_items.length -
+                                  4}{" "}
+                                more item
+                                {order.order_items.length -
+                                  4 ===
+                                1
+                                  ? ""
+                                  : "s"}
+                              </p>
+                            )}
+
+                          </div>
+
+                        ) : isCatering ? (
+
+                          /* ==================================================
+                              CATERING REQUEST
+                          =================================================== */
+
+                          <div className="rounded-2xl border border-[#D4AF37]/20 bg-[#D4AF37]/5 p-4">
+
+                            <div className="grid gap-4 sm:grid-cols-2">
+
+                              <div>
+                                <p className="text-[8px] font-bold uppercase tracking-[0.2em] text-white/30">
+                                  Event
+                                </p>
+
+                                <p className="mt-1 text-sm font-semibold text-white">
+                                  {order.consultation
+                                    ?.event_type ||
+                                    "—"}
+                                </p>
                               </div>
 
-                              <p
-                                className={`mt-2 text-[8px] uppercase tracking-wider md:text-[10px] ${
-                                  completed
-                                    ? "text-[#D4AF37]"
-                                    : "text-[#555555]"
-                                }`}
-                              >
-                                {step}
-                              </p>
+                              <div>
+                                <p className="text-[8px] font-bold uppercase tracking-[0.2em] text-white/30">
+                                  Guests
+                                </p>
+
+                                <p className="mt-1 text-sm font-semibold text-white">
+                                  {order.consultation
+                                    ?.guest_count
+                                    ? `${order.consultation.guest_count} guests`
+                                    : "—"}
+                                </p>
+                              </div>
+
+                              <div>
+                                <p className="text-[8px] font-bold uppercase tracking-[0.2em] text-white/30">
+                                  Event Date
+                                </p>
+
+                                <p className="mt-1 text-sm font-semibold text-white">
+                                  {formatDate(
+                                    order.consultation
+                                      ?.event_date
+                                  )}
+                                </p>
+                              </div>
+
+                              <div>
+                                <p className="text-[8px] font-bold uppercase tracking-[0.2em] text-white/30">
+                                  Event Time
+                                </p>
+
+                                <p className="mt-1 text-sm font-semibold text-white">
+                                  {order.consultation
+                                    ?.event_time ||
+                                    "—"}
+                                </p>
+                              </div>
+
+                              <div className="sm:col-span-2">
+                                <p className="text-[8px] font-bold uppercase tracking-[0.2em] text-white/30">
+                                  Venue
+                                </p>
+
+                                <p className="mt-1 text-sm font-semibold text-white">
+                                  {order.consultation
+                                    ?.venue ||
+                                    "—"}
+                                </p>
+                              </div>
+
+                              <div className="sm:col-span-2">
+                                <p className="text-[8px] font-bold uppercase tracking-[0.2em] text-white/30">
+                                  Budget
+                                </p>
+
+                                <p className="mt-1 text-lg font-bold text-[#D4AF37]">
+                                  {order.consultation
+                                    ?.budget ||
+                                    "Not specified"}
+                                </p>
+                              </div>
+
+                              {order.consultation
+                                ?.special_request && (
+                                <div className="sm:col-span-2">
+
+                                  <p className="text-[8px] font-bold uppercase tracking-[0.2em] text-white/30">
+                                    Special Request
+                                  </p>
+
+                                  <p className="mt-1 text-sm leading-6 text-white/70">
+                                    {
+                                      order
+                                        .consultation
+                                        .special_request
+                                    }
+                                  </p>
+
+                                </div>
+                              )}
+
                             </div>
-                          );
-                        }
-                      )}
+
+                          </div>
+
+                        ) : (
+
+                          /* ==================================================
+                              EMPTY FOOD ORDER
+                          =================================================== */
+
+                          <div className="rounded-xl border border-white/5 bg-white/[0.02] p-4 text-xs text-white/30">
+                            No item details
+                            available for
+                            this order.
+                          </div>
+                        )}
+
+                      </div>
+
                     </div>
-                  </div>
-                )}
-
-                {/* CANCELLED */}
-                {isCancelled && (
-                  <div className="p-6 md:p-8">
-                    <div className="rounded-2xl border border-red-500/20 bg-red-500/5 p-5">
-                      <p className="text-sm font-semibold text-red-300">
-                        This order has been cancelled.
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                {/* STATUS CONTROL */}
-                <div className="border-t border-white/10 bg-[#0D0D0D] p-6 md:p-8">
-                  <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-
-                    <div>
-                      <p className="text-xs uppercase tracking-[0.25em] text-[#666666]">
-                        Update Order Status
-                      </p>
-
-                      <p className="mt-1 text-sm text-[#888888]">
-                        Changing this will also update the
-                        customer's order tracker.
-                      </p>
-                    </div>
-
-                    <select
-                      value={
-                        order.status || "IN REVIEW"
-                      }
-                      disabled={
-                        updatingOrder === order.id
-                      }
-                      onChange={(event) =>
-                        updateOrderStatus(
-                          order.id,
-                          event.target.value
-                        )
-                      }
-                      className="min-w-[220px] rounded-xl border border-[#D4AF37]/30 bg-[#151515] px-4 py-3 text-sm font-semibold text-[#D4AF37] outline-none transition focus:border-[#D4AF37]"
-                    >
-                      {STATUS_OPTIONS.map(
-                        (status) => (
-                          <option
-                            key={status}
-                            value={status}
-                            className="bg-[#151515] text-white"
-                          >
-                            {getStatusLabel(status)}
-                          </option>
-                        )
-                      )}
-                    </select>
 
                   </div>
 
-                  {updatingOrder === order.id && (
-                    <p className="mt-4 text-right text-xs text-[#D4AF37]">
-                      Updating order status...
-                    </p>
-                  )}
-                </div>
+                  {/* ==================================================
+                      STATUS CONTROL
+                  =================================================== */}
 
-              </div>
-            );
-          })}
-        </div>
+                  <div className="border-t border-white/10 bg-black/20 p-5 sm:p-7">
+
+                    <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+
+                      <div>
+
+                        <p className="text-[8px] font-bold uppercase tracking-[0.25em] text-white/30">
+                          Update Order Status
+                        </p>
+
+                        <p className="mt-1 text-xs text-white/40">
+                          Changing this will also
+                          update the customer's
+                          order tracker.
+                        </p>
+
+                      </div>
+
+                      <div className="flex flex-col gap-3 sm:flex-row">
+
+                        <select
+                          value={
+                            order.status ||
+                            "IN REVIEW"
+                          }
+                          onChange={(event) =>
+                            updateOrderStatus(
+                              order.id,
+                              event.target.value
+                            )
+                          }
+                          disabled={
+                            updatingStatus ===
+                            order.id
+                          }
+                          className="min-h-[44px] rounded-xl border border-white/10 bg-[#171717] px-4 text-xs font-bold text-white outline-none focus:border-[#D4AF37] disabled:opacity-50"
+                        >
+
+                          {STATUS_OPTIONS.map(
+                            (status) => (
+                              <option
+                                key={status}
+                                value={status}
+                                className="bg-[#171717]"
+                              >
+                                {getStatusLabel(
+                                  status
+                                )}
+                              </option>
+                            )
+                          )}
+
+                        </select>
+
+                        <button
+                          type="button"
+                          onClick={() =>
+                            openOrder(order)
+                          }
+                          className="min-h-[44px] rounded-xl border border-[#D4AF37]/30 bg-[#D4AF37]/10 px-6 text-xs font-bold uppercase tracking-[0.12em] text-[#D4AF37] transition hover:bg-[#D4AF37] hover:text-black"
+                        >
+                          View Full Order
+                        </button>
+
+                      </div>
+
+                    </div>
+
+                  </div>
+
+                </article>
+              );
+            })}
+
+          </div>
+        )}
 
       </div>
+
+      {/* ============================================================
+          FULL ORDER MODAL
+      ============================================================ */}
+
+      {selectedOrder && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm"
+          onClick={() =>
+            setSelectedOrder(null)
+          }
+        >
+
+          <div
+            className="max-h-[92vh] w-full max-w-4xl overflow-y-auto rounded-[28px] border border-white/10 bg-[#111111] shadow-2xl"
+            onClick={(event) =>
+              event.stopPropagation()
+            }
+          >
+
+            {/* ======================================================
+                MODAL HEADER
+            ======================================================= */}
+
+            <div className="sticky top-0 z-10 flex items-center justify-between border-b border-white/10 bg-[#111111] px-5 py-5 sm:px-7">
+
+              <div>
+
+                <p className="text-[8px] font-bold uppercase tracking-[0.3em] text-[#D4AF37]">
+                  Rhennie Studio
+                </p>
+
+                <h2 className="mt-1 font-serif text-2xl font-bold text-white">
+                  Order Details
+                </h2>
+
+                <p className="mt-1 text-xs text-white/35">
+                  {selectedOrder.order_no}
+                </p>
+
+              </div>
+
+              <button
+                type="button"
+                onClick={() =>
+                  setSelectedOrder(null)
+                }
+                className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/5 text-xl text-white/60 transition hover:bg-white/10 hover:text-white"
+              >
+                ×
+              </button>
+
+            </div>
+
+            <div className="space-y-7 p-5 sm:p-7">
+
+              {/* ====================================================
+                  STATUS
+              ===================================================== */}
+
+              <section>
+
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+
+                  <div>
+
+                    <p className="text-[8px] font-bold uppercase tracking-[0.25em] text-white/30">
+                      Current Status
+                    </p>
+
+                    <p className="mt-1 text-lg font-bold">
+                      {getStatusLabel(
+                        selectedOrder.status
+                      )}
+                    </p>
+
+                  </div>
+
+                  <select
+                    value={
+                      selectedOrder.status ||
+                      "IN REVIEW"
+                    }
+                    onChange={(event) =>
+                      updateOrderStatus(
+                        selectedOrder.id,
+                        event.target.value
+                      )
+                    }
+                    disabled={
+                      updatingStatus ===
+                      selectedOrder.id
+                    }
+                    className="min-h-[44px] rounded-xl border border-white/10 bg-[#181818] px-4 text-xs font-bold text-white outline-none focus:border-[#D4AF37] disabled:opacity-50"
+                  >
+
+                    {STATUS_OPTIONS.map(
+                      (status) => (
+                        <option
+                          key={status}
+                          value={status}
+                          className="bg-[#181818]"
+                        >
+                          {getStatusLabel(
+                            status
+                          )}
+                        </option>
+                      )
+                    )}
+
+                  </select>
+
+                </div>
+
+              </section>
+
+              {/* ====================================================
+                  CUSTOMER
+              ===================================================== */}
+
+              <section>
+
+                <div className="mb-4">
+
+                  <p className="text-[8px] font-bold uppercase tracking-[0.25em] text-[#D4AF37]">
+                    Customer
+                  </p>
+
+                  <h3 className="mt-1 font-serif text-xl font-bold">
+                    Customer Information
+                  </h3>
+
+                </div>
+
+                <div className="grid gap-4 rounded-2xl border border-white/10 bg-white/[0.02] p-5 sm:grid-cols-2">
+
+                  <Info
+                    label="Full Name"
+                    value={
+                      selectedOrder.customer_name ||
+                      selectedOrder.consultation
+                        ?.full_name ||
+                      "Guest"
+                    }
+                  />
+
+                  <Info
+                    label="Phone"
+                    value={
+                      selectedOrder.customer_phone ||
+                      selectedOrder.consultation
+                        ?.phone ||
+                      "—"
+                    }
+                  />
+
+                  <Info
+                    label="Email"
+                    value={
+                      selectedOrder.customer_email ||
+                      selectedOrder.consultation
+                        ?.email ||
+                      "—"
+                    }
+                  />
+
+                  <Info
+                    label="Customer ID"
+                    value={
+                      selectedOrder.customer_id ||
+                      "Guest checkout"
+                    }
+                  />
+
+                </div>
+
+              </section>
+
+              {/* ====================================================
+                  ORDER CONTENT
+              ===================================================== */}
+
+              <section>
+
+                <div className="mb-4">
+
+                  <p className="text-[8px] font-bold uppercase tracking-[0.25em] text-[#D4AF37]">
+                    {selectedOrder.consultation
+                      ? "Event Concierge"
+                      : "Order"}
+                  </p>
+
+                  <h3 className="mt-1 font-serif text-xl font-bold">
+                    {selectedOrder.consultation
+                      ? "Catering Request"
+                      : "Ordered Items"}
+                  </h3>
+
+                </div>
+
+                {selectedOrder.consultation ? (
+
+                  /* ==================================================
+                      CATERING MODAL DETAILS
+                  =================================================== */
+
+                  <div className="grid gap-4 rounded-2xl border border-[#D4AF37]/20 bg-[#D4AF37]/5 p-5 sm:grid-cols-2">
+
+                    <Info
+                      label="Event Type"
+                      value={
+                        selectedOrder
+                          .consultation
+                          .event_type ||
+                        "—"
+                      }
+                    />
+
+                    <Info
+                      label="Guests"
+                      value={
+                        selectedOrder
+                          .consultation
+                          .guest_count
+                          ? `${selectedOrder.consultation.guest_count} guests`
+                          : "—"
+                      }
+                    />
+
+                    <Info
+                      label="Event Date"
+                      value={formatDate(
+                        selectedOrder
+                          .consultation
+                          .event_date
+                      )}
+                    />
+
+                    <Info
+                      label="Event Time"
+                      value={
+                        selectedOrder
+                          .consultation
+                          .event_time ||
+                        "—"
+                      }
+                    />
+
+                    <Info
+                      label="Venue"
+                      value={
+                        selectedOrder
+                          .consultation
+                          .venue ||
+                        "—"
+                      }
+                    />
+
+                    <Info
+                      label="Budget"
+                      value={
+                        selectedOrder
+                          .consultation
+                          .budget ||
+                        "Not specified"
+                      }
+                    />
+
+                    <div className="sm:col-span-2">
+
+                      <Info
+                        label="Special Request"
+                        value={
+                          selectedOrder
+                            .consultation
+                            .special_request ||
+                          "No special request."
+                        }
+                      />
+
+                    </div>
+
+                  </div>
+
+                ) : (
+
+                  /* ==================================================
+                      FOOD ORDER MODAL ITEMS
+                  =================================================== */
+
+                  <div className="overflow-hidden rounded-2xl border border-white/10">
+
+                    {selectedOrder.order_items &&
+                    selectedOrder.order_items.length >
+                      0 ? (
+
+                      <div className="divide-y divide-white/10">
+
+                        {selectedOrder.order_items.map(
+                          (item) => (
+                            <div
+                              key={item.id}
+                              className="flex flex-col gap-4 bg-white/[0.02] p-5 sm:flex-row sm:items-center sm:justify-between"
+                            >
+
+                              <div className="min-w-0">
+
+                                <p className="text-base font-bold">
+                                  {item.name}
+                                </p>
+
+                                <p className="mt-1 text-[10px] uppercase tracking-wider text-[#D4AF37]">
+                                  {item.collection ||
+                                    "Menu"}
+                                </p>
+
+                                <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-white/40">
+
+                                  <span>
+                                    Qty:{" "}
+                                    {
+                                      item.quantity
+                                    }
+                                  </span>
+
+                                  {item.selected_size && (
+                                    <span>
+                                      Size:{" "}
+                                      <strong className="text-white/70">
+                                        {
+                                          item.selected_size
+                                        }
+                                      </strong>
+                                    </span>
+                                  )}
+
+                                  <span>
+                                    Unit:{" "}
+                                    {formatAmount(
+                                      item.unit_price
+                                    )}
+                                  </span>
+
+                                </div>
+
+                              </div>
+
+                              <p className="shrink-0 text-xl font-extrabold text-[#D4AF37]">
+                                {formatAmount(
+                                  item.item_total
+                                )}
+                              </p>
+
+                            </div>
+                          )
+                        )}
+
+                      </div>
+
+                    ) : (
+
+                      <div className="p-6 text-sm text-white/35">
+                        No individual item
+                        records were returned
+                        for this food order.
+                      </div>
+
+                    )}
+
+                  </div>
+                )}
+
+              </section>
+
+
+              {/* ====================================================
+                  QUOTATION EDITOR
+              ===================================================== */}
+
+              {selectedOrder.consultation && (
+                <section>
+                  <div className="mb-4">
+                    <p className="text-[8px] font-bold uppercase tracking-[0.25em] text-[#D4AF37]">
+                      Quotation
+                    </p>
+
+                    <h3 className="mt-1 font-serif text-xl font-bold">
+                      Prepare Customer Quotation
+                    </h3>
+
+                    <p className="mt-2 text-xs leading-6 text-white/40">
+                      The customer's budget is for reference only.
+                      Enter the price Rhennie Tasty Shack will actually
+                      charge for the event.
+                    </p>
+                  </div>
+
+                  <div className="rounded-2xl border border-[#D4AF37]/20 bg-[#D4AF37]/5 p-5">
+                    <div className="grid gap-5 sm:grid-cols-2">
+
+                      <div className="sm:col-span-2">
+                        <p className="text-[8px] font-bold uppercase tracking-[0.2em] text-white/30">
+                          Customer Proposed Budget
+                        </p>
+
+                        <p className="mt-2 text-lg font-bold text-[#D4AF37]">
+                          {getCustomerBudget(selectedOrder)}
+                        </p>
+                      </div>
+
+                      <div>
+                        <label
+                          htmlFor="quotationAmount"
+                          className="mb-2 block text-[9px] font-bold uppercase tracking-[0.18em] text-white/45"
+                        >
+                          Your Quotation
+                        </label>
+
+                        <div className="relative">
+                          <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-sm font-bold text-[#D4AF37]">
+                            ₦
+                          </span>
+
+                          <input
+                            id="quotationAmount"
+                            type="number"
+                            min="0"
+                            step="1"
+                            value={quotationAmount}
+                            onChange={(event) =>
+                              setQuotationAmount(event.target.value)
+                            }
+                            placeholder="Enter your price"
+                            className="min-h-[52px] w-full rounded-xl border border-white/10 bg-[#181818] pl-9 pr-4 text-sm font-semibold text-white outline-none placeholder:text-white/20 focus:border-[#D4AF37]"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label
+                          htmlFor="quotationDeliveryFee"
+                          className="mb-2 block text-[9px] font-bold uppercase tracking-[0.18em] text-white/45"
+                        >
+                          Delivery / Logistics Fee
+                        </label>
+
+                        <div className="relative">
+                          <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-sm font-bold text-[#D4AF37]">
+                            ₦
+                          </span>
+
+                          <input
+                            id="quotationDeliveryFee"
+                            type="number"
+                            min="0"
+                            step="1"
+                            value={quotationDeliveryFee}
+                            onChange={(event) =>
+                              setQuotationDeliveryFee(event.target.value)
+                            }
+                            placeholder="0"
+                            className="min-h-[52px] w-full rounded-xl border border-white/10 bg-[#181818] pl-9 pr-4 text-sm font-semibold text-white outline-none placeholder:text-white/20 focus:border-[#D4AF37]"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label
+                          htmlFor="quotationStatus"
+                          className="mb-2 block text-[9px] font-bold uppercase tracking-[0.18em] text-white/45"
+                        >
+                          Quotation Status
+                        </label>
+
+                        <select
+                          id="quotationStatus"
+                          value={quotationStatus}
+                          onChange={(event) =>
+                            setQuotationStatus(event.target.value)
+                          }
+                          className="min-h-[52px] w-full rounded-xl border border-white/10 bg-[#181818] px-4 text-sm font-semibold text-white outline-none focus:border-[#D4AF37]"
+                        >
+                          <option value="NOT QUOTED" className="bg-[#181818]">
+                            Not Quoted
+                          </option>
+                          <option value="QUOTED" className="bg-[#181818]">
+                            Quoted
+                          </option>
+                          <option value="NEGOTIATING" className="bg-[#181818]">
+                            Negotiating
+                          </option>
+                          <option value="ACCEPTED" className="bg-[#181818]">
+                            Accepted
+                          </option>
+                          <option value="DECLINED" className="bg-[#181818]">
+                            Declined
+                          </option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-white/35">
+                          Final Total
+                        </p>
+
+                        <p className="mt-2 text-2xl font-extrabold text-[#D4AF37]">
+                          {formatAmount(
+                            (Number(quotationAmount) || 0) +
+                              (Number(quotationDeliveryFee) || 0)
+                          )}
+                        </p>
+
+                        <p className="mt-1 text-[10px] text-white/30">
+                          Quotation + delivery/logistics
+                        </p>
+                      </div>
+
+                      <div className="sm:col-span-2">
+                        <label
+                          htmlFor="quotationNotes"
+                          className="mb-2 block text-[9px] font-bold uppercase tracking-[0.18em] text-white/45"
+                        >
+                          Quotation Notes
+                          <span className="ml-1 font-normal normal-case tracking-normal text-white/25">
+                            (Optional)
+                          </span>
+                        </label>
+
+                        <textarea
+                          id="quotationNotes"
+                          value={quotationNotes}
+                          onChange={(event) =>
+                            setQuotationNotes(event.target.value)
+                          }
+                          placeholder="Add inclusions, exclusions, negotiation notes, or pricing details..."
+                          rows={4}
+                          className="w-full resize-none rounded-xl border border-white/10 bg-[#181818] px-4 py-3 text-sm leading-6 text-white outline-none placeholder:text-white/20 focus:border-[#D4AF37]"
+                        />
+                      </div>
+
+                    </div>
+
+                    <div className="mt-5 flex flex-col gap-3 border-t border-white/10 pt-5 sm:flex-row sm:items-center sm:justify-between">
+                      <div>
+                        {selectedOrder.quoted_at && (
+                          <p className="text-[10px] text-white/30">
+                            Last quoted{" "}
+                            {formatDateTime(selectedOrder.quoted_at)}
+                          </p>
+                        )}
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={saveQuotation}
+                        disabled={
+                          savingQuotation ||
+                          quotationAmount.trim() === ""
+                        }
+                        className="min-h-[48px] rounded-xl bg-[#D4AF37] px-7 text-xs font-bold uppercase tracking-[0.14em] text-black transition hover:bg-[#E5C65A] disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {savingQuotation
+                          ? "Saving Quotation..."
+                          : "Save Quotation"}
+                      </button>
+                    </div>
+                  </div>
+                </section>
+              )}
+
+              {/* ====================================================
+                  DELIVERY
+              ===================================================== */}
+
+              {!selectedOrder.consultation && (
+                <section>
+
+                  <div className="mb-4">
+
+                    <p className="text-[8px] font-bold uppercase tracking-[0.25em] text-[#D4AF37]">
+                      Fulfilment
+                    </p>
+
+                    <h3 className="mt-1 font-serif text-xl font-bold">
+                      Delivery & Pickup
+                    </h3>
+
+                  </div>
+
+                  <div className="grid gap-4 rounded-2xl border border-white/10 bg-white/[0.02] p-5 sm:grid-cols-2">
+
+                    <Info
+                      label="Order Type"
+                      value={
+                        selectedOrder.delivery_type ||
+                        "—"
+                      }
+                    />
+
+                    <Info
+                      label="Order Date"
+                      value={formatDate(
+                        selectedOrder.order_date
+                      )}
+                    />
+
+                    <div className="sm:col-span-2">
+
+                      <Info
+                        label="Delivery Address"
+                        value={
+                          selectedOrder.delivery_address ||
+                          "Not provided"
+                        }
+                      />
+
+                    </div>
+
+                    <div className="sm:col-span-2">
+
+                      <Info
+                        label="Order Notes"
+                        value={
+                          selectedOrder.notes ||
+                          "No special instructions."
+                        }
+                      />
+
+                    </div>
+
+                  </div>
+
+                </section>
+              )}
+
+              {/* ====================================================
+                  PAYMENT
+              ===================================================== */}
+
+              <section>
+
+                <div className="mb-4">
+
+                  <p className="text-[8px] font-bold uppercase tracking-[0.25em] text-[#D4AF37]">
+                    Payment
+                  </p>
+
+                  <h3 className="mt-1 font-serif text-xl font-bold">
+                    Payment Information
+                  </h3>
+
+                </div>
+
+                <div className="grid gap-4 rounded-2xl border border-white/10 bg-white/[0.02] p-5 sm:grid-cols-2">
+
+                  <Info
+                    label="Payment Status"
+                    value={
+                      selectedOrder.payment_status ||
+                      "—"
+                    }
+                  />
+
+                  <Info
+                    label="Payment Channel"
+                    value={
+                      selectedOrder.payment_channel ||
+                      "—"
+                    }
+                  />
+
+                  <div className="sm:col-span-2">
+
+                    <Info
+                      label="Payment Reference"
+                      value={
+                        selectedOrder.payment_reference ||
+                        "—"
+                      }
+                    />
+
+                  </div>
+
+                </div>
+
+              </section>
+
+
+              {/* ====================================================
+                  QUOTATION SUMMARY
+              ===================================================== */}
+
+              {selectedOrder.consultation && (
+                <section>
+                  <div className="mb-4">
+                    <p className="text-[8px] font-bold uppercase tracking-[0.25em] text-[#D4AF37]">
+                      Quotation Summary
+                    </p>
+                  </div>
+
+                  <div className="grid gap-4 rounded-2xl border border-[#D4AF37]/20 bg-[#D4AF37]/5 p-5 sm:grid-cols-2">
+                    <Info
+                      label="Customer Budget"
+                      value={getCustomerBudget(selectedOrder)}
+                    />
+
+                    <Info
+                      label="Quotation Status"
+                      value={selectedOrder.quotation_status || "NOT QUOTED"}
+                    />
+
+                    <Info
+                      label="Rhennie Quotation"
+                      value={formatAmount(selectedOrder.amount)}
+                    />
+
+                    <Info
+                      label="Delivery / Logistics Fee"
+                      value={formatAmount(selectedOrder.delivery_fee)}
+                    />
+
+                    <Info
+                      label="Quotation Total"
+                      value={formatAmount(
+                        selectedOrder.total ?? selectedOrder.amount
+                      )}
+                    />
+
+                    <Info
+                      label="Quoted At"
+                      value={
+                        selectedOrder.quoted_at
+                          ? formatDateTime(selectedOrder.quoted_at)
+                          : "Not quoted yet"
+                      }
+                    />
+
+                    <div className="sm:col-span-2">
+                      <Info
+                        label="Quotation Notes"
+                        value={
+                          selectedOrder.quotation_notes ||
+                          "No quotation notes."
+                        }
+                      />
+                    </div>
+                  </div>
+                </section>
+              )}
+
+              {/* ====================================================
+                  TOTALS
+              ===================================================== */}
+
+              <section>
+
+                <div className="rounded-2xl border border-[#D4AF37]/20 bg-[#D4AF37]/5 p-5">
+
+                  <div className="space-y-3">
+
+                    <div className="flex justify-between gap-4 text-sm">
+
+                      <span className="text-white/40">
+                        Subtotal
+                      </span>
+
+                      <span className="font-bold">
+                        {formatAmount(
+                          selectedOrder.subtotal ??
+                            selectedOrder.amount
+                        )}
+                      </span>
+
+                    </div>
+
+                    <div className="flex justify-between gap-4 text-sm">
+
+                      <span className="text-white/40">
+                        Delivery Fee
+                      </span>
+
+                      <span className="font-bold">
+                        {selectedOrder.delivery_fee
+                          ? formatAmount(
+                              selectedOrder.delivery_fee
+                            )
+                          : "Free"}
+                      </span>
+
+                    </div>
+
+                    <div className="my-4 h-px bg-white/10" />
+
+                    <div className="flex items-end justify-between gap-4">
+
+                      <div>
+
+                        <p className="text-[8px] font-bold uppercase tracking-[0.2em] text-white/30">
+                          Total
+                        </p>
+
+                        <p className="mt-1 text-xs text-white/30">
+                          Order Value
+                        </p>
+
+                      </div>
+
+                      <p className="text-3xl font-extrabold text-[#D4AF37]">
+                        {formatAmount(
+                          selectedOrder.total ??
+                            selectedOrder.amount
+                        )}
+                      </p>
+
+                    </div>
+
+                  </div>
+
+                </div>
+
+              </section>
+
+              {/* ====================================================
+                  EVENT CONCIERGE INFORMATION
+              ===================================================== */}
+
+              {selectedOrder.consultation && (
+                <section>
+
+                  <div className="mb-4">
+
+                    <p className="text-[8px] font-bold uppercase tracking-[0.25em] text-[#D4AF37]">
+                      Event Concierge
+                    </p>
+
+                    <h3 className="mt-1 font-serif text-xl font-bold">
+                      Event Information
+                    </h3>
+
+                  </div>
+
+                  <div className="grid gap-4 rounded-2xl border border-white/10 bg-white/[0.02] p-5 sm:grid-cols-2">
+
+                    <Info
+                      label="Event Type"
+                      value={
+                        selectedOrder
+                          .consultation
+                          .event_type ||
+                        "—"
+                      }
+                    />
+
+                    <Info
+                      label="Event Date"
+                      value={formatDate(
+                        selectedOrder
+                          .consultation
+                          .event_date
+                      )}
+                    />
+
+                    <Info
+                      label="Event Time"
+                      value={
+                        selectedOrder
+                          .consultation
+                          .event_time ||
+                        "—"
+                      }
+                    />
+
+                    <Info
+                      label="Guests"
+                      value={
+                        selectedOrder
+                          .consultation
+                          .guest_count
+                          ? `${selectedOrder.consultation.guest_count} guests`
+                          : "—"
+                      }
+                    />
+
+                    <Info
+                      label="Venue"
+                      value={
+                        selectedOrder
+                          .consultation
+                          .venue ||
+                        "—"
+                      }
+                    />
+
+                    <Info
+                      label="Budget"
+                      value={
+                        selectedOrder
+                          .consultation
+                          .budget ||
+                        "—"
+                      }
+                    />
+
+                    <div className="sm:col-span-2">
+
+                      <Info
+                        label="Special Request"
+                        value={
+                          selectedOrder
+                            .consultation
+                            .special_request ||
+                          "No special request."
+                        }
+                      />
+
+                    </div>
+
+                  </div>
+
+                </section>
+              )}
+
+            </div>
+
+            {/* ======================================================
+                MODAL FOOTER
+            ======================================================= */}
+
+            <div className="sticky bottom-0 flex justify-end border-t border-white/10 bg-[#111111] px-5 py-4 sm:px-7">
+
+              <button
+                type="button"
+                onClick={() =>
+                  setSelectedOrder(null)
+                }
+                className="rounded-xl border border-white/10 bg-white/5 px-6 py-3 text-xs font-bold uppercase tracking-[0.12em] text-white/70 transition hover:bg-white/10 hover:text-white"
+              >
+                Close
+              </button>
+
+            </div>
+
+          </div>
+
+        </div>
+      )}
+
     </main>
+  );
+}
+
+// ============================================================
+// SMALL INFO COMPONENT
+// ============================================================
+
+function Info({
+  label,
+  value,
+}: {
+  label: string;
+  value: string;
+}) {
+  return (
+    <div>
+      <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-white/25">
+        {label}
+      </p>
+
+      <p className="mt-1 whitespace-pre-wrap break-words text-sm font-semibold text-white/80">
+        {value}
+      </p>
+    </div>
   );
 }
