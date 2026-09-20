@@ -1,12 +1,29 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 
-export default function LoginPage() {
+function getSafeNextPath(next: string | null) {
+  if (!next) {
+    return "/client-portal";
+  }
+
+  if (!next.startsWith("/") || next.startsWith("//")) {
+    return "/client-portal";
+  }
+
+  return next;
+}
+
+function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const nextPath = getSafeNextPath(
+    searchParams.get("next")
+  );
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -34,17 +51,14 @@ export default function LoginPage() {
       return;
     }
 
-    router.push("/client-portal");
+    router.push(nextPath);
   };
 
   return (
-    <main className="min-h-screen bg-[#0B0B0B] flex items-center justify-center px-6 py-20">
+    <main className="flex min-h-screen items-center justify-center bg-[#0B0B0B] px-6 py-20">
       <div className="w-full max-w-md rounded-[32px] border border-[#D4AF37]/20 bg-[#171717] p-10 shadow-2xl">
-
-        {/* Heading */}
         <div className="text-center">
-
-          <span className="inline-block rounded-full border border-[#D4AF37]/20 bg-[#1F1F1F] px-5 py-2 text-xs tracking-[0.3em] uppercase text-[#D4AF37]">
+          <span className="inline-block rounded-full border border-[#D4AF37]/20 bg-[#1F1F1F] px-5 py-2 text-xs uppercase tracking-[0.3em] text-[#D4AF37]">
             Client Portal
           </span>
 
@@ -53,16 +67,14 @@ export default function LoginPage() {
           </h1>
 
           <p className="mt-3 text-[#B8B8B8]">
-            Sign in to manage your orders, quotations and events.
+            Sign in to manage your orders, quotations and meal plans.
           </p>
-
         </div>
 
         <form
           onSubmit={handleLogin}
           className="mt-10 space-y-6"
         >
-
           <div>
             <label className="mb-2 block text-sm text-[#D4AF37]">
               Email Address
@@ -94,14 +106,12 @@ export default function LoginPage() {
           </div>
 
           <div className="flex items-center justify-between">
-
             <Link
               href="/forgot-password"
               className="text-sm text-[#D4AF37] hover:underline"
             >
               Forgot Password?
             </Link>
-
           </div>
 
           {error && (
@@ -117,23 +127,32 @@ export default function LoginPage() {
           >
             {loading ? "Signing In..." : "Sign In"}
           </button>
-
         </form>
 
         <div className="mt-8 text-center text-[#B8B8B8]">
-
-          Don't have an account?{" "}
-
+          Don&apos;t have an account?{" "}
           <Link
-            href="/signup"
+            href={`/signup?next=${encodeURIComponent(nextPath)}`}
             className="font-semibold text-[#D4AF37] hover:underline"
           >
             Create one
           </Link>
-
         </div>
-
       </div>
     </main>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="flex min-h-screen items-center justify-center bg-[#0B0B0B] text-white">
+          <p>Loading sign in...</p>
+        </main>
+      }
+    >
+      <LoginForm />
+    </Suspense>
   );
 }

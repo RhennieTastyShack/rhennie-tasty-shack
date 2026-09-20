@@ -2,115 +2,115 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import crypto from "crypto";
 
-// =====================================================
-// ENVIRONMENT VARIABLES
-// =====================================================
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
-const supabaseUrl =
-  process.env.NEXT_PUBLIC_SUPABASE_URL;
+function getSupabaseAdmin() {
+  const supabaseUrl =
+    process.env.NEXT_PUBLIC_SUPABASE_URL;
 
-const serviceRoleKey =
-  process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const serviceRoleKey =
+    process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-const paystackSecretKey =
-  process.env.PAYSTACK_SECRET_KEY;
-
-// =====================================================
-// VALIDATE ENVIRONMENT VARIABLES
-// =====================================================
-
-if (!supabaseUrl) {
-  throw new Error(
-    "NEXT_PUBLIC_SUPABASE_URL is missing"
-  );
-}
-
-if (!serviceRoleKey) {
-  throw new Error(
-    "SUPABASE_SERVICE_ROLE_KEY is missing"
-  );
-}
-
-if (!paystackSecretKey) {
-  throw new Error(
-    "PAYSTACK_SECRET_KEY is missing"
-  );
-}
-
-// Create definite string constants after validation.
-// This prevents TypeScript from treating them as
-// string | undefined later in the file.
-
-const SUPABASE_URL: string =
-  supabaseUrl;
-
-const SUPABASE_SERVICE_ROLE_KEY: string =
-  serviceRoleKey;
-
-const PAYSTACK_SECRET_KEY: string =
-  paystackSecretKey;
-
-// =====================================================
-// SUPABASE ADMIN CLIENT
-// =====================================================
-
-const supabaseAdmin = createClient(
-  SUPABASE_URL,
-  SUPABASE_SERVICE_ROLE_KEY,
-  {
-    auth: {
-      persistSession: false,
-      autoRefreshToken: false,
-    },
+  if (!supabaseUrl) {
+    throw new Error(
+      "Missing NEXT_PUBLIC_SUPABASE_URL"
+    );
   }
-);
 
-// =====================================================
-// GET HEALTH CHECK
-// GET /api/payments/paystack/webhook
-// =====================================================
-//
-// Paystack itself will NOT use this GET handler.
-// This only allows us to open the endpoint in a browser
-// and confirm that the route is deployed correctly.
-// =====================================================
+  if (!serviceRoleKey) {
+    throw new Error(
+      "Missing SUPABASE_SERVICE_ROLE_KEY"
+    );
+  }
+
+  return createClient(
+    supabaseUrl,
+    serviceRoleKey,
+    {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    }
+  );
+}
+
+function verifyPaystackSignature(
+  rawBody: string,
+  signature: string,
+  secret: string
+) {
+  const hash = crypto
+    .createHmac("sha512", secret)
+    .update(rawBody)
+    .digest("hex");
+
+  if (
+    hash.length !== signature.length
+  ) {
+    return false;
+  }
+
+  try {
+    return crypto.timingSafeEqual(
+      Buffer.from(hash, "utf8"),
+      Buffer.from(signature, "utf8")
+    );
+  } catch {
+    return false;
+  }
+}
+
+/* =========================================================
+   HEALTH CHECK
+========================================================= */
 
 export async function GET() {
-  return NextResponse.json(
-    {
-      success: true,
-      message:
-        "Paystack webhook endpoint is active.",
-      method: "POST",
-    },
-    { status: 200 }
-  );
+  return NextResponse.json({
+    success: true,
+    message:
+      "Rhennie Tasty Shack Paystack webhook is active.",
+  });
 }
 
-// =====================================================
-// PAYSTACK WEBHOOK
-// POST /api/payments/paystack/webhook
-// =====================================================
+/* =========================================================
+   PAYSTACK WEBHOOK
+========================================================= */
 
 export async function POST(
   request: Request
 ) {
   try {
-    // =================================================
-    // READ RAW REQUEST BODY
-    // =================================================
-    //
-    // IMPORTANT:
-    // The raw body must be used when checking the
-    // Paystack signature.
-    // =================================================
+    const paystackSecret =
+      process.env.PAYSTACK_SECRET_KEY;
+
+    if (!paystackSecret) {
+      console.error(
+        "PAYSTACK_SECRET_KEY is missing."
+      );
+
+      return NextResponse.json(
+        {
+          success: false,
+          message:
+            "Paystack is not configured.",
+        },
+        {
+          status: 500,
+        }
+      );
+    }
+
+    /*
+      IMPORTANT:
+      Read the raw body BEFORE parsing JSON.
+      Paystack's signature is calculated from
+      the exact request payload.
+    */
 
     const rawBody =
       await request.text();
-
-    // =================================================
-    // GET PAYSTACK SIGNATURE
-    // =================================================
 
     const signature =
       request.headers.get(
@@ -118,77 +118,41 @@ export async function POST(
       );
 
     if (!signature) {
-      console.error(
-        "Paystack webhook: signature missing"
-      );
-
       return NextResponse.json(
         {
           success: false,
-          error:
+          message:
             "Missing Paystack signature.",
         },
-        { status: 401 }
+        {
+          status: 401,
+        }
       );
     }
 
-    // =================================================
-    // GENERATE EXPECTED SIGNATURE
-    // =================================================
-
-    const expectedSignature =
-      crypto
-        .createHmac(
-          "sha512",
-          PAYSTACK_SECRET_KEY
-        )
-        .update(rawBody)
-        .digest("hex");
-
-    // =================================================
-    // SECURELY COMPARE SIGNATURES
-    // =================================================
-
-    const providedSignature =
-      signature.trim();
-
-    const expectedBuffer =
-      Buffer.from(
-        expectedSignature,
-        "utf8"
+    const signatureIsValid =
+      verifyPaystackSignature(
+        rawBody,
+        signature,
+        paystackSecret
       );
 
-    const providedBuffer =
-      Buffer.from(
-        providedSignature,
-        "utf8"
-      );
-
-    if (
-      expectedBuffer.length !==
-        providedBuffer.length ||
-      !crypto.timingSafeEqual(
-        expectedBuffer,
-        providedBuffer
-      )
-    ) {
+    if (!signatureIsValid) {
       console.error(
-        "Paystack webhook: invalid signature"
+        "Invalid Paystack webhook signature."
       );
 
       return NextResponse.json(
         {
           success: false,
-          error:
+          message:
             "Invalid webhook signature.",
         },
-        { status: 401 }
+        {
+          status: 401,
+        }
       );
     }
-
-    // =================================================
-    // PARSE PAYSTACK EVENT
-    // =================================================
 
     let event: any;
 
@@ -196,273 +160,132 @@ export async function POST(
       event =
         JSON.parse(rawBody);
     } catch {
-      console.error(
-        "Paystack webhook: invalid JSON"
-      );
-
       return NextResponse.json(
         {
           success: false,
-          error:
-            "Invalid webhook payload.",
+          message:
+            "Invalid JSON payload.",
         },
-        { status: 400 }
+        {
+          status: 400,
+        }
       );
     }
 
-    console.log(
-      "Paystack webhook event:",
-      event.event
-    );
-
-    // =================================================
-    // ONLY PROCESS SUCCESSFUL PAYMENTS
-    // =================================================
+    /*
+      We currently only need successful
+      Paystack charges.
+    */
 
     if (
-      event.event !==
+      event?.event !==
       "charge.success"
     ) {
-      return NextResponse.json(
-        {
-          success: true,
-          received: true,
-          ignored: true,
-          event:
-            event.event || null,
-        },
-        { status: 200 }
-      );
+      return NextResponse.json({
+        success: true,
+        received: true,
+        ignored: true,
+        event:
+          event?.event || null,
+      });
     }
-
-    // =================================================
-    // GET TRANSACTION
-    // =================================================
 
     const transaction =
-      event.data;
+      event?.data;
 
     if (!transaction) {
-      console.error(
-        "Paystack webhook: transaction data missing"
-      );
-
       return NextResponse.json(
         {
-          success: true,
-          received: true,
-          ignored: true,
+          success: false,
+          message:
+            "Transaction data is missing.",
         },
-        { status: 200 }
+        {
+          status: 400,
+        }
       );
     }
-
-    // =================================================
-    // GET REFERENCE
-    // =================================================
 
     const reference =
-      String(
-        transaction.reference || ""
-      );
+      transaction.reference;
 
     if (!reference) {
-      console.error(
-        "Paystack webhook: reference missing"
-      );
-
       return NextResponse.json(
         {
-          success: true,
-          received: true,
-          ignored: true,
+          success: false,
+          message:
+            "Transaction reference is missing.",
         },
-        { status: 200 }
+        {
+          status: 400,
+        }
       );
     }
 
-    // =================================================
-    // FIND LOCAL PAYMENT RECORD
-    // =================================================
+    const supabaseAdmin =
+      getSupabaseAdmin();
+
+    /* =====================================================
+       FIND LOCAL PAYMENT
+    ===================================================== */
 
     const {
       data: payment,
-      error: paymentLookupError,
-    } = await supabaseAdmin
-      .from("payments")
-      .select("*")
-      .eq(
-        "payment_reference",
-        reference
-      )
-      .maybeSingle();
+      error: paymentError,
+    } =
+      await supabaseAdmin
+        .from("payments")
+        .select("*")
+        .eq(
+          "payment_reference",
+          reference
+        )
+        .maybeSingle();
 
-    if (paymentLookupError) {
+    if (paymentError) {
       console.error(
         "Webhook payment lookup error:",
-        paymentLookupError
+        paymentError
       );
 
       return NextResponse.json(
         {
           success: false,
-          error:
-            paymentLookupError.message,
+          message:
+            "Unable to load payment.",
         },
-        { status: 500 }
+        {
+          status: 500,
+        }
       );
     }
 
-    // =================================================
-    // PAYMENT RECORD NOT FOUND
-    // =================================================
+    /*
+      The webhook may receive transactions
+      that were not created by this app.
+
+      Acknowledge them instead of repeatedly
+      asking Paystack to retry.
+    */
 
     if (!payment) {
-      console.error(
-        "Webhook payment record not found:",
+      console.warn(
+        "Webhook payment not found:",
         reference
       );
 
-      // Acknowledge the event so Paystack does not
-      // repeatedly retry an unknown old reference.
-
-      return NextResponse.json(
-        {
-          success: true,
-          received: true,
-          payment_found: false,
-        },
-        { status: 200 }
-      );
+      return NextResponse.json({
+        success: true,
+        received: true,
+        ignored: true,
+        reason:
+          "Payment record not found.",
+      });
     }
 
-    // =================================================
-    // IDEMPOTENCY CHECK
-    // =================================================
-    //
-    // Paystack can send the same webhook more than once.
-    // If this payment is already marked paid, we simply
-    // acknowledge the event.
-    // =================================================
-
-    if (
-      payment.payment_status ===
-      "paid"
-    ) {
-      return NextResponse.json(
-        {
-          success: true,
-          received: true,
-          already_processed: true,
-          reference,
-        },
-        { status: 200 }
-      );
-    }
-
-    // =================================================
-    // VERIFY TRANSACTION STATUS
-    // =================================================
-
-    if (
-      transaction.status !==
-      "success"
-    ) {
-      console.log(
-        "Webhook ignored because transaction is not successful:",
-        transaction.status
-      );
-
-      return NextResponse.json(
-        {
-          success: true,
-          received: true,
-          ignored: true,
-          transaction_status:
-            transaction.status || null,
-        },
-        { status: 200 }
-      );
-    }
-
-    // =================================================
-    // VERIFY REFERENCE
-    // =================================================
-
-    if (
-      reference !==
-      payment.payment_reference
-    ) {
-      console.error(
-        "Webhook reference mismatch:",
-        {
-          received:
-            reference,
-          expected:
-            payment.payment_reference,
-        }
-      );
-
-      return NextResponse.json(
-        {
-          success: false,
-          error:
-            "Payment reference mismatch.",
-        },
-        { status: 400 }
-      );
-    }
-
-    // =================================================
-    // VERIFY CURRENCY
-    // =================================================
-
-    const transactionCurrency =
-      String(
-        transaction.currency || ""
-      ).toUpperCase();
-
-    const paymentCurrency =
-      String(
-        payment.currency || ""
-      ).toUpperCase();
-
-    if (
-      transactionCurrency !==
-      paymentCurrency
-    ) {
-      console.error(
-        "Webhook currency mismatch:",
-        {
-          received:
-            transactionCurrency,
-          expected:
-            paymentCurrency,
-        }
-      );
-
-      return NextResponse.json(
-        {
-          success: false,
-          error:
-            "Payment currency mismatch.",
-        },
-        { status: 400 }
-      );
-    }
-
-    // =================================================
-    // VERIFY AMOUNT
-    // =================================================
-    //
-    // Paystack transaction amounts are returned in the
-    // currency's subunit.
-    //
-    // NGN -> kobo
-    // USD -> cents
-    //
-    // ₦1,000 = 100000 kobo
-    // =================================================
+    /* =====================================================
+       VALIDATE AMOUNT
+    ===================================================== */
 
     const expectedAmount =
       Math.round(
@@ -470,7 +293,7 @@ export async function POST(
           100
       );
 
-    const paidAmount =
+    const receivedAmount =
       Number(
         transaction.amount
       );
@@ -479,232 +302,309 @@ export async function POST(
       !Number.isFinite(
         expectedAmount
       ) ||
-      expectedAmount <= 0
-    ) {
-      console.error(
-        "Webhook invalid expected amount:",
-        payment.amount
-      );
-
-      return NextResponse.json(
-        {
-          success: false,
-          error:
-            "Invalid expected payment amount.",
-        },
-        { status: 500 }
-      );
-    }
-
-    if (
-      !Number.isFinite(
-        paidAmount
-      )
-    ) {
-      console.error(
-        "Webhook invalid Paystack amount:",
-        transaction.amount
-      );
-
-      return NextResponse.json(
-        {
-          success: false,
-          error:
-            "Invalid payment amount returned by Paystack.",
-        },
-        { status: 400 }
-      );
-    }
-
-    if (
-      paidAmount !==
-      expectedAmount
+      expectedAmount !==
+        receivedAmount
     ) {
       console.error(
         "Webhook amount mismatch:",
         {
+          reference,
           expectedAmount,
-          paidAmount,
+          receivedAmount,
         }
       );
 
       return NextResponse.json(
         {
           success: false,
-          error:
+          message:
             "Payment amount mismatch.",
         },
-        { status: 400 }
+        {
+          status: 400,
+        }
       );
     }
 
-    // =================================================
-    // PREPARE PAYMENT DATA
-    // =================================================
+    /* =====================================================
+       VALIDATE CURRENCY
+    ===================================================== */
 
-    const now =
-      new Date().toISOString();
+    const expectedCurrency =
+      String(
+        payment.currency ||
+          "NGN"
+      ).toUpperCase();
 
-    const paidAt =
-      transaction.paid_at ||
-      transaction.paidAt ||
-      now;
-
-    const paymentChannel =
-      transaction.channel ||
-      payment.payment_method ||
-      "PAYSTACK";
-
-    const providerTransactionId =
-      transaction.id
-        ? String(
-            transaction.id
-          )
-        : null;
-
-    // =================================================
-    // UPDATE PAYMENT RECORD
-    // =================================================
-
-    const {
-      data: updatedPayment,
-      error: paymentUpdateError,
-    } = await supabaseAdmin
-      .from("payments")
-      .update({
-        payment_status:
-          "paid",
-
-        payment_provider:
-          "PAYSTACK",
-
-        payment_method:
-          paymentChannel,
-
-        provider_transaction_id:
-          providerTransactionId,
-
-        provider_metadata:
-          transaction,
-
-        paid_at:
-          paidAt,
-
-        updated_at:
-          now,
-      })
-      .eq(
-        "id",
-        payment.id
-      )
-      .select("*")
-      .single();
+    const receivedCurrency =
+      String(
+        transaction.currency ||
+          ""
+      ).toUpperCase();
 
     if (
-      paymentUpdateError
+      expectedCurrency !==
+      receivedCurrency
     ) {
       console.error(
-        "Webhook payment update error:",
-        paymentUpdateError
-      );
-
-      return NextResponse.json(
+        "Webhook currency mismatch:",
         {
-          success: false,
-          error:
-            paymentUpdateError.message,
-        },
-        { status: 500 }
-      );
-    }
-
-    // =================================================
-    // UPDATE ORDER PAYMENT RECORD
-    // =================================================
-
-    const {
-      error: orderUpdateError,
-    } = await supabaseAdmin
-      .from("orders")
-      .update({
-        payment_status:
-          "paid",
-
-        payment_reference:
           reference,
-
-        payment_channel:
-          paymentChannel,
-
-        updated_at:
-          now,
-      })
-      .eq(
-        "id",
-        payment.order_id
-      );
-
-    if (
-      orderUpdateError
-    ) {
-      console.error(
-        "Webhook order update error:",
-        orderUpdateError
+          expectedCurrency,
+          receivedCurrency,
+        }
       );
 
       return NextResponse.json(
         {
           success: false,
-          error:
-            orderUpdateError.message,
+          message:
+            "Payment currency mismatch.",
         },
-        { status: 500 }
+        {
+          status: 400,
+        }
       );
     }
 
-    // =================================================
-    // SUCCESS
-    // =================================================
+    /* =====================================================
+       IDEMPOTENCY
+    ===================================================== */
 
-    console.log(
-      "Paystack webhook processed successfully:",
-      {
-        reference,
-        order_id:
-          payment.order_id,
-        payment_id:
-          payment.id,
+    const alreadyPaid =
+      String(
+        payment.payment_status ||
+          ""
+      ).toLowerCase() ===
+      "paid";
+
+    /*
+      Even if the payment row is already PAID,
+      we still make sure its associated order
+      or subscription is correctly updated.
+    */
+
+    if (!alreadyPaid) {
+      const {
+        error:
+          paymentUpdateError,
+      } =
+        await supabaseAdmin
+          .from("payments")
+          .update({
+            payment_status:
+              "paid",
+
+            payment_provider:
+              "paystack",
+
+            payment_method:
+              transaction.channel ||
+              "paystack",
+
+            provider_transaction_id:
+              transaction.id
+                ? String(
+                    transaction.id
+                  )
+                : null,
+
+            provider_metadata:
+              transaction,
+
+            paid_at:
+              transaction.paid_at ||
+              transaction.paidAt ||
+              new Date().toISOString(),
+
+            updated_at:
+              new Date().toISOString(),
+          })
+          .eq(
+            "id",
+            payment.id
+          );
+
+      if (
+        paymentUpdateError
+      ) {
+        console.error(
+          "Webhook payment update error:",
+          paymentUpdateError
+        );
+
+        return NextResponse.json(
+          {
+            success: false,
+            message:
+              "Unable to update payment.",
+          },
+          {
+            status: 500,
+          }
+        );
       }
-    );
+    }
 
-    return NextResponse.json(
-      {
+    /* =====================================================
+       SUBSCRIPTION PAYMENT
+    ===================================================== */
+
+    if (
+      payment.subscription_id
+    ) {
+      const {
+        error:
+          subscriptionUpdateError,
+      } =
+        await supabaseAdmin
+          .from("subscriptions")
+          .update({
+            payment_status:
+              "PAID",
+
+            payment_reference:
+              reference,
+
+            status:
+              "ACTIVE",
+
+            updated_at:
+              new Date().toISOString(),
+          })
+          .eq(
+            "id",
+            payment.subscription_id
+          );
+
+      if (
+        subscriptionUpdateError
+      ) {
+        console.error(
+          "Webhook subscription update error:",
+          subscriptionUpdateError
+        );
+
+        return NextResponse.json(
+          {
+            success: false,
+            message:
+              "Payment was recorded but subscription could not be activated.",
+          },
+          {
+            status: 500,
+          }
+        );
+      }
+
+      return NextResponse.json({
         success: true,
         received: true,
-        processed: true,
+        payment_type:
+          "subscription",
         reference,
-        payment_id:
-          updatedPayment.id,
-        order_id:
-          payment.order_id,
-      },
-      { status: 200 }
+      });
+    }
+
+    /* =====================================================
+       ORDER PAYMENT
+    ===================================================== */
+
+    if (payment.order_id) {
+      /*
+        Keep the existing order behaviour:
+        payment is marked PAID and the order's
+        payment fields are updated.
+
+        We do NOT alter quotation/order workflow
+        fields here.
+      */
+
+      const {
+        error:
+          orderUpdateError,
+      } =
+        await supabaseAdmin
+          .from("orders")
+          .update({
+            payment_status:
+              "PAID",
+
+            payment_reference:
+              reference,
+
+            payment_channel:
+              transaction.channel ||
+              "paystack",
+
+            updated_at:
+              new Date().toISOString(),
+          })
+          .eq(
+            "id",
+            payment.order_id
+          );
+
+      if (
+        orderUpdateError
+      ) {
+        console.error(
+          "Webhook order update error:",
+          orderUpdateError
+        );
+
+        return NextResponse.json(
+          {
+            success: false,
+            message:
+              "Payment was recorded but order could not be updated.",
+          },
+          {
+            status: 500,
+          }
+        );
+      }
+
+      return NextResponse.json({
+        success: true,
+        received: true,
+        payment_type:
+          "order",
+        reference,
+      });
+    }
+
+    /* =====================================================
+       PAYMENT HAS NO OWNER
+    ===================================================== */
+
+    console.warn(
+      "Payment has neither order_id nor subscription_id:",
+      payment.id
     );
+
+    return NextResponse.json({
+      success: true,
+      received: true,
+      payment_type:
+        "unlinked",
+      reference,
+    });
   } catch (error) {
     console.error(
-      "Paystack webhook API error:",
+      "Paystack webhook error:",
       error
     );
 
     return NextResponse.json(
       {
         success: false,
-        error:
-          error instanceof Error
-            ? error.message
-            : "Webhook processing failed.",
+        message:
+          "Webhook processing failed.",
       },
-      { status: 500 }
+      {
+        status: 500,
+      }
     );
   }
 }

@@ -4,6 +4,8 @@ import { createClient } from "@supabase/supabase-js";
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const paystackSecretKey = process.env.PAYSTACK_SECRET_KEY;
+const publishableKey =
+  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 
 if (!supabaseUrl) {
   throw new Error("NEXT_PUBLIC_SUPABASE_URL is missing");
@@ -191,6 +193,44 @@ export async function POST(request: Request) {
       generateOrderNumber();
 
     /* =====================================================
+       OPTIONAL AUTH CUSTOMER
+    ====================================================== */
+
+    let customerId: string | null = null;
+
+    const authorization =
+      request.headers.get("authorization");
+
+    if (authorization && publishableKey) {
+      const [type, token] =
+        authorization.split(" ");
+
+      if (
+        type?.toLowerCase() === "bearer" &&
+        token
+      ) {
+        const supabaseAuth = createClient(
+          supabaseUrl,
+          publishableKey,
+          {
+            auth: {
+              persistSession: false,
+              autoRefreshToken: false,
+            },
+          }
+        );
+
+        const {
+          data: { user },
+        } = await supabaseAuth.auth.getUser(
+          token.trim()
+        );
+
+        customerId = user?.id || null;
+      }
+    }
+
+    /* =====================================================
        CREATE ORDER
     ====================================================== */
 
@@ -201,6 +241,8 @@ export async function POST(request: Request) {
           order_no: orderNumber,
 
           order_number: orderNumber,
+
+          customer_id: customerId,
 
           customer_name:
             customerName.trim(),
@@ -439,8 +481,11 @@ export async function POST(request: Request) {
     }
 
     /* =====================================================
-       SAVE PAYMENT REFERENCE
+       SAVE PAYMENT REFERENCE + PAYMENTS ROW
     ====================================================== */
+
+    const paymentReference =
+      paystackData.data.reference || reference;
 
     const {
       error: updateError,
@@ -448,7 +493,7 @@ export async function POST(request: Request) {
       .from("orders")
       .update({
         payment_reference:
-          paystackData.data.reference,
+          paymentReference,
 
         payment_status:
           "pending",
@@ -462,6 +507,61 @@ export async function POST(request: Request) {
       console.error(
         "Payment reference update error:",
         updateError
+      );
+    }
+
+    const {
+      error: paymentInsertError,
+    } = await supabaseAdmin
+      .from("payments")
+      .insert({
+        order_id: order.id,
+
+        subscription_id: null,
+
+        customer_id: customerId,
+
+        amount: total,
+
+        currency: "NGN",
+
+        payment_method: "paystack",
+
+        payment_provider: "paystack",
+
+        payment_status: "pending",
+
+        payment_reference: paymentReference,
+
+        base_currency: "NGN",
+
+        base_amount: total,
+
+        exchange_rate: 1,
+
+        paid_at: null,
+
+        updated_at: new Date().toISOString(),
+      });
+
+    if (paymentInsertError) {
+      console.error(
+        "Payment record insert error:",
+        paymentInsertError
+      );
+
+      await supabaseAdmin
+        .from("orders")
+        .delete()
+        .eq("id", order.id);
+
+      return NextResponse.json(
+        {
+          error:
+            paymentInsertError.message ||
+            "Unable to create payment record.",
+        },
+        { status: 500 }
       );
     }
 
@@ -479,7 +579,7 @@ export async function POST(request: Request) {
         orderNumber,
 
         reference:
-          paystackData.data.reference,
+          paymentReference,
 
         authorizationUrl:
           paystackData.data.authorization_url,

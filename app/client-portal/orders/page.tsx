@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabase";
 
 type Order = {
   id: string;
@@ -23,15 +25,33 @@ const STATUS_STEPS = [
 ];
 
 export default function OrdersPage() {
+  const router = useRouter();
+
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
+    let active = true;
+
     async function loadOrders() {
       try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+
+        if (!session?.access_token) {
+          router.replace(
+            `/login?next=${encodeURIComponent("/client-portal/orders")}`
+          );
+          return;
+        }
+
         const response = await fetch("/api/orders", {
           cache: "no-store",
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+          },
         });
 
         if (!response.ok) {
@@ -40,17 +60,28 @@ export default function OrdersPage() {
 
         const data = await response.json();
 
-        setOrders(data);
-      } catch (error) {
-        console.error("Orders loading error:", error);
-        setError("Unable to load your orders.");
+        if (active) {
+          setOrders(Array.isArray(data) ? data : data?.orders || []);
+        }
+      } catch (loadError) {
+        console.error("Orders loading error:", loadError);
+
+        if (active) {
+          setError("Unable to load your orders.");
+        }
       } finally {
-        setLoading(false);
+        if (active) {
+          setLoading(false);
+        }
       }
     }
 
     loadOrders();
-  }, []);
+
+    return () => {
+      active = false;
+    };
+  }, [router]);
 
   function formatAmount(amount: number | null) {
     if (amount === null || amount === undefined) {

@@ -39,23 +39,13 @@ const categories = [
   },
 
   {
-    label: "Grill House",
-    value: "grill-house",
+    label: "Soups, Sides & Sauces",
+    value: "soups-sides-sauces",
   },
 
   {
     label: "Food Boxes",
     value: "food-boxes",
-  },
-
-  {
-    label: "Soups & Swallows",
-    value: "soups-swallow",
-  },
-
-  {
-    label: "Sauces",
-    value: "sauces",
   },
 
   {
@@ -214,8 +204,6 @@ export default function MenuFilters() {
 
           <div className="group relative">
 
-            {/* Search Icon */}
-
             <div className="pointer-events-none absolute left-5 top-1/2 z-10 -translate-y-1/2 text-gray-400 transition-colors group-focus-within:text-[#F26A21]">
 
               <svg
@@ -252,8 +240,6 @@ export default function MenuFilters() {
               className="h-14 w-full rounded-full border border-black/10 bg-[#F8F6F2] pl-12 pr-12 text-sm text-[#171717] outline-none transition-all duration-300 placeholder:text-gray-400 focus:border-[#F26A21] focus:bg-white focus:ring-4 focus:ring-[#F26A21]/10"
             />
 
-            {/* Clear Search */}
-
             {search && (
               <button
                 type="button"
@@ -288,8 +274,6 @@ export default function MenuFilters() {
             </p>
 
           </div>
-
-          {/* Horizontal Scroll */}
 
           <div className="overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
 
@@ -352,15 +336,11 @@ export default function MenuFilters() {
                 Showing
               </span>
 
-              {/* Active Category */}
-
               {activeCategory && (
                 <span className="rounded-full bg-[#FFF1E9] px-3 py-1.5 text-[9px] font-bold uppercase tracking-wider text-[#F26A21]">
                   {activeCategoryLabel}
                 </span>
               )}
-
-              {/* Active Search */}
 
               {urlSearch && (
                 <span className="max-w-[220px] truncate rounded-full bg-[#FFF1E9] px-3 py-1.5 text-[9px] font-bold text-[#F26A21]">
@@ -369,8 +349,6 @@ export default function MenuFilters() {
               )}
 
             </div>
-
-            {/* Clear Filters */}
 
             <button
               type="button"

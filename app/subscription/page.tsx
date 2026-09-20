@@ -5,6 +5,7 @@ import Link from "next/link";
 const plans = [
   {
     name: "Lunch Plan",
+    slug: "daily-lunch",
     description:
       "Enjoy a freshly prepared premium lunch delivered on the days that work for you.",
     features: [
@@ -17,6 +18,7 @@ const plans = [
   },
   {
     name: "3-Square Meal Plan",
+    slug: "weekly-plan",
     description:
       "A convenient daily meal experience designed for customers who want breakfast, lunch and dinner covered.",
     features: [
@@ -30,6 +32,7 @@ const plans = [
   },
   {
     name: "Custom Meal Plan",
+    slug: "custom",
     description:
       "Build a meal subscription around your lifestyle, preferences and delivery needs.",
     features: [
@@ -39,6 +42,7 @@ const plans = [
       "Dedicated assistance",
     ],
     price: "Let's Talk",
+    whatsapp: true,
   },
 ];
 
@@ -46,8 +50,6 @@ export default function SubscriptionPage() {
   return (
     <main className="min-h-screen bg-[#080808] px-4 py-14 text-white sm:px-6 md:px-8 lg:py-20">
       <div className="mx-auto max-w-7xl">
-
-        {/* Back */}
         <Link
           href="/"
           className="inline-flex items-center gap-2 text-sm font-medium text-[#999999] transition hover:text-[#D4AF37]"
@@ -55,7 +57,6 @@ export default function SubscriptionPage() {
           ← Back to Home
         </Link>
 
-        {/* Hero */}
         <section className="mt-10 text-center">
           <span className="inline-flex rounded-full border border-[#D4AF37]/30 bg-[#111111] px-5 py-2 text-[10px] font-bold uppercase tracking-[0.35em] text-[#D4AF37]">
             Meal Subscription
@@ -74,74 +75,81 @@ export default function SubscriptionPage() {
           </p>
         </section>
 
-        {/* Plans */}
         <section className="mt-14">
           <div className="grid gap-6 lg:grid-cols-3">
+            {plans.map((plan) => {
+              const href = plan.whatsapp
+                ? "https://wa.me/2348121577759?text=Hello%20Rhennie%20Tasty%20Shack,%20I%20want%20a%20custom%20meal%20subscription."
+                : `/client-portal/subscriptions?plan=${encodeURIComponent(plan.slug)}`;
 
-            {plans.map((plan) => (
-              <article
-                key={plan.name}
-                className={`relative rounded-[30px] border p-7 transition duration-300 hover:-translate-y-1 sm:p-8 ${
-                  plan.featured
-                    ? "border-[#D4AF37]/60 bg-gradient-to-br from-[#1b180d] to-[#111111] shadow-[0_0_40px_rgba(212,175,55,0.08)]"
-                    : "border-white/10 bg-[#111111]"
-                }`}
-              >
-
-                {plan.featured && (
-                  <div className="absolute right-6 top-6 rounded-full bg-[#D4AF37] px-3 py-1 text-[9px] font-bold uppercase tracking-widest text-black">
-                    Popular
-                  </div>
-                )}
-
-                <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-[#D4AF37]">
-                  {plan.name}
-                </p>
-
-                <h2 className="mt-5 text-2xl font-bold sm:text-3xl">
-                  {plan.price}
-                </h2>
-
-                <p className="mt-4 min-h-[80px] text-sm leading-6 text-[#888888]">
-                  {plan.description}
-                </p>
-
-                <div className="my-7 h-px bg-white/10" />
-
-                <ul className="space-y-4">
-                  {plan.features.map((feature) => (
-                    <li
-                      key={feature}
-                      className="flex items-start gap-3 text-sm text-[#cccccc]"
-                    >
-                      <span className="mt-0.5 text-[#D4AF37]">
-                        ✓
-                      </span>
-
-                      <span>{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-
-                <a
-                  href="https://wa.me/2348121577759"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={`mt-8 flex w-full items-center justify-center rounded-full px-6 py-3.5 text-sm font-bold transition ${
+              return (
+                <article
+                  key={plan.name}
+                  className={`relative rounded-[30px] border p-7 transition duration-300 hover:-translate-y-1 sm:p-8 ${
                     plan.featured
-                      ? "bg-[#D4AF37] text-black hover:bg-[#E5C65A]"
-                      : "border border-[#D4AF37]/50 text-[#D4AF37] hover:bg-[#D4AF37] hover:text-black"
+                      ? "border-[#D4AF37]/60 bg-gradient-to-br from-[#1b180d] to-[#111111] shadow-[0_0_40px_rgba(212,175,55,0.08)]"
+                      : "border-white/10 bg-[#111111]"
                   }`}
                 >
-                  Choose This Plan →
-                </a>
-              </article>
-            ))}
+                  {plan.featured && (
+                    <div className="absolute right-6 top-6 rounded-full bg-[#D4AF37] px-3 py-1 text-[9px] font-bold uppercase tracking-widest text-black">
+                      Popular
+                    </div>
+                  )}
 
+                  <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-[#D4AF37]">
+                    {plan.name}
+                  </p>
+
+                  <h2 className="mt-5 text-2xl font-bold sm:text-3xl">
+                    {plan.price}
+                  </h2>
+
+                  <p className="mt-4 min-h-[80px] text-sm leading-6 text-[#888888]">
+                    {plan.description}
+                  </p>
+
+                  <div className="my-7 h-px bg-white/10" />
+
+                  <ul className="space-y-4">
+                    {plan.features.map((feature) => (
+                      <li
+                        key={feature}
+                        className="flex items-start gap-3 text-sm text-[#cccccc]"
+                      >
+                        <span className="mt-0.5 text-[#D4AF37]">✓</span>
+                        <span>{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+
+                  {plan.whatsapp ? (
+                    <a
+                      href={href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-8 flex w-full items-center justify-center rounded-full border border-[#D4AF37]/50 px-6 py-3.5 text-sm font-bold text-[#D4AF37] transition hover:bg-[#D4AF37] hover:text-black"
+                    >
+                      Chat About Custom →
+                    </a>
+                  ) : (
+                    <Link
+                      href={href}
+                      className={`mt-8 flex w-full items-center justify-center rounded-full px-6 py-3.5 text-sm font-bold transition ${
+                        plan.featured
+                          ? "bg-[#D4AF37] text-black hover:bg-[#E5C65A]"
+                          : "border border-[#D4AF37]/50 text-[#D4AF37] hover:bg-[#D4AF37] hover:text-black"
+                      }`}
+                    >
+                      Build This Plan →
+                    </Link>
+                  )}
+                </article>
+              );
+            })}
           </div>
         </section>
 
-        {/* How it works */}
         <section className="mt-16 rounded-[30px] border border-white/10 bg-[#111111] p-7 sm:p-10">
           <div className="text-center">
             <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-[#D4AF37]">
@@ -154,18 +162,13 @@ export default function SubscriptionPage() {
           </div>
 
           <div className="mt-10 grid gap-8 md:grid-cols-3">
-
             <div className="text-center">
               <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full border border-[#D4AF37]/30 bg-[#181818] font-bold text-[#D4AF37]">
                 1
               </div>
-
-              <h3 className="mt-5 font-bold">
-                Choose Your Plan
-              </h3>
-
+              <h3 className="mt-5 font-bold">Build Your Plan</h3>
               <p className="mt-2 text-sm leading-6 text-[#777777]">
-                Select the meal plan that best fits your lifestyle.
+                Choose meals and delivery days in your client portal.
               </p>
             </div>
 
@@ -173,13 +176,9 @@ export default function SubscriptionPage() {
               <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full border border-[#D4AF37]/30 bg-[#181818] font-bold text-[#D4AF37]">
                 2
               </div>
-
-              <h3 className="mt-5 font-bold">
-                Set Your Schedule
-              </h3>
-
+              <h3 className="mt-5 font-bold">We Price & Approve</h3>
               <p className="mt-2 text-sm leading-6 text-[#777777]">
-                Tell us when and where you would like your meals delivered.
+                Rhennie Studio reviews your plan and confirms the total.
               </p>
             </div>
 
@@ -187,44 +186,46 @@ export default function SubscriptionPage() {
               <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full border border-[#D4AF37]/30 bg-[#181818] font-bold text-[#D4AF37]">
                 3
               </div>
-
-              <h3 className="mt-5 font-bold">
-                Enjoy Your Meals
-              </h3>
-
+              <h3 className="mt-5 font-bold">Pay & Enjoy</h3>
               <p className="mt-2 text-sm leading-6 text-[#777777]">
-                Sit back and enjoy premium meals prepared by Rhennie Tasty Shack.
+                Pay securely online, then enjoy freshly prepared meals on schedule.
               </p>
             </div>
-
           </div>
         </section>
 
-        {/* CTA */}
         <section className="mt-10 rounded-[30px] border border-[#D4AF37]/20 bg-gradient-to-br from-[#17150d] to-[#101010] p-8 text-center sm:p-12">
           <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-[#D4AF37]">
             Need Something Custom?
           </p>
 
           <h2 className="mt-4 text-2xl font-bold sm:text-3xl">
-            Let's create a plan that works for you.
+            Let&apos;s create a plan that works for you.
           </h2>
 
           <p className="mx-auto mt-4 max-w-xl text-sm leading-6 text-[#888888]">
-            Contact Rhennie Tasty Shack and we'll help you choose
-            or customize the right meal subscription.
+            Start with our digital builder, or chat with Rhennie Tasty Shack
+            if you need a fully custom subscription.
           </p>
 
-          <a
-            href="https://wa.me/2348121577759?text=Hello%20Rhennie%20Tasty%20Shack,%20I%20want%20to%20ask%20about%20meal%20subscriptions."
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-7 inline-flex rounded-full bg-[#D4AF37] px-8 py-3.5 text-sm font-bold text-black transition hover:bg-[#E5C65A]"
-          >
-            Chat With Us →
-          </a>
-        </section>
+          <div className="mt-7 flex flex-col items-center justify-center gap-3 sm:flex-row">
+            <Link
+              href="/client-portal/subscriptions?plan=weekly-plan"
+              className="inline-flex rounded-full bg-[#D4AF37] px-8 py-3.5 text-sm font-bold text-black transition hover:bg-[#E5C65A]"
+            >
+              Start Meal Plan →
+            </Link>
 
+            <a
+              href="https://wa.me/2348121577759?text=Hello%20Rhennie%20Tasty%20Shack,%20I%20want%20to%20ask%20about%20meal%20subscriptions."
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex rounded-full border border-[#D4AF37]/50 px-8 py-3.5 text-sm font-bold text-[#D4AF37] transition hover:bg-[#D4AF37] hover:text-black"
+            >
+              Chat With Us →
+            </a>
+          </div>
+        </section>
       </div>
     </main>
   );

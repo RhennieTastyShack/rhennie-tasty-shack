@@ -17,11 +17,17 @@ const quickLinks = [
   },
   {
     title: "Meal Plans",
-    description: "Explore flexible meal subscription options.",
-    href: "/subscription",
+    description: "Build a flexible meal subscription online.",
+    href: "/client-portal/subscriptions?plan=weekly-plan",
     icon: "🍽️",
   },
-]
+  {
+    title: "My Subscriptions",
+    description: "Track plans, approvals and payments.",
+    href: "/client-portal/my-subscriptions",
+    icon: "🗓️",
+  },
+];
 
 export default function ClientPortalPage() {
   return (
@@ -64,7 +70,7 @@ export default function ClientPortalPage() {
 
           </div>
 
-          <div className="grid gap-5 md:grid-cols-3">
+          <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
 
             {quickLinks.map((item) => (
               <Link
@@ -187,12 +193,21 @@ export default function ClientPortalPage() {
 
             </div>
 
-            <Link
-              href="/subscription"
-              className="inline-flex shrink-0 items-center justify-center rounded-full border border-[#D4AF37]/50 px-7 py-3.5 text-sm font-bold text-[#D4AF37] transition hover:bg-[#D4AF37] hover:text-black"
-            >
-              Explore Meal Plans →
-            </Link>
+            <div className="flex flex-col gap-3 sm:flex-row sm:shrink-0">
+              <Link
+                href="/client-portal/subscriptions?plan=weekly-plan"
+                className="inline-flex items-center justify-center rounded-full bg-[#D4AF37] px-7 py-3.5 text-sm font-bold text-black transition hover:bg-[#E5C65A]"
+              >
+                Build Meal Plan →
+              </Link>
+
+              <Link
+                href="/client-portal/my-subscriptions"
+                className="inline-flex items-center justify-center rounded-full border border-[#D4AF37]/50 px-7 py-3.5 text-sm font-bold text-[#D4AF37] transition hover:bg-[#D4AF37] hover:text-black"
+              >
+                My Subscriptions
+              </Link>
+            </div>
 
           </div>
 

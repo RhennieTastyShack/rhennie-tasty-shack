@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabase";
 
 type Order = {
   id: string;
@@ -23,406 +25,523 @@ const STATUS_STEPS = [
 ];
 
 export default function OrdersPage() {
+  const router = useRouter();
+
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
+    let active = true;
+
     async function loadOrders() {
       try {
-        const response = await fetch("/api/orders", {
-          cache: "no-store",
-        });
+        setLoading(true);
+        setError("");
 
-        if (!response.ok) {
-          throw new Error("Unable to load orders");
+        /* ============================================
+           GET LOGGED-IN CUSTOMER SESSION
+        ============================================ */
+
+        const {
+          data: { session },
+          error: sessionError,
+        } = await supabase.auth.getSession();
+
+        if (sessionError) {
+          console.error(
+            "Session loading error:",
+            sessionError
+          );
+
+          if (active) {
+            setError(
+              "Unable to verify your session."
+            );
+          }
+
+          return;
+        }
+
+        /* ============================================
+           CUSTOMER IS NOT LOGGED IN
+        ============================================ */
+
+        if (!session?.access_token) {
+          router.replace("/login");
+          return;
+        }
+
+        /* ============================================
+           LOAD ONLY THIS CUSTOMER'S ORDERS
+        ============================================ */
+
+        const response = await fetch(
+          "/api/orders",
+          {
+            method: "GET",
+            headers: {
+              Authorization:
+                `Bearer ${session.access_token}`,
+            },
+            cache: "no-store",
+          }
+        );
+
+        /* ============================================
+           SESSION EXPIRED / INVALID
+        ============================================ */
+
+        if (response.status === 401) {
+          await supabase.auth.signOut();
+
+          router.replace("/login");
+          return;
         }
 
         const data = await response.json();
 
-        setOrders(Array.isArray(data) ? data : []);
+        if (!response.ok) {
+          throw new Error(
+            data?.error ||
+              "Unable to load orders."
+          );
+        }
+
+        if (!active) {
+          return;
+        }
+
+        setOrders(
+          Array.isArray(data) ? data : []
+        );
       } catch (error) {
-        console.error("Orders loading error:", error);
-        setError("Unable to load your orders.");
+        console.error(
+          "Orders loading error:",
+          error
+        );
+
+        if (active) {
+          setError(
+            error instanceof Error
+              ? error.message
+              : "Unable to load your orders."
+          );
+        }
       } finally {
-        setLoading(false);
+        if (active) {
+          setLoading(false);
+        }
       }
     }
 
     loadOrders();
-  }, []);
 
-  function formatAmount(amount: number | null) {
-    if (amount === null || amount === undefined) {
+    return () => {
+      active = false;
+    };
+  }, [router]);
+
+  function formatAmount(
+    amount: number | null
+  ) {
+    if (
+      amount === null ||
+      amount === undefined
+    ) {
       return "₦0";
     }
 
-    return `₦${Number(amount).toLocaleString("en-NG")}`;
+    return `₦${Number(
+      amount
+    ).toLocaleString("en-NG")}`;
   }
 
-  function formatDate(date: string | null) {
-    if (!date) return "";
+  function formatDate(
+    date: string | null
+  ) {
+    if (!date) {
+      return "";
+    }
 
-    return new Date(date).toLocaleDateString("en-NG", {
+    return new Date(
+      date
+    ).toLocaleDateString("en-NG", {
       year: "numeric",
       month: "long",
       day: "numeric",
     });
   }
 
-  function getStatusIndex(status: string | null) {
-    if (!status) return 0;
+  function getStatusIndex(
+    status: string | null
+  ) {
+    if (!status) {
+      return 0;
+    }
 
-    const index = STATUS_STEPS.indexOf(status.toUpperCase());
+    const normalizedStatus =
+      status
+        .toUpperCase()
+        .replaceAll("_", " ");
+
+    const index =
+      STATUS_STEPS.indexOf(
+        normalizedStatus
+      );
 
     return index === -1 ? 0 : index;
   }
 
-  function getStatusLabel(status: string | null) {
-    if (!status) return "In Review";
+  function getProgressWidth(
+    status: string | null
+  ) {
+    const index =
+      getStatusIndex(status);
 
-    return status
-      .toLowerCase()
-      .replace(/\b\w/g, (letter) => letter.toUpperCase());
+    if (index === 0) {
+      return "w-1/5";
+    }
+
+    if (index === 1) {
+      return "w-2/5";
+    }
+
+    if (index === 2) {
+      return "w-3/5";
+    }
+
+    if (index === 3) {
+      return "w-4/5";
+    }
+
+    if (index === 4) {
+      return "w-full";
+    }
+
+    return "w-1/5";
   }
 
-  function getProgressWidth(status: string | null) {
-    const index = getStatusIndex(status);
+  function getStatusLabel(
+    status: string | null
+  ) {
+    if (!status) {
+      return "In Review";
+    }
 
-    if (index === 0) return "20%";
-    if (index === 1) return "40%";
-    if (index === 2) return "60%";
-    if (index === 3) return "80%";
-    if (index === 4) return "100%";
-
-    return "20%";
+    return status
+      .replaceAll("_", " ")
+      .toLowerCase()
+      .replace(
+        /\b\w/g,
+        (letter) =>
+          letter.toUpperCase()
+      );
   }
 
   function isStepCompleted(
     status: string | null,
     stepIndex: number
   ) {
-    return getStatusIndex(status) >= stepIndex;
+    return (
+      getStatusIndex(status) >=
+      stepIndex
+    );
   }
+
+  /* ============================================
+     LOADING
+  ============================================ */
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-[#080808] px-5 py-20 text-white">
-        <div className="mx-auto max-w-5xl text-center">
+      <main className="min-h-screen bg-[#080808] px-5 py-16 text-white sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-6xl text-center">
+
           <div className="mx-auto h-10 w-10 animate-spin rounded-full border-2 border-[#D4AF37]/20 border-t-[#D4AF37]" />
 
-          <p className="mt-5 text-sm text-[#D4AF37]">
+          <p className="mt-5 text-[#D4AF37]">
             Loading your orders...
           </p>
+
         </div>
       </main>
     );
   }
 
+  /* ============================================
+     PAGE
+  ============================================ */
+
   return (
-    <main className="min-h-screen bg-[#080808] px-4 py-14 text-white sm:px-6 md:px-8 lg:py-20">
+    <main className="min-h-screen bg-[#080808] px-5 py-12 text-white sm:px-6 lg:px-8">
 
-      <div className="mx-auto max-w-5xl">
+      <div className="mx-auto max-w-6xl">
 
-        {/* ================= HEADER ================= */}
+        {/* HEADER */}
 
-        <div className="mb-12 text-center">
+        <div className="mb-10">
 
-          <span className="inline-flex rounded-full border border-[#D4AF37]/30 bg-[#111111] px-5 py-2 text-[10px] font-bold uppercase tracking-[0.35em] text-[#D4AF37]">
+          <span className="inline-block rounded-full border border-[#D4AF37]/30 bg-[#111111] px-4 py-2 text-xs uppercase tracking-[0.3em] text-[#D4AF37]">
             Client Portal
           </span>
 
-          <h1 className="mt-6 text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl">
+          <h1 className="mt-5 text-4xl font-bold md:text-5xl">
             My Orders
           </h1>
 
-          <p className="mx-auto mt-4 max-w-2xl text-sm leading-7 text-[#999999] sm:text-base">
-            View and track your current and previous orders
-            with Rhennie Tasty Shack.
+          <p className="mt-3 text-[#B8B8B8]">
+            View and track your current and
+            previous orders with Rhennie Tasty
+            Shack.
           </p>
 
           <Link
             href="/client-portal"
-            className="mt-6 inline-flex items-center text-sm font-medium text-[#D4AF37] transition hover:text-[#E5C65A]"
+            className="mt-5 inline-block text-sm text-[#D4AF37] hover:underline"
           >
-            ← Back to Client Portal
+            ← Back to Dashboard
           </Link>
 
         </div>
 
-        {/* ================= ERROR ================= */}
+        {/* ERROR */}
 
         {error && (
-          <div className="mb-8 rounded-2xl border border-red-500/20 bg-red-500/5 p-5 text-center text-sm text-red-300">
-            {error}
-          </div>
-        )}
+          <div className="rounded-2xl border border-red-500/30 bg-red-500/10 p-5">
 
-        {/* ================= EMPTY ================= */}
-
-        {!error && orders.length === 0 && (
-          <div className="rounded-[30px] border border-[#D4AF37]/15 bg-[#111111] px-6 py-20 text-center shadow-2xl">
-
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full border border-[#D4AF37]/20 bg-[#181818] text-2xl">
-              🍽️
-            </div>
-
-            <h2 className="mt-6 text-2xl font-bold">
-              No orders yet
-            </h2>
-
-            <p className="mx-auto mt-3 max-w-xl text-sm leading-7 text-[#888888]">
-              You don't have any orders yet. Start a consultation
-              or place an order and it will appear here.
+            <p className="font-semibold text-red-300">
+              Unable to load your orders
             </p>
 
-            <Link
-              href="/client-portal/event-concierge"
-              className="mt-7 inline-flex rounded-full bg-[#D4AF37] px-7 py-3.5 text-sm font-bold text-black transition hover:bg-[#E5C65A]"
-            >
-              Start a Consultation →
-            </Link>
+            <p className="mt-2 text-sm text-red-300/80">
+              {error}
+            </p>
 
           </div>
         )}
 
-        {/* ================= ORDERS ================= */}
+        {/* EMPTY STATE */}
 
-        {!error && orders.length > 0 && (
-          <div className="space-y-8">
+        {!error &&
+          orders.length === 0 && (
+            <div className="rounded-3xl border border-[#D4AF37]/20 bg-[#111111] px-5 py-16 text-center sm:px-6 lg:px-8">
 
-            {orders.map((order) => {
-              const statusIndex = getStatusIndex(order.status);
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full border border-[#D4AF37]/20 bg-[#D4AF37]/10 text-xl text-[#D4AF37]">
+                ✓
+              </div>
 
-              const isCancelled =
-                order.status?.toUpperCase() === "CANCELLED";
+              <h2 className="mt-6 text-2xl font-semibold">
+                No orders yet
+              </h2>
 
-              return (
-                <article
-                  key={order.id}
-                  className="overflow-hidden rounded-[30px] border border-white/10 bg-[#111111] shadow-[0_20px_60px_rgba(0,0,0,0.35)] transition duration-300 hover:border-[#D4AF37]/25"
-                >
+              <p className="mx-auto mt-3 max-w-xl text-[#A8A8A8]">
+                You don't have any orders
+                associated with this account yet.
+                Start a consultation or place an
+                order and it will appear here.
+              </p>
 
-                  {/* ================= ORDER TOP ================= */}
+              <Link
+                href="/client-portal/event-concierge"
+                className="mt-7 inline-flex min-h-[48px] items-center justify-center rounded-full bg-[#D4AF37] px-6 font-semibold text-black transition hover:bg-[#E5C65A]"
+              >
+                Start a Consultation
+              </Link>
 
-                  <div className="p-6 sm:p-8 md:p-10">
+            </div>
+          )}
 
-                    <div className="flex flex-col gap-7 md:flex-row md:items-start md:justify-between">
+        {/* ORDERS */}
 
-                      {/* ORDER INFO */}
+        {!error &&
+          orders.length > 0 && (
+            <div className="space-y-6">
 
-                      <div className="min-w-0">
+              {orders.map(
+                (order) => {
+                  const isCancelled =
+                    order.status
+                      ?.toUpperCase()
+                      .replaceAll(
+                        "_",
+                        " "
+                      ) ===
+                    "CANCELLED";
 
-                        <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-[#D4AF37]">
-                          {order.order_no}
-                        </p>
+                  return (
+                    <div
+                      key={order.id}
+                      className="rounded-3xl border border-[#D4AF37]/20 bg-[#111111] p-5 sm:p-6 lg:p-8"
+                    >
 
-                        <h2 className="mt-3 text-2xl font-bold leading-tight sm:text-3xl">
-                          {order.title}
-                        </h2>
+                      {/* ORDER HEADER */}
 
-                        {order.order_date && (
-                          <p className="mt-2 text-sm text-[#777777]">
-                            {formatDate(order.order_date)}
+                      <div className="flex flex-col justify-between gap-5 md:flex-row md:items-center">
+
+                        <div>
+
+                          <p className="text-xs uppercase tracking-[0.25em] text-[#D4AF37]">
+                            {order.order_no}
                           </p>
-                        )}
 
-                      </div>
+                          <h2 className="mt-2 text-2xl font-semibold">
+                            {order.title}
+                          </h2>
 
-                      {/* ORDER VALUE */}
-
-                      <div className="shrink-0 md:text-right">
-
-                        <p className="text-[10px] uppercase tracking-[0.25em] text-[#666666]">
-                          Order Value
-                        </p>
-
-                        <p className="mt-1 text-2xl font-bold text-[#D4AF37] sm:text-3xl">
-                          {formatAmount(order.amount)}
-                        </p>
-
-                        <span
-                          className={`mt-3 inline-flex rounded-full border px-4 py-1.5 text-[10px] font-bold uppercase tracking-[0.18em] ${
-                            isCancelled
-                              ? "border-red-500/30 bg-red-500/5 text-red-400"
-                              : "border-[#D4AF37]/30 bg-[#D4AF37]/5 text-[#D4AF37]"
-                          }`}
-                        >
-                          {getStatusLabel(order.status)}
-                        </span>
-
-                      </div>
-
-                    </div>
-
-                    {/* ================= PROGRESS ================= */}
-
-                    {!isCancelled && (
-                      <div className="mt-10">
-
-                        <div className="mb-4 flex items-center justify-between">
-
-                          <div>
-                            <p className="text-[10px] uppercase tracking-[0.25em] text-[#666666]">
-                              Order Progress
+                          {order.order_date && (
+                            <p className="mt-2 text-sm text-[#999999]">
+                              {formatDate(
+                                order.order_date
+                              )}
                             </p>
-
-                            <p className="mt-2 text-sm font-semibold text-white">
-                              {getStatusLabel(order.status)}
-                            </p>
-                          </div>
-
-                          <div className="text-right">
-
-                            <p className="text-[9px] uppercase tracking-[0.2em] text-[#666666]">
-                              Stage
-                            </p>
-
-                            <p className="mt-1 text-sm font-bold text-[#D4AF37]">
-                              {statusIndex + 1} of 5
-                            </p>
-
-                          </div>
-
-                        </div>
-
-                        {/* BAR */}
-
-                        <div className="relative h-1.5 overflow-hidden rounded-full bg-[#292929]">
-
-                          <div
-                            className="h-full rounded-full bg-[#D4AF37] transition-all duration-700"
-                            style={{
-                              width: getProgressWidth(order.status),
-                            }}
-                          />
-
-                        </div>
-
-                        {/* STEPS */}
-
-                        <div className="mt-5 grid grid-cols-5 gap-1">
-
-                          {STATUS_STEPS.map(
-                            (step, index) => {
-                              const completed =
-                                isStepCompleted(
-                                  order.status,
-                                  index
-                                );
-
-                              const active =
-                                index === statusIndex;
-
-                              return (
-                                <div
-                                  key={step}
-                                  className="flex flex-col items-center text-center"
-                                >
-
-                                  <div
-                                    className={`flex h-8 w-8 items-center justify-center rounded-full border text-[10px] font-bold transition-all sm:h-9 sm:w-9 ${
-                                      completed
-                                        ? "border-[#D4AF37] bg-[#D4AF37] text-black"
-                                        : "border-[#333333] bg-[#181818] text-[#555555]"
-                                    } ${
-                                      active
-                                        ? "ring-4 ring-[#D4AF37]/10"
-                                        : ""
-                                    }`}
-                                  >
-                                    {completed
-                                      ? "✓"
-                                      : index + 1}
-                                  </div>
-
-                                  <p
-                                    className={`mt-3 max-w-[90px] text-[8px] font-medium uppercase leading-3 tracking-wider sm:text-[9px] ${
-                                      completed
-                                        ? "text-[#D4AF37]"
-                                        : "text-[#555555]"
-                                    }`}
-                                  >
-                                    {step}
-                                  </p>
-
-                                </div>
-                              );
-                            }
                           )}
 
                         </div>
 
-                      </div>
-                    )}
+                        {/* AMOUNT / STATUS */}
 
-                    {/* ================= CANCELLED ================= */}
+                        <div className="text-left md:text-right">
 
-                    {isCancelled && (
-                      <div className="mt-8 rounded-2xl border border-red-500/20 bg-red-500/5 p-5">
+                          <p className="text-2xl font-bold text-[#D4AF37]">
+                            {formatAmount(
+                              order.amount
+                            )}
+                          </p>
 
-                        <p className="text-sm leading-6 text-red-300">
-                          This order has been cancelled. Please
-                          contact Rhennie Tasty Shack if you need
-                          further assistance.
-                        </p>
+                          <span
+                            className={`mt-2 inline-block rounded-full border px-4 py-1 text-xs uppercase tracking-wider ${
+                              isCancelled
+                                ? "border-red-500/40 text-red-400"
+                                : "border-[#D4AF37]/30 text-[#D4AF37]"
+                            }`}
+                          >
+                            {getStatusLabel(
+                              order.status
+                            )}
+                          </span>
 
-                      </div>
-                    )}
-
-                    {/* ================= CURRENT STATUS ================= */}
-
-                    {!isCancelled && (
-                      <div className="mt-9 border-t border-white/5 pt-6">
-
-                        <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-[#666666]">
-                          Current Status
-                        </p>
-
-                        <p className="mt-2 text-sm font-semibold text-white">
-                          {getStatusLabel(order.status)}
-                        </p>
-
-                        <p className="mt-2 max-w-2xl text-xs leading-6 text-[#666666] sm:text-sm">
-                          Your order status will update here as our
-                          team processes your request.
-                        </p>
+                        </div>
 
                       </div>
-                    )}
 
-                  </div>
+                      {/* STATUS PROGRESS */}
 
-                </article>
-              );
-            })}
+                      {!isCancelled && (
+                        <div className="mt-8">
 
-          </div>
-        )}
+                          <div className="relative h-1 overflow-hidden rounded-full bg-[#2A2A2A]">
 
-        {/* ================= BOTTOM CTA ================= */}
+                            <div
+                              className={`h-full bg-[#D4AF37] transition-all duration-700 ${getProgressWidth(
+                                order.status
+                              )}`}
+                            />
 
-        {!error && orders.length > 0 && (
-          <div className="mt-14 text-center">
+                          </div>
 
-            <p className="text-sm text-[#666666]">
-              Need help with an order?
-            </p>
+                          <div className="mt-4 grid grid-cols-5 gap-2">
 
-            <a
-              href="https://wa.me/2348121577759?text=Hello%20Rhennie%20Tasty%20Shack,%20I%20need%20help%20with%20my%20order."
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-4 inline-flex rounded-full bg-[#D4AF37] px-7 py-3.5 text-sm font-bold text-black transition hover:bg-[#E5C65A]"
-            >
-              Chat With Us →
-            </a>
+                            {STATUS_STEPS.map(
+                              (
+                                step,
+                                index
+                              ) => {
+                                const completed =
+                                  isStepCompleted(
+                                    order.status,
+                                    index
+                                  );
 
-          </div>
-        )}
+                                return (
+                                  <div
+                                    key={
+                                      step
+                                    }
+                                    className="text-center"
+                                  >
+
+                                    <div
+                                      className={`mx-auto flex h-7 w-7 items-center justify-center rounded-full border text-xs ${
+                                        completed
+                                          ? "border-[#D4AF37] bg-[#D4AF37] text-black"
+                                          : "border-[#444444] bg-[#181818] text-[#666666]"
+                                      }`}
+                                    >
+                                      {completed
+                                        ? "✓"
+                                        : index +
+                                          1}
+                                    </div>
+
+                                    <p
+                                      className={`mt-2 text-[9px] uppercase tracking-wider md:text-[10px] ${
+                                        completed
+                                          ? "text-[#D4AF37]"
+                                          : "text-[#666666]"
+                                      }`}
+                                    >
+                                      {step}
+                                    </p>
+
+                                  </div>
+                                );
+                              }
+                            )}
+
+                          </div>
+
+                        </div>
+                      )}
+
+                      {/* CANCELLED */}
+
+                      {isCancelled && (
+                        <div className="mt-6 rounded-2xl border border-red-500/20 bg-red-500/5 p-4">
+
+                          <p className="text-sm text-red-300">
+                            This order has been
+                            cancelled. Please contact
+                            Rhennie Tasty Shack if you
+                            need further assistance.
+                          </p>
+
+                        </div>
+                      )}
+
+                      {/* CURRENT STATUS */}
+
+                      {!isCancelled && (
+                        <div className="mt-7 border-t border-[#222222] pt-5">
+
+                          <p className="text-xs uppercase tracking-[0.2em] text-[#777777]">
+                            Current Status
+                          </p>
+
+                          <p className="mt-2 font-semibold text-white">
+                            {getStatusLabel(
+                              order.status
+                            )}
+                          </p>
+
+                          <p className="mt-1 text-sm text-[#888888]">
+                            Your order status will
+                            update here as our team
+                            processes your request.
+                          </p>
+
+                        </div>
+                      )}
+
+                    </div>
+                  );
+                }
+              )}
+
+            </div>
+          )}
 
       </div>
-
     </main>
   );
 }

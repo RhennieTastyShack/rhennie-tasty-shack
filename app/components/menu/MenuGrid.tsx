@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
 import { supabase } from "@/lib/supabase";
+import { polishCollectionName } from "@/lib/menu-images";
 import MenuFilters from "./MenuFilters";
 import MealCard from "./MealCard";
 import FoodByLitreCard from "./FoodByLitreCard";
@@ -15,6 +16,7 @@ type MenuItem = {
   collectionSlug: string;
   description: string;
   price: number;
+  image_url: string | null;
   available: boolean;
   featured: boolean;
   display_order: number;
@@ -62,56 +64,81 @@ function matchesCategory(
       "build-your-plate",
       "main meals",
       "main meal",
+      "main-meals",
+      "pasta",
     ],
 
     "executive-lunch": [
       "executive lunch",
+      "executive-lunch",
+      "executive lunch collection",
       "executive",
       "combo",
       "combo collection",
+      "combo-collection",
     ],
 
     breakfast: [
       "breakfast",
       "sunrise",
+      "sunrise collection",
+      "sunrise-collection",
     ],
 
     "street-kitchen-wraps": [
+      "street kitchen & wraps",
+      "street-kitchen-wraps",
       "street kitchen",
+      "street-kitchen",
       "street",
       "wraps",
       "shawarma",
+      "shawarma & wraps",
+      "shawarma-wraps",
       "sharwarma",
-    ],
-
-    "grill-house": [
       "grill house",
+      "grill-house",
       "grill",
     ],
 
-    "food-boxes": [
-      "luxury food boxes",
-      "food boxes",
-      "food box",
-    ],
+    "soups-sides-sauces": [
+      "soups, sides & sauces",
+      "soups-sides-sauces",
 
-    "soups-swallow": [
       "soups & swallows",
       "soups and swallows",
+      "soups-swallow",
       "soups",
       "swallows",
       "soup",
-    ],
 
-    sauces: [
+      "proteins & sides",
+      "proteins and sides",
+      "proteins-sides",
+      "proteins",
+      "sides",
+
       "sauces",
       "sauce",
     ],
 
+    "food-boxes": [
+      "luxury food boxes",
+      "luxury-food-boxes",
+      "food boxes",
+      "food-boxes",
+      "food box",
+      "platter",
+      "feast box",
+    ],
+
     "grand-pot": [
       "grand pot",
+      "grand-pot",
       "food by litre",
+      "food-by-litre",
       "food by liter",
+      "food-by-liter",
       "party orders",
       "litre",
       "liter",
@@ -135,7 +162,7 @@ function matchesCategory(
 }
 
 /* =========================================================
-   CHECK FOOD BY LITRE
+   FOOD BY LITRE CHECK
 ========================================================= */
 
 function isFoodByLitre(
@@ -156,7 +183,7 @@ function isFoodByLitre(
 }
 
 /* =========================================================
-   SIZE LIST
+   LITRE SIZES
 ========================================================= */
 
 const litreSizes = [
@@ -169,7 +196,7 @@ const litreSizes = [
 ];
 
 /* =========================================================
-   MAIN COMPONENT
+   COMPONENT
 ========================================================= */
 
 export default function MenuGrid() {
@@ -208,6 +235,7 @@ export default function MenuGrid() {
           name,
           description,
           price,
+          image_url,
           available,
           featured,
           display_order,
@@ -248,35 +276,46 @@ export default function MenuGrid() {
       }
 
       const formattedMeals: MenuItem[] =
-        (data || []).map((item: any) => ({
-          id: item.id,
+        (data || []).map((item: any) => {
+          const name = item.name || "";
+          const rawCollection =
+            item.collections?.name || "";
 
-          name: item.name || "",
+          return {
+            id: item.id,
 
-          collection:
-            item.collections?.name || "",
+            name,
 
-          collectionSlug:
-            item.collections?.slug || "",
+            collection: polishCollectionName(
+              name,
+              rawCollection
+            ),
 
-          description:
-            item.description || "",
+            collectionSlug:
+              item.collections?.slug || "",
 
-          price:
-            Number(item.price) || 0,
+            description:
+              item.description || "",
 
-          available:
-            item.available ?? true,
+            price:
+              Number(item.price) || 0,
 
-          featured:
-            item.featured ?? false,
+            image_url:
+              item.image_url || null,
 
-          display_order:
-            Number(item.display_order) || 0,
+            available:
+              item.available ?? true,
 
-          sort_order:
-            Number(item.sort_order) || 0,
-        }));
+            featured:
+              item.featured ?? false,
+
+            display_order:
+              Number(item.display_order) || 0,
+
+            sort_order:
+              Number(item.sort_order) || 0,
+          };
+        });
 
       setMeals(formattedMeals);
       setLoading(false);
@@ -290,7 +329,7 @@ export default function MenuGrid() {
   }, []);
 
   /* =======================================================
-     FILTER MEALS
+     FILTER MENU
   ======================================================= */
 
   const filteredMeals = useMemo(() => {
@@ -330,21 +369,7 @@ export default function MenuGrid() {
   ]);
 
   /* =======================================================
-     GROUP FOOD BY LITRE
-     
-     The database can contain several rows for the
-     same meal, one row for each litre size.
-
-     Example:
-
-     Party Jollof Rice - 1L
-     Party Jollof Rice - 2L
-     Party Jollof Rice - 2.5L
-     Party Jollof Rice - 3L
-     Party Jollof Rice - 4L
-     Party Jollof Rice - 5L
-
-     The website displays ONE card.
+     FOOD BY LITRE
   ======================================================= */
 
   const groupedLitreMeals =
@@ -389,7 +414,9 @@ export default function MenuGrid() {
               .map((item, index) => ({
                 size:
                   litreSizes[index],
-                price: item.price,
+
+                price:
+                  item.price,
               }));
 
           return {
@@ -434,7 +461,7 @@ export default function MenuGrid() {
   }, [filteredMeals]);
 
   /* =======================================================
-     DISPLAY COUNT
+     COUNT
   ======================================================= */
 
   const displayCount =
@@ -451,11 +478,9 @@ export default function MenuGrid() {
     return (
       <section className="bg-[#F8F6F2] px-4 py-10 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl">
-
           <MenuFilters />
 
           <div className="mb-7 mt-8 flex items-end justify-between gap-4">
-
             <div>
               <div className="h-3 w-24 animate-pulse rounded bg-black/10" />
 
@@ -466,38 +491,27 @@ export default function MenuGrid() {
           </div>
 
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {Array.from({
+              length: 8,
+            }).map((_, index) => (
+              <div
+                key={index}
+                className="overflow-hidden rounded-[26px] border border-black/5 bg-white shadow-sm"
+              >
+                <div className="h-[230px] animate-pulse bg-black/10" />
 
-            {Array.from({ length: 8 }).map(
-              (_, index) => (
-                <div
-                  key={index}
-                  className="
-                    overflow-hidden
-                    rounded-[26px]
-                    border border-black/5
-                    bg-white
-                    shadow-sm
-                  "
-                >
-                  <div className="h-1.5 animate-pulse bg-black/10" />
+                <div className="space-y-4 p-6">
+                  <div className="h-6 animate-pulse rounded bg-black/10" />
 
-                  <div className="space-y-4 p-6">
+                  <div className="h-4 animate-pulse rounded bg-black/5" />
 
-                    <div className="h-6 animate-pulse rounded bg-black/10" />
+                  <div className="h-4 w-3/4 animate-pulse rounded bg-black/5" />
 
-                    <div className="h-4 animate-pulse rounded bg-black/5" />
-
-                    <div className="h-4 w-3/4 animate-pulse rounded bg-black/5" />
-
-                    <div className="h-12 animate-pulse rounded-full bg-black/10" />
-
-                  </div>
+                  <div className="h-12 animate-pulse rounded-full bg-black/10" />
                 </div>
-              )
-            )}
-
+              </div>
+            ))}
           </div>
-
         </div>
       </section>
     );
@@ -510,13 +524,10 @@ export default function MenuGrid() {
   if (error) {
     return (
       <section className="bg-[#F8F6F2] px-4 py-16 sm:px-6 lg:px-8">
-
         <div className="mx-auto max-w-7xl">
-
           <MenuFilters />
 
           <div className="mt-8 rounded-[28px] border border-red-200 bg-white px-6 py-20 text-center shadow-sm">
-
             <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-red-50 text-2xl text-red-500">
               !
             </div>
@@ -534,26 +545,12 @@ export default function MenuGrid() {
               onClick={() =>
                 window.location.reload()
               }
-              className="
-                mt-7
-                rounded-full
-                bg-[#F26A21]
-                px-7 py-3
-                text-sm
-                font-bold
-                text-white
-                transition-all
-                hover:-translate-y-0.5
-                hover:bg-[#D95512]
-              "
+              className="mt-7 rounded-full bg-[#F26A21] px-7 py-3 text-sm font-bold text-white transition-all hover:-translate-y-0.5 hover:bg-[#D95512]"
             >
               Try Again
             </button>
-
           </div>
-
         </div>
-
       </section>
     );
   }
@@ -565,13 +562,10 @@ export default function MenuGrid() {
   if (displayCount === 0) {
     return (
       <section className="bg-[#F8F6F2] px-4 pb-20 sm:px-6 lg:px-8">
-
         <div className="mx-auto max-w-7xl">
-
           <MenuFilters />
 
           <div className="mt-8 rounded-[30px] border border-black/10 bg-white px-6 py-20 text-center shadow-sm">
-
             <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-[#FFF1E9] text-3xl">
               🍽️
             </div>
@@ -581,120 +575,45 @@ export default function MenuGrid() {
             </h3>
 
             <p className="mx-auto mt-3 max-w-md text-sm leading-7 text-gray-500">
-              We couldn't find a meal matching your
-              current search or selected collection.
-              Try another option.
+              We couldn&apos;t find a meal matching
+              your current search or selected
+              collection. Try another option.
             </p>
-
           </div>
-
         </div>
-
       </section>
     );
   }
 
   /* =======================================================
-     MAIN
+     MAIN MENU
   ======================================================= */
 
   return (
     <section
       id="meals"
-      className="
-        relative
-        overflow-hidden
-        bg-[#F8F6F2]
-        px-4
-        pb-20
-        pt-0
-        text-[#171717]
-        sm:px-6
-        lg:px-8
-      "
+      className="relative overflow-hidden bg-[#F8F6F2] px-4 pb-20 pt-0 text-[#171717] sm:px-6 lg:px-8"
     >
+      {/* BACKGROUND DECORATION */}
 
-      {/* ===================================================
-          DECORATIVE ATMOSPHERE
-      ==================================================== */}
+      <div className="pointer-events-none absolute -left-40 top-40 h-80 w-80 rounded-full bg-[#F26A21]/5 blur-[100px]" />
 
-      <div
-        className="
-          pointer-events-none
-          absolute
-          -left-40
-          top-40
-          h-80
-          w-80
-          rounded-full
-          bg-[#F26A21]/5
-          blur-[100px]
-        "
-      />
-
-      <div
-        className="
-          pointer-events-none
-          absolute
-          -right-40
-          bottom-40
-          h-80
-          w-80
-          rounded-full
-          bg-[#F26A21]/5
-          blur-[100px]
-        "
-      />
+      <div className="pointer-events-none absolute -right-40 bottom-40 h-80 w-80 rounded-full bg-[#F26A21]/5 blur-[100px]" />
 
       <div className="relative mx-auto max-w-7xl">
-
-        {/* =================================================
-            FILTERS
-        ================================================== */}
+        {/* FILTERS */}
 
         <MenuFilters />
 
-        {/* =================================================
-            RESULT HEADER
-        ================================================== */}
+        {/* RESULT HEADER */}
 
-        <div
-          className="
-            mb-8
-            mt-8
-            flex
-            flex-col
-            gap-4
-            sm:flex-row
-            sm:items-end
-            sm:justify-between
-          "
-        >
-
+        <div className="mb-8 mt-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
-
-            <p
-              className="
-                text-[9px]
-                font-bold
-                uppercase
-                tracking-[0.3em]
-                text-[#F26A21]
-              "
-            >
+            <p className="text-[9px] font-bold uppercase tracking-[0.3em] text-[#F26A21]">
               Freshly Prepared
             </p>
 
-            <h2
-              className="
-                mt-2
-                font-serif
-                text-2xl
-                font-bold
-                text-[#171717]
-                sm:text-3xl
-              "
-            >
+            <h2 className="mt-2 font-serif text-2xl font-bold text-[#171717] sm:text-3xl">
               {category
                 ? "Explore This Collection"
                 : "Our Signature Menu"}
@@ -704,28 +623,13 @@ export default function MenuGrid() {
               <p className="mt-2 text-sm text-gray-500">
                 Showing results for{" "}
                 <span className="font-semibold text-[#F26A21]">
-                  "{search}"
+                  &quot;{search}&quot;
                 </span>
               </p>
             )}
-
           </div>
 
-          <div
-            className="
-              flex
-              w-fit
-              items-center
-              rounded-full
-              border
-              border-black/10
-              bg-white
-              px-4
-              py-2.5
-              shadow-sm
-            "
-          >
-
+          <div className="flex w-fit items-center rounded-full border border-black/10 bg-white px-4 py-2.5 shadow-sm">
             <span className="mr-2 h-2 w-2 rounded-full bg-[#F26A21]" />
 
             <span className="text-xs font-semibold text-gray-500">
@@ -734,59 +638,32 @@ export default function MenuGrid() {
                 ? "meal"
                 : "meals"}
             </span>
-
           </div>
-
         </div>
 
-        {/* =================================================
-            FOOD BY LITRE ONLY
-        ================================================== */}
+        {/* FOOD BY LITRE ONLY */}
 
         {category === "grand-pot" ? (
-          <div
-            className="
-              grid
-              items-stretch
-              gap-5
-              sm:grid-cols-2
-              lg:grid-cols-3
-              xl:grid-cols-4
-            "
-          >
-
+          <div className="grid items-stretch gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {groupedLitreMeals.map(
               (meal) => (
                 <FoodByLitreCard
                   key={meal.id}
                   id={meal.id}
                   name={meal.name}
+                  collection="Food by Litre"
                   description={meal.description}
                   options={meal.options}
                   available={meal.available}
                 />
               )
             )}
-
           </div>
         ) : (
+          /* NORMAL MENU */
 
-          /* =================================================
-             NORMAL MENU + GROUPED LITRE PRODUCTS
-          ================================================= */
-
-          <div
-            className="
-              grid
-              items-stretch
-              gap-5
-              sm:grid-cols-2
-              lg:grid-cols-3
-              xl:grid-cols-4
-            "
-          >
-
-            {normalMeals.map((meal) => (
+          <div className="grid items-stretch gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {normalMeals.map((meal, index) => (
               <MealCard
                 key={meal.id}
                 id={meal.id}
@@ -794,7 +671,9 @@ export default function MenuGrid() {
                 collection={meal.collection}
                 description={meal.description}
                 price={meal.price}
+                imageUrl={meal.image_url}
                 available={meal.available}
+                priority={index < 4}
               />
             ))}
 
@@ -804,46 +683,23 @@ export default function MenuGrid() {
                   key={`litre-${meal.id}`}
                   id={meal.id}
                   name={meal.name}
+                  collection="Food by Litre"
                   description={meal.description}
                   options={meal.options}
                   available={meal.available}
                 />
               )
             )}
-
           </div>
         )}
 
-        {/* =================================================
-            BOTTOM BRAND MESSAGE
-        ================================================== */}
+        {/* BRAND MESSAGE */}
 
         {displayCount > 0 && (
           <div className="mt-16 text-center">
+            <div className="mx-auto mb-5 h-px max-w-xs bg-gradient-to-r from-transparent via-[#F26A21]/40 to-transparent" />
 
-            <div
-              className="
-                mx-auto
-                mb-5
-                h-px
-                max-w-xs
-                bg-gradient-to-r
-                from-transparent
-                via-[#F26A21]/40
-                to-transparent
-              "
-            />
-
-            <p
-              className="
-                text-[8px]
-                font-bold
-                uppercase
-                tracking-[0.4em]
-                text-gray-400
-                sm:text-[9px]
-              "
-            >
+            <p className="text-[8px] font-bold uppercase tracking-[0.4em] text-gray-400 sm:text-[9px]">
               Premium Taste
 
               <span className="mx-3 text-[#F26A21]">
@@ -858,10 +714,8 @@ export default function MenuGrid() {
 
               Fast Delivery
             </p>
-
           </div>
         )}
-
       </div>
     </section>
   );

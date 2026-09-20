@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useCart } from "@/app/context/CartContext";
 
 function formatPrice(price: number) {
@@ -20,6 +21,8 @@ type CheckoutForm = {
 };
 
 export default function CartDrawer() {
+  const router = useRouter();
+
   const {
     items,
     subtotal,
@@ -114,6 +117,11 @@ Thank you.`;
   ========================================================= */
 
   function openCheckout() {
+    closeCart();
+    router.push("/checkout");
+  }
+
+  function openWhatsAppCheckout() {
     setError("");
     setCheckoutOpen(true);
   }
@@ -955,9 +963,8 @@ Thank you.`;
                 </div>
 
                 <p className="mt-2 text-[11px] leading-5 text-black/40">
-                  Delivery fee and final order
-                  details will be confirmed at
-                  checkout.
+                  Pay securely with Paystack on the checkout page.
+                  Delivery details are confirmed there.
                 </p>
 
                 <button
@@ -991,9 +998,28 @@ Thank you.`;
 
                 <button
                   type="button"
-                  onClick={clearCart}
+                  onClick={openWhatsAppCheckout}
                   className="
                     mt-3
+                    w-full
+                    py-2
+                    text-[9px]
+                    font-bold
+                    uppercase
+                    tracking-[0.2em]
+                    text-black/35
+                    transition-colors
+                    hover:text-[#F26A21]
+                  "
+                >
+                  Or order on WhatsApp
+                </button>
+
+                <button
+                  type="button"
+                  onClick={clearCart}
+                  className="
+                    mt-1
                     w-full
                     py-2
                     text-[9px]

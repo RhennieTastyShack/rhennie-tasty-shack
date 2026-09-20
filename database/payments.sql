@@ -3,34 +3,82 @@
 -- Rhennie Tasty Shack
 -- =====================================================
 
-create table if not exists payments (
+CREATE TABLE IF NOT EXISTS payments (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
 
-    id uuid primary key default gen_random_uuid(),
+    payment_no text UNIQUE,
 
-    payment_no text unique not null,
+    customer_id uuid REFERENCES customers(id),
 
-    customer_id uuid references customers(id),
+    order_id uuid REFERENCES orders(id),
 
-    order_id uuid references orders(id),
+    quotation_id uuid REFERENCES quotations(id),
 
-    quotation_id uuid references quotations(id),
+    -- Used by meal-plan Paystack checkout
+    subscription_id uuid,
 
-    amount numeric(12,2) not null,
+    amount numeric(12,2) NOT NULL,
+
+    currency text DEFAULT 'NGN',
+
+    base_currency text,
+
+    base_amount numeric(12,2),
+
+    exchange_rate numeric(12,6) DEFAULT 1,
 
     payment_method text,
 
-    payment_status text default 'Pending',
+    payment_provider text,
+
+    payment_status text DEFAULT 'pending',
+
+    payment_reference text,
 
     transaction_reference text,
 
+    provider_metadata jsonb,
+
     paid_at timestamptz,
 
-    created_at timestamptz default now()
+    created_at timestamptz DEFAULT now(),
 
+    updated_at timestamptz DEFAULT now()
 );
-git add .
-create index if not exists idx_payment_customer
-on payments(customer_id);
 
-create index if not exists idx_payment_order
-on payments(order_id);
+-- Safe upgrades for existing databases
+ALTER TABLE payments
+    ADD COLUMN IF NOT EXISTS subscription_id uuid;
+
+ALTER TABLE payments
+    ADD COLUMN IF NOT EXISTS currency text DEFAULT 'NGN';
+
+ALTER TABLE payments
+    ADD COLUMN IF NOT EXISTS base_currency text;
+
+ALTER TABLE payments
+    ADD COLUMN IF NOT EXISTS base_amount numeric(12,2);
+
+ALTER TABLE payments
+    ADD COLUMN IF NOT EXISTS exchange_rate numeric(12,6) DEFAULT 1;
+
+ALTER TABLE payments
+    ADD COLUMN IF NOT EXISTS payment_provider text;
+
+ALTER TABLE payments
+    ADD COLUMN IF NOT EXISTS payment_reference text;
+
+ALTER TABLE payments
+    ADD COLUMN IF NOT EXISTS provider_metadata jsonb;
+
+ALTER TABLE payments
+    ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now();
+
+CREATE INDEX IF NOT EXISTS idx_payment_customer
+ON payments(customer_id);
+
+CREATE INDEX IF NOT EXISTS idx_payment_order
+ON payments(order_id);
+
+CREATE INDEX IF NOT EXISTS idx_payment_subscription
+ON payments(subscription_id);
