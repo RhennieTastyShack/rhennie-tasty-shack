@@ -307,6 +307,10 @@ const IMAGE_MATCHES: Array<{
     image: "fishgetti.jpeg",
   },
   {
+    keywords: ["royal stir fry"],
+    image: "spaghetti.jpeg",
+  },
+  {
     keywords: ["native spaghetti", "native pasta"],
     image: "native pasta.jpeg",
   },
@@ -735,6 +739,20 @@ export function resolveMenuImage(
   // and the stored URL is empty, generic, or a different food.
   if (localPath) {
     if (!stored) {
+      return localPath;
+    }
+
+    const mealKey = normalizeName(mealName);
+
+    if (
+      mealKey.includes("native spaghetti") &&
+      mealKey.includes("chicken") &&
+      /native%20pasta/i.test(localPath)
+    ) {
+      return localPath;
+    }
+
+    if (mealKey.includes("royal stir fry") && /spaghetti\.jpeg/i.test(localPath)) {
       return localPath;
     }
 
