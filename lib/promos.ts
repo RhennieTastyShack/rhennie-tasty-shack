@@ -9,8 +9,8 @@ export type Promo = {
 export const PROMOS: Promo[] = [
   {
     code: "RHENNIE14",
-    label: "14% off your food",
-    percent: 14,
+    label: "5% off your food",
+    percent: 5,
     note: "Delivery and the rider tip stay full price.",
   },
 ];
