@@ -21,6 +21,14 @@ const navLinks = [
     href: "/menu",
   },
   {
+    label: "Promos",
+    href: "/promos",
+  },
+  {
+    label: "RTS Wallet",
+    href: "/client-portal/wallet",
+  },
+  {
     label: "Food Boxes",
     href: "/#foodboxes",
   },
@@ -39,6 +47,10 @@ const navLinks = [
   {
     label: "Meal Plans",
     href: "/subscription",
+  },
+  {
+    label: "Become a Rider",
+    href: "/riders/join",
   },
   {
     label: "Contact",

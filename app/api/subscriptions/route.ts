@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { quoteSubscription } from "@/lib/subscription-price";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -10,9 +11,11 @@ export const dynamic = "force-dynamic";
 
 type TimetableEntry = {
   day?: string;
+  meal_service?: string;
   meal_preference?: string;
   delivery_time?: string;
   notes?: string;
+  menu_item_id?: string;
 };
 
 type CreateSubscriptionBody = {
@@ -28,6 +31,10 @@ type CreateSubscriptionBody = {
   timetable?: TimetableEntry[];
 
   special_requests?: string;
+  start_date?: string;
+  end_date?: string | null;
+  dispatch_mode?: string;
+  payment_mode?: string;
 };
 
 /* =========================================================
@@ -134,6 +141,16 @@ function cleanTimetable(
         notes:
           cleanText(
             item.notes
+          ),
+
+        meal_service:
+          cleanText(
+            item.meal_service
+          ),
+
+        menu_item_id:
+          cleanText(
+            item.menu_item_id
           ),
       };
     })
@@ -634,9 +651,7 @@ export async function POST(
       const entry of timetable
     ) {
       const day =
-        cleanText(
-          entry.day
-        ).toLowerCase();
+        `${cleanText(entry.day)}|${cleanText(entry.meal_service) || cleanText(entry.meal_preference)}|${cleanText(entry.menu_item_id)}`.toLowerCase();
 
       if (
         usedDays.has(day)
@@ -645,7 +660,7 @@ export async function POST(
           {
             success: false,
             message:
-              "Each delivery day can only appear once.",
+              "That dish is already on this course for the same day.",
           },
           {
             status: 400,
@@ -694,10 +709,108 @@ export async function POST(
        SPECIAL REQUEST
     ===================================================== */
 
-    const specialRequests =
-      cleanText(
-        body.special_requests
-      ) || null;
+    const dispatchMode =
+      cleanText(body.dispatch_mode).toUpperCase() === "CUSTOMER" ||
+      cleanText(body.dispatch_mode).toUpperCase() === "CUSTOMER_DISPATCH"
+        ? "CUSTOMER_DISPATCH"
+        : "PLATFORM";
+
+    const isCustom = planSlug === "custom";
+    const paysNow =
+      !isCustom ||
+      cleanText(body.payment_mode).toUpperCase() === "AUTOMATIC";
+    const supabaseAdmin = getSupabaseAdmin();
+    let amount: number | null = null;
+    let status = "PENDING";
+    let deliveryNote = paysNow
+      ? "Delivery: customer's own rider. Delivery fee is not included."
+      : "Custom table. The kitchen will set the price before payment.";
+
+    if (paysNow) {
+      const menuIds = timetable.map((entry) => cleanText(entry.menu_item_id));
+
+      if (menuIds.some((id) => !id)) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: "Choose each course from the menu.",
+          },
+          { status: 400 }
+        );
+      }
+
+      const { data: menuRows, error: menuError } = await supabaseAdmin
+        .from("menu")
+        .select("id, name, price, available")
+        .in("id", [...new Set(menuIds)]);
+
+      if (menuError) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: "Unable to price the menu.",
+          },
+          { status: 500 }
+        );
+      }
+
+      const menuById = new Map(
+        (menuRows || []).map((row) => [String(row.id), row])
+      );
+
+      const pricedMeals = [];
+
+      for (const entry of timetable) {
+        const row = menuById.get(cleanText(entry.menu_item_id));
+        const unitPrice = Number(row?.price);
+
+        if (!row || row.available === false || !Number.isFinite(unitPrice) || unitPrice <= 0) {
+          return NextResponse.json(
+            {
+              success: false,
+              message: "One of the chosen dishes is not available on the menu.",
+            },
+            { status: 400 }
+          );
+        }
+
+        entry.meal_preference = `${cleanText(entry.meal_service) || "Meal"} — ${cleanText(row.name)}`;
+        pricedMeals.push({
+          day: cleanText(entry.day),
+          meal_service: cleanText(entry.meal_service),
+          unitPrice,
+        });
+      }
+
+      const quote = quoteSubscription({
+        meals: pricedMeals,
+        address: deliveryAddress,
+        dispatchMode,
+        startDate: cleanText(body.start_date),
+        endDate: cleanText(body.end_date) || null,
+      });
+
+      if (!quote.total) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: "Add at least one course from the menu so the price can be set.",
+          },
+          { status: 400 }
+        );
+      }
+
+      amount = quote.total;
+      status = "APPROVED";
+      deliveryNote =
+        dispatchMode === "PLATFORM"
+          ? `Delivery: Rhennie platform rider, ₦${quote.deliveryFeeEach.toLocaleString("en-NG")} on each drop (${quote.drops} drop${quote.drops === 1 ? "" : "s"}).`
+          : deliveryNote;
+    }
+
+    const specialRequests = [cleanText(body.special_requests), deliveryNote]
+      .filter(Boolean)
+      .join("\n\n");
 
     /* =====================================================
        CUSTOMER CODE
@@ -711,9 +824,6 @@ export async function POST(
     /* =====================================================
        INSERT
     ===================================================== */
-
-    const supabaseAdmin =
-      getSupabaseAdmin();
 
     const {
       data: subscription,
@@ -757,11 +867,15 @@ export async function POST(
           special_requests:
             specialRequests,
 
-          status:
-            "PENDING",
+          start_date:
+            cleanText(body.start_date) || null,
 
-          amount:
-            null,
+          end_date:
+            cleanText(body.end_date) || null,
+
+          status,
+
+          amount,
 
           currency:
             "NGN",
@@ -773,12 +887,6 @@ export async function POST(
             null,
 
           admin_notes:
-            null,
-
-          start_date:
-            null,
-
-          end_date:
             null,
 
           updated_at:

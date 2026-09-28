@@ -104,6 +104,18 @@ export async function GET(request: Request) {
       );
     }
 
+    let trackingToken: string | null = null;
+
+    if (payment.order_id) {
+      const { data: delivery } = await supabaseAdmin
+        .from("deliveries")
+        .select("tracking_token")
+        .eq("order_id", payment.order_id)
+        .maybeSingle();
+
+      trackingToken = delivery?.tracking_token || null;
+    }
+
     // =================================================
     // ALREADY VERIFIED
     // =================================================
@@ -124,6 +136,8 @@ export async function GET(request: Request) {
 
           order_id:
             payment.order_id,
+
+          tracking_token: trackingToken,
 
           reference:
             payment.payment_reference,
@@ -485,6 +499,29 @@ export async function GET(request: Request) {
     }
 
     // =================================================
+    // CUSTOMER NOTIFICATIONS (non-blocking)
+    // =================================================
+
+    try {
+      const { awardOrderPoints } = await import("@/lib/loyalty");
+      void awardOrderPoints(payment.order_id);
+    } catch (loyaltyError) {
+      console.error("Loyalty points error:", loyaltyError);
+    }
+
+    try {
+      const { notifyOrderPaid } = await import(
+        "@/lib/notify/hooks"
+      );
+      void notifyOrderPaid(payment.order_id);
+    } catch (notifyError) {
+      console.error(
+        "Order paid notify error:",
+        notifyError
+      );
+    }
+
+    // =================================================
     // SUCCESS
     // =================================================
 
@@ -500,6 +537,8 @@ export async function GET(request: Request) {
 
         order_id:
           payment.order_id,
+
+        tracking_token: trackingToken,
 
         reference,
 

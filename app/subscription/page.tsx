@@ -4,44 +4,44 @@ import Link from "next/link";
 
 const plans = [
   {
-    name: "Lunch Plan",
+    name: "Lunch Atelier",
     slug: "daily-lunch",
     description:
-      "Enjoy a freshly prepared premium lunch delivered on the days that work for you.",
+      "A private lunch menu, composed by you and served on the days you keep.",
     features: [
-      "Freshly prepared meals",
-      "Flexible delivery schedule",
-      "Premium menu options",
-      "Easy order management",
+      "Your own lunch dishes",
+      "Stay for a week, a season, or as long as you wish",
+      "Delivery timed to your day",
+      "Pay the menu price for each lunch",
     ],
     price: "From ₦5,500",
   },
   {
-    name: "3-Square Meal Plan",
+    name: "The Signature Table",
     slug: "weekly-plan",
     description:
-      "A convenient daily meal experience designed for customers who want breakfast, lunch and dinner covered.",
+      "Breakfast, lunch, and dinner arranged as your own timetable. The membership lasts exactly as long as you want it to.",
     features: [
-      "Breakfast, lunch & dinner",
-      "Flexible meal schedule",
-      "Premium meal selections",
-      "Priority customer support",
+      "Choose each course yourself",
+      "A private weekly menu",
+      "One week, several months, or open-ended",
+      "Prepared and delivered to your address",
     ],
-    price: "Custom Plan",
+    price: "Menu price",
     featured: true,
   },
   {
-    name: "Custom Meal Plan",
+    name: "A Private Table",
     slug: "custom",
     description:
-      "Build a meal subscription around your lifestyle, preferences and delivery needs.",
+      "For a household, a residence, or a table that needs a menu written only for them.",
     features: [
-      "Personalized meal selection",
-      "Flexible delivery frequency",
-      "Custom dietary preferences",
-      "Dedicated assistance",
+      "A menu composed around your table",
+      "Any length of stay",
+      "Dietary preferences kept on file",
+      "A direct line to the kitchen",
     ],
-    price: "Let's Talk",
+    price: "By request",
     whatsapp: true,
   },
 ];
@@ -157,7 +157,7 @@ export default function SubscriptionPage() {
             </p>
 
             <h2 className="mt-3 text-2xl font-bold sm:text-3xl">
-              Your meals, made simple.
+              A table kept for you.
             </h2>
           </div>
 
@@ -166,9 +166,9 @@ export default function SubscriptionPage() {
               <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full border border-[#D4AF37]/30 bg-[#181818] font-bold text-[#D4AF37]">
                 1
               </div>
-              <h3 className="mt-5 font-bold">Build Your Plan</h3>
+              <h3 className="mt-5 font-bold">Compose your menu</h3>
               <p className="mt-2 text-sm leading-6 text-[#777777]">
-                Choose meals and delivery days in your client portal.
+                Choose the courses, the dishes, the days, and how long you would like to stay.
               </p>
             </div>
 
@@ -176,9 +176,9 @@ export default function SubscriptionPage() {
               <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full border border-[#D4AF37]/30 bg-[#181818] font-bold text-[#D4AF37]">
                 2
               </div>
-              <h3 className="mt-5 font-bold">We Price & Approve</h3>
+              <h3 className="mt-5 font-bold">The kitchen confirms</h3>
               <p className="mt-2 text-sm leading-6 text-[#777777]">
-                Rhennie Studio reviews your plan and confirms the total.
+                Dishes chosen from the menu are charged at their menu price, with delivery added for a platform rider. A custom table can pay that way too, or the kitchen can set the price.
               </p>
             </div>
 
@@ -186,9 +186,9 @@ export default function SubscriptionPage() {
               <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full border border-[#D4AF37]/30 bg-[#181818] font-bold text-[#D4AF37]">
                 3
               </div>
-              <h3 className="mt-5 font-bold">Pay & Enjoy</h3>
+              <h3 className="mt-5 font-bold">The table begins</h3>
               <p className="mt-2 text-sm leading-6 text-[#777777]">
-                Pay securely online, then enjoy freshly prepared meals on schedule.
+                Pay securely, then your menu is prepared and delivered for as long as the membership runs.
               </p>
             </div>
           </div>

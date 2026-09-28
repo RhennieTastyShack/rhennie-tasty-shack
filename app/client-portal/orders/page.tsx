@@ -4,6 +4,21 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { thankYouNote } from "@/lib/thank-you-notes";
+
+type DeliveryInfo = {
+  id: string;
+  mode: string;
+  status: string;
+  tracking_token: string;
+  order_code?: string | null;
+  external_rider_name: string | null;
+  external_rider_phone: string | null;
+  riders?: {
+    full_name: string;
+    phone: string;
+  } | null;
+};
 
 type Order = {
   id: string;
@@ -14,6 +29,7 @@ type Order = {
   amount: number | null;
   status: string | null;
   created_at: string;
+  deliveries?: DeliveryInfo | DeliveryInfo[] | null;
 };
 
 const STATUS_STEPS = [
@@ -140,6 +156,17 @@ export default function OrdersPage() {
     return getStatusIndex(status) >= stepIndex;
   }
 
+  function orderHref(order: Order) {
+    const deliveryRaw = order.deliveries;
+    const delivery = Array.isArray(deliveryRaw) ? deliveryRaw[0] : deliveryRaw;
+
+    if (delivery?.tracking_token) {
+      return `/track/${encodeURIComponent(delivery.tracking_token)}`;
+    }
+
+    return `/client-portal/event-concierge/quotation/${order.id}`;
+  }
+
   if (loading) {
     return (
       <main className="min-h-screen bg-[#080808] px-6 py-16 text-white">
@@ -223,9 +250,10 @@ export default function OrdersPage() {
                 "CANCELLED";
 
               return (
-                <div
+                <Link
                   key={order.id}
-                  className="rounded-3xl border border-[#D4AF37]/20 bg-[#111111] p-6 md:p-8"
+                  href={orderHref(order)}
+                  className="block rounded-3xl border border-[#D4AF37]/20 bg-[#111111] p-6 transition hover:border-[#D4AF37]/60 md:p-8"
                 >
 
                   {/* ORDER HEADER */}
@@ -358,10 +386,58 @@ export default function OrdersPage() {
                         Your order status will update here as
                         our team processes your request.
                       </p>
+                      <p className="mt-3 text-sm leading-6 text-[#D4AF37]">
+                        {thankYouNote(order.order_date || order.created_at)}
+                      </p>
                     </div>
                   )}
 
-                </div>
+                  {(() => {
+                    const deliveryRaw = order.deliveries;
+                    const delivery = Array.isArray(deliveryRaw)
+                      ? deliveryRaw[0]
+                      : deliveryRaw;
+
+                    if (!delivery?.tracking_token) {
+                      return (
+                        <span className="mt-6 inline-flex min-h-[40px] items-center justify-center rounded-full bg-[#D4AF37] px-5 text-xs font-bold uppercase tracking-wider text-black">
+                          Open order
+                        </span>
+                      );
+                    }
+
+                    const riderName =
+                      delivery.riders?.full_name ||
+                      delivery.external_rider_name;
+
+                    return (
+                      <div className="mt-6 rounded-2xl border border-[#D4AF37]/20 bg-[#0C0C0C] p-4">
+                        <p className="text-xs uppercase tracking-[0.2em] text-[#D4AF37]">
+                          Delivery tracking
+                        </p>
+                        <p className="mt-2 text-sm text-white">
+                          {delivery.status.replaceAll("_", " ")}
+                          {riderName ? ` · ${riderName}` : ""}
+                        </p>
+                        {delivery.order_code ? (
+                          <p className="mt-3 text-sm text-white">
+                            Delivery code{" "}
+                            <span className="font-bold tracking-[0.2em] text-[#D4AF37]">
+                              {delivery.order_code}
+                            </span>
+                            . Give this to the rider when the order arrives.
+                          </p>
+                        ) : null}
+                        <span
+                          className="mt-4 inline-flex min-h-[40px] items-center justify-center rounded-full bg-[#D4AF37] px-5 text-xs font-bold uppercase tracking-wider text-black"
+                        >
+                          Open tracking
+                        </span>
+                      </div>
+                    );
+                  })()}
+
+                </Link>
               );
             })}
 

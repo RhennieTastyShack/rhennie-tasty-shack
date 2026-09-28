@@ -89,6 +89,10 @@ export default function AdminLayout({
       href: "/admin/orders",
     },
     {
+      name: "Riders",
+      href: "/admin/riders",
+    },
+    {
       name: "Customers",
       href: "/admin/customers",
     },

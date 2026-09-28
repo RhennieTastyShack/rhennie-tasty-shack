@@ -3,6 +3,7 @@
 import { Suspense, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import PasswordField from "@/app/components/PasswordField";
 import { supabase } from "@/lib/supabase";
 
 function getSafeNextPath(next: string | null) {
@@ -27,10 +28,6 @@ function SignupForm() {
 
   const loginHref = `/login?next=${encodeURIComponent(nextPath)}`;
 
-  const [fullName, setFullName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -45,8 +42,18 @@ function SignupForm() {
     setSuccess("");
 
     try {
-      const normalizedEmail = email.trim().toLowerCase();
-      const normalizedName = fullName.trim();
+    const form = new FormData(e.currentTarget);
+    const normalizedEmail = String(form.get("email") || "")
+      .trim()
+      .toLowerCase();
+    const normalizedName = String(form.get("fullName") || "").trim();
+    const normalizedPhone = String(form.get("phone") || "").trim();
+    const password = String(form.get("password") || "");
+
+      if (!normalizedPhone || normalizedPhone.replace(/\D/g, "").length < 10) {
+        setError("Please enter a valid Nigerian phone number.");
+        return;
+      }
 
       /* ===============================================
          CREATE SUPABASE AUTH ACCOUNT
@@ -60,9 +67,10 @@ function SignupForm() {
         password,
         options: {
           emailRedirectTo:
-            `${window.location.origin}/auth/callback?next=${encodeURIComponent(nextPath)}`,
+            `${window.location.origin}/auth/callback?next=${encodeURIComponent("/verify-phone")}`,
           data: {
             full_name: normalizedName,
+            phone: normalizedPhone,
           },
         },
       });
@@ -81,6 +89,16 @@ function SignupForm() {
         return;
       }
 
+      if (
+        Array.isArray(user.identities) &&
+        user.identities.length === 0
+      ) {
+        setError(
+          "This email already has an account. Sign in instead."
+        );
+        return;
+      }
+
       /* ===============================================
          CREATE / LINK CLIENT PROFILE
       =============================================== */
@@ -91,62 +109,79 @@ function SignupForm() {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            ...(data.session?.access_token
+              ? { Authorization: `Bearer ${data.session.access_token}` }
+              : {}),
           },
           body: JSON.stringify({
             auth_user_id: user.id,
             full_name: normalizedName,
             email: normalizedEmail,
+            phone: normalizedPhone,
           }),
         }
       );
 
       const profileResult =
-        await profileResponse.json();
+        await profileResponse.json().catch(() => ({}));
 
       if (
         !profileResponse.ok ||
         !profileResult?.success
       ) {
-        console.error(
-          "Client profile setup failed:",
-          profileResult
+        setError(
+          profileResult?.message ||
+            "Your login was created, but the client profile could not be saved."
         );
+        return;
+      }
 
-        /*
-         * The Auth account already exists at this point.
-         * Don't tell the customer signup completely failed.
-         */
+      const customerCode =
+        profileResult?.profile?.customer_code;
+
+      if (!data.session?.access_token) {
         setSuccess(
-          "Your account was created. Please verify your email to continue."
+          customerCode
+            ? `Account created. Your Client ID is ${customerCode}. Confirm the email we sent, then sign in to verify your phone.`
+            : "Account created. Confirm the email we sent, then sign in to verify your phone."
         );
 
         setTimeout(() => {
-          router.push(loginHref);
-        }, 2500);
+          router.push(
+            `/login?next=${encodeURIComponent("/verify-phone")}`
+          );
+        }, 2200);
 
         return;
       }
 
       /* ===============================================
-         SUCCESS
+         SEND PHONE OTP
       =============================================== */
 
-      const customerCode =
-        profileResult?.profile?.customer_code;
+      await fetch("/api/auth/otp/send", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${data.session.access_token}`,
+        },
+        body: JSON.stringify({
+          phone: normalizedPhone,
+          purpose: "SIGNUP",
+        }),
+      });
 
-      if (customerCode) {
-        setSuccess(
-          `Account created successfully! Your Client ID is ${customerCode}. Please check your email to verify your account.`
-        );
-      } else {
-        setSuccess(
-          "Account created successfully! Please check your email to verify your account."
-        );
-      }
+      setSuccess(
+        customerCode
+          ? `Account created! Your Client ID is ${customerCode}. Check your email, then enter the verification code.`
+          : "Account created! Check your email for the confirmation link and your verification code."
+      );
 
       setTimeout(() => {
-        router.push(loginHref);
-      }, 3000);
+        router.push(
+          `/verify-phone?next=${encodeURIComponent(nextPath)}`
+        );
+      }, 1800);
     } catch (err) {
       console.error("Signup error:", err);
 
@@ -180,6 +215,7 @@ function SignupForm() {
 
         <form
           onSubmit={handleSignup}
+          autoComplete="on"
           className="mt-10 space-y-6"
         >
           <div>
@@ -188,11 +224,9 @@ function SignupForm() {
             </label>
 
             <input
+              id="fullName"
+              name="fullName"
               type="text"
-              value={fullName}
-              onChange={(e) =>
-                setFullName(e.target.value)
-              }
               placeholder="Your full name"
               autoComplete="name"
               required
@@ -206,13 +240,27 @@ function SignupForm() {
             </label>
 
             <input
+              id="email"
+              name="email"
               type="email"
-              value={email}
-              onChange={(e) =>
-                setEmail(e.target.value)
-              }
               placeholder="you@example.com"
-              autoComplete="email"
+              autoComplete="username"
+              required
+              className="min-h-[50px] w-full rounded-xl border border-[#D4AF37]/20 bg-[#111111] px-4 py-3 text-white outline-none transition focus:border-[#D4AF37]"
+            />
+          </div>
+
+          <div>
+            <label className="mb-2 block text-sm text-[#D4AF37]">
+              Phone Number
+            </label>
+
+            <input
+              id="phone"
+              name="phone"
+              type="tel"
+              placeholder="08012345678"
+              autoComplete="tel"
               required
               className="min-h-[50px] w-full rounded-xl border border-[#D4AF37]/20 bg-[#111111] px-4 py-3 text-white outline-none transition focus:border-[#D4AF37]"
             />
@@ -223,12 +271,9 @@ function SignupForm() {
               Password
             </label>
 
-            <input
-              type="password"
-              value={password}
-              onChange={(e) =>
-                setPassword(e.target.value)
-              }
+            <PasswordField
+              id="password"
+              name="password"
               placeholder="Create a password"
               autoComplete="new-password"
               required
@@ -268,6 +313,13 @@ function SignupForm() {
             className="font-semibold text-[#D4AF37] hover:underline"
           >
             Sign In
+          </Link>
+          {" · "}
+          <Link
+            href="/forgot-password"
+            className="font-semibold text-[#D4AF37] hover:underline"
+          >
+            Forgot password
           </Link>
         </div>
       </div>

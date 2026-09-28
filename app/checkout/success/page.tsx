@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import {
@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 
 import { useCart } from "@/app/context/CartContext";
+import { thankYouNote } from "@/lib/thank-you-notes";
 
 type VerifyState =
   | "loading"
@@ -24,13 +25,38 @@ function CheckoutSuccessContent() {
 
   const orderId = searchParams.get("order");
   const reference = searchParams.get("reference");
+  const trackingToken = searchParams.get("tracking");
+  const deliveryCode = searchParams.get("code");
 
-  const [status, setStatus] =
-    useState<VerifyState>(
-      reference ? "loading" : orderId ? "success" : "missing"
-    );
+  const canShowOrder = Boolean(orderId || trackingToken);
+
+  const [status, setStatus] = useState<VerifyState>(
+    canShowOrder ? "success" : reference ? "loading" : "missing"
+  );
 
   const [message, setMessage] = useState("");
+  const [verifyNote, setVerifyNote] = useState("");
+  const [copiedTracking, setCopiedTracking] = useState(false);
+  const [siteOrigin, setSiteOrigin] = useState("");
+  const [trackingFromPayment, setTrackingFromPayment] = useState("");
+  const clearCartRef = useRef(clearCart);
+  clearCartRef.current = clearCart;
+
+  useEffect(() => {
+    setSiteOrigin(window.location.origin);
+  }, []);
+
+  const resolvedTracking =
+    trackingToken || trackingFromPayment;
+
+  const trackingPath = resolvedTracking
+    ? `/track/${encodeURIComponent(resolvedTracking)}`
+    : null;
+
+  const trackingUrl =
+    trackingPath && siteOrigin
+      ? `${siteOrigin}${trackingPath}`
+      : trackingPath;
 
   useEffect(() => {
     let cancelled = false;
@@ -38,7 +64,7 @@ function CheckoutSuccessContent() {
     async function verifyPayment() {
       if (!reference) {
         if (orderId) {
-          clearCart();
+          clearCartRef.current();
           setStatus("success");
         } else {
           setStatus("missing");
@@ -47,14 +73,13 @@ function CheckoutSuccessContent() {
       }
 
       try {
-        setStatus("loading");
-
         const response = await fetch(
           `/api/payments/paystack/verify?reference=${encodeURIComponent(
             reference
           )}`,
           {
             cache: "no-store",
+            signal: AbortSignal.timeout(12000),
           }
         );
 
@@ -65,6 +90,15 @@ function CheckoutSuccessContent() {
         }
 
         if (!response.ok || !result?.success) {
+          if (orderId || trackingToken) {
+            setVerifyNote(
+              "Paystack is still confirming this payment. Your order and tracking link are ready."
+            );
+            clearCartRef.current();
+            setStatus("success");
+            return;
+          }
+
           setStatus("failed");
           setMessage(
             result?.error ||
@@ -74,7 +108,11 @@ function CheckoutSuccessContent() {
           return;
         }
 
-        clearCart();
+        if (result.tracking_token) {
+          setTrackingFromPayment(String(result.tracking_token));
+        }
+
+        clearCartRef.current();
         setStatus("success");
         setMessage(
           result.message ||
@@ -87,6 +125,15 @@ function CheckoutSuccessContent() {
         );
 
         if (!cancelled) {
+          if (orderId || trackingToken) {
+            setVerifyNote(
+              "Paystack is still confirming this payment. Your order and tracking link are ready."
+            );
+            clearCartRef.current();
+            setStatus("success");
+            return;
+          }
+
           setStatus("failed");
           setMessage(
             "Something went wrong while verifying your payment."
@@ -100,7 +147,7 @@ function CheckoutSuccessContent() {
     return () => {
       cancelled = true;
     };
-  }, [reference, orderId, clearCart]);
+  }, [reference, orderId]);
 
   if (status === "loading") {
     return (
@@ -216,9 +263,7 @@ function CheckoutSuccessContent() {
             </h1>
 
             <p className="mx-auto mt-4 max-w-md text-sm leading-7 text-black/50">
-              Thank you for ordering from Rhennie Tasty Shack.
-              Your payment was received successfully and your
-              order is now being processed.
+              {thankYouNote()} Your payment was received and your order is now being processed.
             </p>
 
             <div className="mx-auto mt-8 max-w-md rounded-[22px] border border-black/[0.07] bg-[#FAF9F7] p-5 text-left">
@@ -253,6 +298,14 @@ function CheckoutSuccessContent() {
               </div>
             </div>
 
+            {verifyNote && (
+              <div className="mx-auto mt-5 max-w-md rounded-2xl bg-[#FFF7F2] px-5 py-4">
+                <p className="text-xs leading-6 text-black/55">
+                  {verifyNote}
+                </p>
+              </div>
+            )}
+
             <div className="mx-auto mt-7 max-w-md rounded-2xl bg-[#FFF7F2] px-5 py-4">
               <p className="text-xs leading-6 text-black/55">
                 We will contact you using the phone number
@@ -260,6 +313,74 @@ function CheckoutSuccessContent() {
                 order and delivery.
               </p>
             </div>
+
+            {deliveryCode && (
+              <div className="mx-auto mt-5 max-w-md rounded-2xl border border-[#F26A21]/25 bg-[#FFF7F2] px-5 py-4">
+                <p className="text-[9px] font-bold uppercase tracking-[0.25em] text-[#F26A21]">
+                  Delivery code
+                </p>
+                <p className="mt-2 text-3xl font-bold tracking-[0.25em] text-[#1A120B]">
+                  {deliveryCode}
+                </p>
+                <p className="mt-2 text-xs leading-5 text-black/50">
+                  Give this code to the rider when your order arrives.
+                </p>
+              </div>
+            )}
+
+            {trackingPath && (
+              <div className="mx-auto mt-5 max-w-md rounded-2xl border border-[#F26A21]/25 bg-white px-5 py-4 text-left">
+                <p className="text-[9px] font-bold uppercase tracking-[0.25em] text-[#F26A21]">
+                  Track delivery
+                </p>
+                <p className="mt-2 text-xs leading-5 text-black/50">
+                  Share this link to follow your delivery status.
+                </p>
+                <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+                  <Link
+                    href={trackingPath}
+                    className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-full bg-[#F26A21] px-5 text-xs font-bold text-white transition hover:bg-[#D95512]"
+                  >
+                    Open tracking page
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      if (!trackingUrl) return;
+                      try {
+                        await navigator.clipboard.writeText(
+                          trackingUrl.startsWith("http")
+                            ? trackingUrl
+                            : `${window.location.origin}${trackingPath}`
+                        );
+                        setCopiedTracking(true);
+                        window.setTimeout(
+                          () => setCopiedTracking(false),
+                          2000
+                        );
+                      } catch {
+                        /* ignore */
+                      }
+                    }}
+                    className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-full border border-black/10 px-5 text-xs font-bold text-black/60 transition hover:border-[#F26A21]/40 hover:text-[#F26A21]"
+                  >
+                    {copiedTracking ? "Copied!" : "Copy tracking link"}
+                  </button>
+                </div>
+                {trackingUrl?.startsWith("http") && (
+                  <a
+                    href={`https://wa.me/?text=${encodeURIComponent(
+                      `Track my Rhennie Tasty Shack delivery: ${trackingUrl}`
+                    )}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-2 inline-flex w-full min-h-[44px] items-center justify-center rounded-full border border-black/10 px-5 text-xs font-bold text-black/60 transition hover:border-[#F26A21]/40 hover:text-[#F26A21]"
+                  >
+                    Share on WhatsApp
+                  </a>
+                )}
+              </div>
+            )}
 
             <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
               <Link

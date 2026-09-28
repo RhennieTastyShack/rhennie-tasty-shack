@@ -4,6 +4,8 @@ import Image from "next/image";
 import { useState } from "react";
 import { useCart } from "@/app/context/CartContext";
 import { resolveMenuImage } from "@/lib/menu-images";
+import { dishChoices, dishChoiceUi } from "@/lib/menu-choices";
+import { partyChoices } from "@/lib/party-menu";
 
 type MealCardProps = {
   id: string;
@@ -38,21 +40,66 @@ export default function MealCard({
 
   const [added, setAdded] = useState(false);
   const [imageError, setImageError] = useState(false);
+  const partyOptions = partyChoices(name);
+  const choices = partyOptions.length > 0 ? partyOptions : dishChoices(name);
+  const choiceUi =
+    partyOptions.length > 0
+      ? {
+          choose: "Choose cups",
+          hide: "Hide cups",
+          hint: "Select more than one. Each cup is ordered on its own, minimum 10.",
+        }
+      : dishChoiceUi(name);
+  const [selectedCups, setSelectedCups] = useState<string[]>([]);
+  const [cupsOpen, setCupsOpen] = useState(false);
 
   const imagePath = resolveMenuImage(name, imageUrl);
 
+  function toggleCup(option: string) {
+    setSelectedCups((current) =>
+      current.includes(option)
+        ? current.filter((cup) => cup !== option)
+        : [...current, option]
+    );
+  }
+
   function handleAddToCart() {
-    if (!available) {
+    if (!available) return;
+
+    if (choices.length > 0 && selectedCups.length === 0) {
+      setCupsOpen(true);
       return;
     }
 
-    addToCart({
-      id,
-      name,
-      collection,
-      price,
-      quantity: 1,
-    });
+    if (selectedCups.length > 0 && name.trim().toLowerCase() === "mixed pasta") {
+      addToCart({
+        id,
+        name,
+        collection,
+        price,
+        quantity: 1,
+        selectedSize: selectedCups.join(" + "),
+      });
+    } else if (selectedCups.length > 0) {
+      for (const cup of selectedCups) {
+        addToCart({
+          id,
+          name,
+          collection,
+          price,
+          quantity: 1,
+          selectedSize: cup,
+        });
+      }
+    } else {
+      addToCart({
+        id,
+        name,
+        collection,
+        price,
+        quantity: 1,
+      });
+    }
 
     setAdded(true);
 
@@ -293,29 +340,56 @@ export default function MealCard({
         {/* DESCRIPTION */}
 
         {description ? (
-          <p
-            className="
-              mt-3
-              line-clamp-3
-              text-sm
-              leading-6
-              text-gray-500
-            "
-          >
+          <p className="mt-3 line-clamp-3 text-sm leading-6 text-gray-500">
             {description}
           </p>
-        ) : (
-          <p
-            className="
-              mt-3
-              text-sm
-              leading-6
-              text-gray-400
-            "
-          >
+        ) : null}
+
+        {choices.length > 0 && choiceUi ? (
+          <div className="mt-4">
+            <button
+              type="button"
+              onClick={() => setCupsOpen((open) => !open)}
+              aria-expanded={cupsOpen}
+              className="text-[8px] font-bold uppercase tracking-[0.2em] text-[#F26A21]"
+            >
+              {cupsOpen ? choiceUi.hide : choiceUi.choose}
+              {selectedCups.length > 0 ? ` · ${selectedCups.length} selected` : ""}
+            </button>
+            {cupsOpen ? (
+              <>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {choices.map((option) => {
+                    const selected = selectedCups.includes(option);
+
+                    return (
+                      <button
+                        key={option}
+                        type="button"
+                        onClick={() => toggleCup(option)}
+                        aria-pressed={selected}
+                        className={`rounded-full border px-3 py-1.5 text-left text-xs font-semibold ${
+                          selected
+                            ? "border-[#F26A21] bg-[#F26A21] text-white"
+                            : "border-black/10 bg-white text-[#171717]"
+                        }`}
+                      >
+                        {option}
+                      </button>
+                    );
+                  })}
+                </div>
+                <p className="mt-2 text-[11px] leading-5 text-gray-400">
+                  {choiceUi.hint}
+                </p>
+              </>
+            ) : null}
+          </div>
+        ) : !description ? (
+          <p className="mt-3 text-sm leading-6 text-gray-400">
             Freshly prepared with premium ingredients.
           </p>
-        )}
+        ) : null}
 
         {/* =================================================
             PRICE + CART
@@ -375,6 +449,7 @@ export default function MealCard({
               type="button"
               onClick={handleAddToCart}
               disabled={!available}
+              aria-disabled={!available}
               className={`
                 mt-5
                 flex
@@ -390,8 +465,13 @@ export default function MealCard({
                 duration-300
 
                 ${
-                  available
-                    ? added
+                  !available
+                    ? `
+                      cursor-not-allowed
+                      bg-gray-200
+                      text-gray-400
+                    `
+                    : added
                       ? `
                         bg-green-600
                         text-white
@@ -405,19 +485,18 @@ export default function MealCard({
                         hover:bg-[#D95512]
                         hover:shadow-[0_12px_28px_rgba(242,106,33,0.25)]
                       `
-                    : `
-                      cursor-not-allowed
-                      bg-gray-200
-                      text-gray-400
-                    `
                 }
               `}
             >
               {!available
                 ? "Currently Unavailable"
-                : added
+                : choices.length > 0 && selectedCups.length === 0
+                  ? choiceUi?.choose || "Choose options"
+                  : added
                   ? "Added to Cart ✓"
-                  : "Add to Cart"}
+                  : selectedCups.length > 1
+                    ? `Add ${selectedCups.length}`
+                    : "Add to Cart"}
             </button>
           </div>
         </div>

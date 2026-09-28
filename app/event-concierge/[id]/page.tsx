@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import { supabase } from "@/lib/supabase";
 import {
   ArrowLeft,
   Check,
@@ -115,13 +116,20 @@ export default function CustomerQuotationPage() {
         setLoading(true);
         setError("");
 
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+
         const response = await fetch(
           `/api/orders/${encodeURIComponent(
             orderId
-          )}/quotation`,
+          )}`,
           {
             method: "GET",
             cache: "no-store",
+            headers: session?.access_token
+              ? { Authorization: `Bearer ${session.access_token}` }
+              : {},
           }
         );
 
@@ -184,6 +192,10 @@ export default function CustomerQuotationPage() {
       setError("");
       setSuccess("");
 
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
       const response = await fetch(
         `/api/orders/${encodeURIComponent(
           order.id
@@ -192,6 +204,9 @@ export default function CustomerQuotationPage() {
           method: "PATCH",
           headers: {
             "Content-Type": "application/json",
+            ...(session?.access_token
+              ? { Authorization: `Bearer ${session.access_token}` }
+              : {}),
           },
           body: JSON.stringify({
             quotation_status: "ACCEPTED",
@@ -266,6 +281,10 @@ export default function CustomerQuotationPage() {
       setError("");
       setSuccess("");
 
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
       const response = await fetch(
         `/api/orders/${encodeURIComponent(
           order.id
@@ -274,6 +293,9 @@ export default function CustomerQuotationPage() {
           method: "PATCH",
           headers: {
             "Content-Type": "application/json",
+            ...(session?.access_token
+              ? { Authorization: `Bearer ${session.access_token}` }
+              : {}),
           },
           body: JSON.stringify({
             quotation_status:
@@ -633,7 +655,7 @@ export default function CustomerQuotationPage() {
 
                 <div className="flex items-center justify-between gap-4 text-sm">
                   <span className="text-black/45">
-                    Delivery / Logistics
+                    Event logistics
                   </span>
 
                   <span className="font-bold">
@@ -843,6 +865,13 @@ export default function CustomerQuotationPage() {
                   accepted and your event is now
                   confirmed with Rhennie Tasty Shack.
                 </p>
+
+                <Link
+                  href={`/client-portal/payment/${order.id}`}
+                  className="mt-6 inline-flex min-h-[48px] items-center justify-center rounded-full bg-[#F26A21] px-8 text-xs font-bold uppercase tracking-[0.15em] text-white transition hover:bg-[#D95512]"
+                >
+                  Pay Now
+                </Link>
 
               </div>
             )}

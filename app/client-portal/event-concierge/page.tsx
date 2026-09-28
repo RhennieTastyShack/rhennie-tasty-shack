@@ -1,6 +1,13 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
+import { useState } from "react";
+import {
+  PARTY_DISHES,
+  formatPartyPrice,
+  type PartyDish,
+} from "@/lib/party-menu";
 
 const eventTypes = [
   {
@@ -42,13 +49,92 @@ const eventTypes = [
 ];
 
 const services = [
-  "Custom event menus",
-  "Premium food boxes",
-  "Party orders by the litre",
-  "Small chops & appetizers",
-  "Dessert & celebration packages",
-  "Corporate meal service",
+  "The regular menu for the table",
+  "Appetizers for the reception",
+  "Seafood, grill and small chops",
+  "Private dining and receptions",
+  "Logistics quoted for each event",
+  "A host who stays with the details",
 ];
+
+function AppetizerCard({ dish }: { dish: PartyDish }) {
+  const [selectedCups, setSelectedCups] = useState<string[]>([]);
+  const [cupsOpen, setCupsOpen] = useState(false);
+  const choices = dish.choices || [];
+
+  return (
+    <article className="overflow-hidden rounded-[28px] border border-black/[0.06] bg-white">
+      {dish.image ? (
+        <div className="relative aspect-[4/3]">
+          <Image
+            src={dish.image}
+            alt={dish.name}
+            fill
+            className="object-cover"
+            sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+          />
+        </div>
+      ) : null}
+      <div className="p-6">
+        <p className="text-[9px] font-bold uppercase tracking-[0.22em] text-[#F26A21]">
+          {dish.kind}
+        </p>
+        <h3 className="mt-3 font-serif text-2xl font-bold">{dish.name}</h3>
+        <p className="mt-2 text-sm leading-6 text-black/50">{dish.description}</p>
+        {choices.length > 0 ? (
+          <div className="mt-4">
+            <button
+              type="button"
+              onClick={() => setCupsOpen((open) => !open)}
+              aria-expanded={cupsOpen}
+              className="text-[8px] font-bold uppercase tracking-[0.2em] text-[#F26A21]"
+            >
+              {cupsOpen ? "Hide cups" : "Choose cups"}
+              {selectedCups.length > 0 ? ` · ${selectedCups.length} selected` : ""}
+            </button>
+            {cupsOpen ? (
+              <div className="mt-2 flex flex-wrap gap-2">
+                {choices.map((option) => {
+                  const selected = selectedCups.includes(option);
+
+                  return (
+                    <button
+                      key={option}
+                      type="button"
+                      onClick={() =>
+                        setSelectedCups((current) =>
+                          current.includes(option)
+                            ? current.filter((cup) => cup !== option)
+                            : [...current, option]
+                        )
+                      }
+                      aria-pressed={selected}
+                      className={`rounded-full border px-3 py-1.5 text-left text-xs font-semibold ${
+                        selected
+                          ? "border-[#F26A21] bg-[#F26A21] text-white"
+                          : "border-black/10 bg-white text-[#171717]"
+                      }`}
+                    >
+                      {option}
+                    </button>
+                  );
+                })}
+              </div>
+            ) : null}
+            {selectedCups.length > 0 && cupsOpen ? (
+              <p className="mt-3 text-xs font-semibold text-[#171717]">
+                Selected: {selectedCups.join(", ")}
+              </p>
+            ) : null}
+          </div>
+        ) : null}
+        <p className="mt-4 text-sm font-bold text-[#171717]">
+          {formatPartyPrice(dish)}
+        </p>
+      </div>
+    </article>
+  );
+}
 
 export default function EventConciergePage() {
   return (
@@ -93,10 +179,11 @@ export default function EventConciergePage() {
 
             {/* Description */}
             <p className="mt-8 max-w-2xl text-sm leading-7 text-white/65 sm:text-base sm:leading-8 lg:text-lg">
-              Tell us about your event and let Rhennie Tasty Shack
-              create a dining experience your guests will remember.
-              From intimate celebrations to large corporate events,
-              every detail is thoughtfully crafted.
+              A private table for the occasion you are hosting.
+              Guests begin with appetizers — waffle boxes, a seafood platter
+              of crabs, prawns, glazed corn, fish and sauce, and tapioca.
+              Every appetizer starts at 10. Then the regular menu.
+              Logistics is quoted for that event alone.
             </p>
 
             {/* Buttons */}
@@ -257,10 +344,9 @@ export default function EventConciergePage() {
             </h2>
 
             <p className="mt-6 max-w-xl text-sm leading-7 text-white/55 sm:text-base sm:leading-8">
-              Every event is different. That's why we don't believe
-              in one-size-fits-all catering. Our team works around
-              your needs to create something personal, polished
-              and delicious.
+              Every celebration asks for its own menu and its own logistics.
+              The fee to bring the table to your venue is set for that event,
+              from the address, the hour and the number of guests.
             </p>
 
           </div>
@@ -290,6 +376,51 @@ export default function EventConciergePage() {
 
         </div>
 
+      </section>
+
+      {/* =====================================================
+          PARTY TABLE
+      ====================================================== */}
+
+      <section className="bg-[#F8F6F2] px-5 py-20 sm:px-8 md:py-24 lg:px-12">
+        <div className="mx-auto max-w-7xl">
+          <div className="mb-12 max-w-2xl">
+            <p className="text-[9px] font-bold uppercase tracking-[0.35em] text-[#F26A21]">
+              Appetizers
+            </p>
+            <h2 className="mt-3 font-serif text-3xl font-bold sm:text-4xl md:text-5xl">
+              Bites before the regular menu
+            </h2>
+            <p className="mt-4 text-sm leading-7 text-black/50 sm:text-base">
+              Waffles come with grilled chicken, sausage and sauce.
+              Every appetizer has a minimum order of 10. Pasta cups are
+              ₦3,500, and the creamy and fire pastas are ₦4,500. The
+              regular menu is still the meal. Logistics is written for
+              this event.
+            </p>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {PARTY_DISHES.map((dish) => (
+              <AppetizerCard key={dish.name} dish={dish} />
+            ))}
+          </div>
+
+          <div className="mt-10 flex flex-wrap gap-6">
+            <Link
+              href="/menu"
+              className="text-xs font-bold uppercase tracking-[0.16em] text-[#171717]"
+            >
+              Regular menu →
+            </Link>
+            <Link
+              href="/menu?category=appetizers"
+              className="text-xs font-bold uppercase tracking-[0.16em] text-[#F26A21]"
+            >
+              Appetizers →
+            </Link>
+          </div>
+        </div>
       </section>
 
       {/* =====================================================

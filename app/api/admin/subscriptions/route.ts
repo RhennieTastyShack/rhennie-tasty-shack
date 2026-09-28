@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { requireAdmin } from "@/lib/supabase-admin";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -44,8 +45,17 @@ function normalizeStatus(value: unknown) {
    GET ALL SUBSCRIPTIONS
 ========================================================= */
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const admin = await requireAdmin(request);
+
+    if (!admin) {
+      return NextResponse.json(
+        { success: false, message: "Only the kitchen can view subscriptions." },
+        { status: 401 }
+      );
+    }
+
     const supabaseAdmin = getSupabaseAdmin();
 
     const { data, error } = await supabaseAdmin

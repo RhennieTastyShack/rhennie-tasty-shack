@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import crypto from "crypto";
+import { creditWalletTopup } from "@/lib/customer-wallet";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -220,6 +221,32 @@ export async function POST(
           status: 400,
         }
       );
+    }
+
+    if (String(reference).startsWith("RTS-WALLET-")) {
+      const amountNgn = Math.round(Number(transaction.amount || 0) / 100);
+      const credited = await creditWalletTopup(String(reference), amountNgn);
+
+      if (credited.handled && credited.ok) {
+        return NextResponse.json({
+          success: true,
+          wallet: true,
+          message: credited.message,
+        });
+      }
+
+      if (credited.handled && credited.retry) {
+        return NextResponse.json(
+          { success: false, message: credited.message },
+          { status: 500 }
+        );
+      }
+
+      return NextResponse.json({
+        success: false,
+        wallet: true,
+        message: credited.handled ? credited.message : "Wallet top-up was skipped.",
+      });
     }
 
     const supabaseAdmin =
@@ -563,6 +590,20 @@ export async function POST(
             status: 500,
           }
         );
+      }
+
+      if (!alreadyPaid) {
+        try {
+          const { notifyOrderPaid } = await import(
+            "@/lib/notify/hooks"
+          );
+          void notifyOrderPaid(payment.order_id);
+        } catch (notifyError) {
+          console.error(
+            "Webhook order paid notify error:",
+            notifyError
+          );
+        }
       }
 
       return NextResponse.json({

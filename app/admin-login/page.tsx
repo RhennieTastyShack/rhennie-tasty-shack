@@ -3,19 +3,21 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import PasswordField from "@/app/components/PasswordField";
 import { supabase } from "@/lib/supabase";
 
 export default function AdminLoginPage() {
   const router = useRouter();
-
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   async function handleLogin(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+
+    const form = new FormData(e.currentTarget);
+    const email = String(form.get("email") || "").trim();
+    const password = String(form.get("password") || "");
 
     setLoading(true);
     setError("");
@@ -60,7 +62,7 @@ export default function AdminLoginPage() {
         </div>
 
         {/* Login Form */}
-        <form onSubmit={handleLogin} className="space-y-6">
+        <form onSubmit={handleLogin} autoComplete="on" className="space-y-6">
 
           {/* Email */}
           <div>
@@ -73,11 +75,10 @@ export default function AdminLoginPage() {
 
             <input
               id="email"
+              name="email"
               type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
               placeholder="admin@example.com"
-              autoComplete="email"
+              autoComplete="username"
               required
               className="w-full rounded-xl border border-white/10 bg-[#111111] px-4 py-4 text-white outline-none transition placeholder:text-white/20 focus:border-[#D4AF37] focus:ring-1 focus:ring-[#D4AF37]"
             />
@@ -101,11 +102,9 @@ export default function AdminLoginPage() {
               </Link>
             </div>
 
-            <input
+            <PasswordField
               id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              name="password"
               placeholder="••••••••"
               autoComplete="current-password"
               required

@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS payments (
 
     payment_no text UNIQUE,
 
-    customer_id uuid REFERENCES customers(id),
+    customer_id uuid,
 
     order_id uuid REFERENCES orders(id),
 

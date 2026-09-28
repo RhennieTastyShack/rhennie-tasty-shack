@@ -4,6 +4,7 @@ import {
   Suspense,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 
@@ -18,6 +19,11 @@ import {
   createClient,
 } from "@supabase/supabase-js";
 
+import {
+  quoteSubscription,
+  type DispatchMode,
+} from "@/lib/subscription-price";
+
 /* =========================================================
    TYPES
 ========================================================= */
@@ -31,11 +37,35 @@ type DayName =
   | "Saturday"
   | "Sunday";
 
+type CourseName = "Breakfast" | "Lunch" | "Dinner";
+
+type SelectedDish = {
+  menuItemId: string;
+  name: string;
+  unitPrice: number;
+};
+
+type CourseEntry = {
+  selected: boolean;
+  dish: string;
+  time: string;
+  dishes: SelectedDish[];
+};
+
+type MenuChoice = {
+  id: string;
+  name: string;
+  price: number;
+  collection: string;
+  available?: boolean;
+};
+
 type TimetableEntry = {
   day: string;
   meal_preference: string;
   delivery_time: string;
   notes: string;
+  courses: Record<CourseName, CourseEntry>;
 };
 
 type Subscription = {
@@ -109,12 +139,22 @@ const DAYS: DayName[] = [
   "Sunday",
 ];
 
-const PLAN_NAMES: Record<string, string> = {
-  "daily-lunch": "Daily Lunch",
-  lunch: "Daily Lunch",
+const COURSES: CourseName[] = ["Breakfast", "Lunch", "Dinner"];
 
-  "weekly-plan": "Weekly Plan",
-  weekly: "Weekly Plan",
+const DURATIONS = [
+  { id: "1-week", label: "1 week" },
+  { id: "2-weeks", label: "2 weeks" },
+  { id: "1-month", label: "1 month" },
+  { id: "3-months", label: "3 months" },
+  { id: "ongoing", label: "As long as I wish" },
+];
+
+const PLAN_NAMES: Record<string, string> = {
+  "daily-lunch": "Lunch Atelier",
+  lunch: "Lunch Atelier",
+
+  "weekly-plan": "The Signature Table",
+  weekly: "The Signature Table",
 
   "monthly-plan": "Monthly Plan",
   monthly: "Monthly Plan",
@@ -197,6 +237,14 @@ function getUserName(
   return `${first} ${last}`.trim();
 }
 
+function emptyCourses(): Record<CourseName, CourseEntry> {
+  return {
+    Breakfast: { selected: false, dish: "", time: "", dishes: [] },
+    Lunch: { selected: false, dish: "", time: "", dishes: [] },
+    Dinner: { selected: false, dish: "", time: "", dishes: [] },
+  };
+}
+
 function createEmptyTimetable():
   Record<
     DayName,
@@ -208,6 +256,7 @@ function createEmptyTimetable():
       meal_preference: "",
       delivery_time: "",
       notes: "",
+      courses: emptyCourses(),
     },
 
     Tuesday: {
@@ -215,6 +264,7 @@ function createEmptyTimetable():
       meal_preference: "",
       delivery_time: "",
       notes: "",
+      courses: emptyCourses(),
     },
 
     Wednesday: {
@@ -222,6 +272,7 @@ function createEmptyTimetable():
       meal_preference: "",
       delivery_time: "",
       notes: "",
+      courses: emptyCourses(),
     },
 
     Thursday: {
@@ -229,6 +280,7 @@ function createEmptyTimetable():
       meal_preference: "",
       delivery_time: "",
       notes: "",
+      courses: emptyCourses(),
     },
 
     Friday: {
@@ -236,6 +288,7 @@ function createEmptyTimetable():
       meal_preference: "",
       delivery_time: "",
       notes: "",
+      courses: emptyCourses(),
     },
 
     Saturday: {
@@ -243,6 +296,7 @@ function createEmptyTimetable():
       meal_preference: "",
       delivery_time: "",
       notes: "",
+      courses: emptyCourses(),
     },
 
     Sunday: {
@@ -250,6 +304,7 @@ function createEmptyTimetable():
       meal_preference: "",
       delivery_time: "",
       notes: "",
+      courses: emptyCourses(),
     },
   };
 }
@@ -291,6 +346,31 @@ function formatTime(
     2,
     "0"
   )} ${suffix}`;
+}
+
+function coursesForPlan(planSlug: string): CourseName[] {
+  if (planSlug === "daily-lunch" || planSlug === "lunch") {
+    return ["Lunch"];
+  }
+  return COURSES;
+}
+
+function subscriptionEnd(start: string, durationId: string) {
+  if (durationId === "ongoing" || !start) return null;
+  const date = new Date(`${start}T12:00:00`);
+  if (Number.isNaN(date.getTime())) return null;
+  if (durationId === "1-week") date.setDate(date.getDate() + 6);
+  else if (durationId === "2-weeks") date.setDate(date.getDate() + 13);
+  else if (durationId === "1-month") {
+    date.setMonth(date.getMonth() + 1);
+    date.setDate(date.getDate() - 1);
+  } else if (durationId === "3-months") {
+    date.setMonth(date.getMonth() + 3);
+    date.setDate(date.getDate() - 1);
+  }
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${date.getFullYear()}-${month}-${day}`;
 }
 
 /* =========================================================
@@ -359,6 +439,8 @@ function SubscriptionBuilderContent() {
       )
     );
 
+  const isCustom = planSlug === "custom";
+
   /* =======================================================
      FORM STATE
   ======================================================= */
@@ -396,6 +478,14 @@ function SubscriptionBuilderContent() {
     setSpecialRequests,
   ] = useState("");
 
+  const [customPaysNow, setCustomPaysNow] = useState(false);
+  const paysNow = !isCustom || customPaysNow;
+  const [durationId, setDurationId] = useState("ongoing");
+  const [dispatchMode, setDispatchMode] = useState<DispatchMode>("PLATFORM");
+  const [startDate, setStartDate] = useState(() =>
+    new Date().toISOString().slice(0, 10)
+  );
+
   const [
     selectedDays,
     setSelectedDays,
@@ -431,6 +521,18 @@ function SubscriptionBuilderContent() {
     setErrorMessage,
   ] = useState("");
 
+  const paySectionRef = useRef<HTMLElement>(null);
+
+  function revealError(message: string) {
+    setErrorMessage(message);
+    window.setTimeout(() => {
+      paySectionRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+    }, 0);
+  }
+
   const [
     successMessage,
     setSuccessMessage,
@@ -441,9 +543,46 @@ function SubscriptionBuilderContent() {
     setSubmittedId,
   ] = useState("");
 
+  const [menuChoices, setMenuChoices] = useState<MenuChoice[]>([]);
+
   /* =======================================================
      TOKEN
   ======================================================= */
+
+  const priceQuote = useMemo(() => {
+    const offered = coursesForPlan(planSlug);
+    const meals = selectedDays.flatMap((day) =>
+      offered
+        .filter((course) => timetable[day].courses[course].selected)
+        .flatMap((course) =>
+          timetable[day].courses[course].dishes.map((dish) => ({
+            day,
+            meal_service: course,
+            unitPrice: dish.unitPrice,
+          }))
+        )
+    );
+
+    return quoteSubscription({
+      meals,
+      address: deliveryAddress,
+      dispatchMode,
+      startDate,
+      endDate: subscriptionEnd(startDate, durationId),
+    });
+  }, [
+    deliveryAddress,
+    dispatchMode,
+    durationId,
+    planSlug,
+    selectedDays,
+    startDate,
+    timetable,
+  ]);
+
+  function naira(value: number) {
+    return `₦${value.toLocaleString("en-NG")}`;
+  }
 
   async function getAccessToken() {
     const {
@@ -691,27 +830,47 @@ function SubscriptionBuilderContent() {
     router,
   ]);
 
-  /* =======================================================
-     SELECTED TIMETABLE
-  ======================================================= */
+  useEffect(() => {
+    let cancelled = false;
 
-  const selectedTimetable =
-    useMemo(
-      () =>
-        DAYS.filter(
-          (day) =>
-            selectedDays.includes(
-              day
-            )
-        ).map(
-          (day) =>
-            timetable[day]
-        ),
-      [
-        selectedDays,
-        timetable,
-      ]
-    );
+    async function loadMenu() {
+      try {
+        const response = await fetch("/api/menu", { cache: "no-store" });
+        const data = await response.json();
+        if (cancelled || !Array.isArray(data)) return;
+
+        const choices = data
+          .filter((item) => {
+            const collection = String(item.collection || "");
+            const price = Number(item.price);
+            return (
+              item.available !== false &&
+              Number.isFinite(price) &&
+              price > 0 &&
+              !/box|litre|party|appetizer/i.test(collection)
+            );
+          })
+          .map((item) => ({
+            id: String(item.id),
+            name: String(item.name || ""),
+            price: Number(item.price),
+            collection: String(item.collection || "Menu"),
+            available: item.available !== false,
+          }))
+          .filter((item) => item.id && item.name);
+
+        setMenuChoices(choices);
+      } catch {
+        if (!cancelled) setMenuChoices([]);
+      }
+    }
+
+    loadMenu();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   /* =======================================================
      TOGGLE DAY
@@ -804,29 +963,33 @@ function SubscriptionBuilderContent() {
       return "Please select at least one delivery day.";
     }
 
-    for (
-      const day of
-        selectedDays
-    ) {
-      const entry =
-        timetable[
-          day
-        ];
+    if (!startDate) {
+      return "Please choose the day your subscription begins.";
+    }
 
-      if (
-        !entry
-          .meal_preference
-          .trim()
-      ) {
-        return `Please enter your meal for ${day}.`;
+    const offered = coursesForPlan(planSlug);
+
+    for (const day of selectedDays) {
+      const chosen = offered.filter(
+        (course) => timetable[day].courses[course].selected
+      );
+
+      if (chosen.length === 0) {
+        return `Choose at least one course for ${day}.`;
       }
 
-      if (
-        !entry
-          .delivery_time
-          .trim()
-      ) {
-        return `Please choose a delivery time for ${day}.`;
+      for (const course of chosen) {
+        const item = timetable[day].courses[course];
+        if (!paysNow) {
+          if (!item.dish.trim()) {
+            return `Name the ${course.toLowerCase()} dish for ${day}.`;
+          }
+        } else if (item.dishes.length === 0) {
+          return `Choose at least one ${course.toLowerCase()} dish from the menu for ${day}.`;
+        }
+        if (!item.time.trim()) {
+          return `Choose a ${course.toLowerCase()} delivery time for ${day}.`;
+        }
       }
     }
 
@@ -843,10 +1006,9 @@ function SubscriptionBuilderContent() {
   ======================================================= */
 
   async function submitMealPlan(
-    event:
-      React.FormEvent<HTMLFormElement>
+    event?: React.FormEvent<HTMLFormElement>
   ) {
-    event.preventDefault();
+    event?.preventDefault();
 
     setErrorMessage("");
     setSuccessMessage("");
@@ -856,10 +1018,7 @@ function SubscriptionBuilderContent() {
       validate();
 
     if (validation) {
-      setErrorMessage(
-        validation
-      );
-
+      revealError(validation);
       return;
     }
 
@@ -875,12 +1034,52 @@ function SubscriptionBuilderContent() {
         );
       }
 
+      const offered = coursesForPlan(planSlug);
+      const endDate = subscriptionEnd(startDate, durationId);
+      const durationLabel =
+        DURATIONS.find((item) => item.id === durationId)?.label ||
+        "As long as I wish";
+      const lengthNote =
+        durationId === "ongoing"
+          ? `Subscription length: as long as I wish, starting ${startDate}.`
+          : `Subscription length: ${durationLabel}, ${startDate} to ${endDate}.`;
+      const menu = selectedDays.flatMap((day) =>
+        offered
+          .filter((course) => timetable[day].courses[course].selected)
+          .flatMap((course) => {
+            const item = timetable[day].courses[course];
+            if (!paysNow) {
+              return [
+                {
+                  day,
+                  meal_service: course,
+                  meal_preference: `${course} — ${item.dish.trim()}`,
+                  menu_item_id: "",
+                  delivery_time: item.time,
+                  notes: timetable[day].notes.trim(),
+                },
+              ];
+            }
+            return item.dishes.map((dish) => ({
+              day,
+              meal_service: course,
+              meal_preference: `${course} — ${dish.name}`,
+              menu_item_id: dish.menuItemId,
+              delivery_time: item.time,
+              notes: timetable[day].notes.trim(),
+            }));
+          })
+      );
+
       const payload = {
         plan_slug:
           planSlug,
 
         plan_name:
           planName,
+
+        start_date: startDate,
+        end_date: endDate,
 
         customer_name:
           customerName.trim(),
@@ -894,31 +1093,15 @@ function SubscriptionBuilderContent() {
         delivery_address:
           deliveryAddress.trim(),
 
-        timetable:
-          selectedTimetable.map(
-            (
-              entry
-            ) => ({
-              day:
-                entry.day,
+        timetable: menu,
 
-              meal_preference:
-                entry
-                  .meal_preference
-                  .trim(),
+        dispatch_mode: dispatchMode,
 
-              delivery_time:
-                entry.delivery_time,
+        payment_mode: paysNow ? "AUTOMATIC" : "QUOTE",
 
-              notes:
-                entry
-                  .notes
-                  .trim(),
-            })
-          ),
-
-        special_requests:
-          specialRequests.trim(),
+        special_requests: [lengthNote, specialRequests.trim()]
+          .filter(Boolean)
+          .join("\n\n"),
       };
 
       const response =
@@ -967,16 +1150,40 @@ function SubscriptionBuilderContent() {
         result.subscription.id
       );
 
-      setSuccessMessage(
-        isRenewal
-          ? "Your renewal has been submitted to Rhennie Studio for review and pricing."
-          : "Your meal plan has been submitted to Rhennie Studio for review and pricing."
-      );
+      if (paysNow) {
+        const priced = naira(result.subscription.amount || priceQuote.total);
+        setSuccessMessage(`Opening payment for ${priced}.`);
 
-      /*
-        Return to My Subscriptions so the customer
-        can track pricing, approval and payment.
-      */
+        const paymentResponse = await fetch(
+          `/api/subscriptions/${result.subscription.id}/payment`,
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+        const payment = (await paymentResponse.json()) as {
+          success?: boolean;
+          message?: string;
+          authorization_url?: string;
+        };
+
+        if (!paymentResponse.ok || !payment.authorization_url) {
+          throw new Error(
+            payment.message ||
+              "Your plan is saved. Open My Subscriptions to pay."
+          );
+        }
+
+        window.location.href = payment.authorization_url;
+        return;
+      }
+
+      setSuccessMessage(
+        "Your custom table is with the kitchen. They will set the price before payment."
+      );
 
       window.setTimeout(
         () => {
@@ -987,7 +1194,7 @@ function SubscriptionBuilderContent() {
         1500
       );
     } catch (error) {
-      setErrorMessage(
+      revealError(
         error instanceof Error
           ? error.message
           : "Unable to submit your meal plan."
@@ -1047,7 +1254,7 @@ function SubscriptionBuilderContent() {
             <p className="mt-3 max-w-2xl text-sm leading-6 text-gray-500">
               {isRenewal
                 ? "Choose fresh meals, delivery days and times for your next subscription."
-                : "Tell us what you would like to eat and when you would like each meal delivered."}
+                : "Compose your own menu, choose how long you would like to stay, and we will prepare it for you."}
             </p>
           </div>
 
@@ -1156,11 +1363,10 @@ function SubscriptionBuilderContent() {
 
                 <input
                   type="text"
-                  value={
-                    customerName
-                  }
-                  readOnly
-                  className="mt-2 min-h-[50px] w-full rounded-[16px] border border-gray-200 bg-gray-50 px-4 text-sm text-gray-700"
+                  value={customerName}
+                  onChange={(event) => setCustomerName(event.target.value)}
+                  placeholder="Your full name"
+                  className="mt-2 min-h-[50px] w-full rounded-[16px] border border-gray-200 bg-white px-4 text-sm outline-none focus:border-[#F26A21]"
                 />
               </div>
 
@@ -1248,6 +1454,89 @@ function SubscriptionBuilderContent() {
             </div>
           </section>
 
+          <section className="rounded-[28px] border border-gray-200 bg-white px-5 py-6 shadow-sm sm:px-6 lg:px-8 lg:py-8">
+            <p className="text-[9px] font-bold uppercase tracking-[0.22em] text-[#F26A21]">
+              Membership
+            </p>
+            <h2 className="mt-2 text-2xl font-bold text-gray-950">
+              Stay as long as you wish
+            </h2>
+            <p className="mt-2 text-sm leading-6 text-gray-500">
+              Choose a set period, or keep the table open until you decide to stop.
+            </p>
+            <div className="mt-6 flex flex-wrap gap-3">
+              {DURATIONS.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => setDurationId(item.id)}
+                  className={`min-h-[46px] rounded-full border px-5 text-sm font-bold transition ${
+                    durationId === item.id
+                      ? "border-[#1A120B] bg-[#1A120B] text-white"
+                      : "border-gray-200 bg-white text-gray-700 hover:border-[#1A120B]"
+                  }`}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
+            <div className="mt-5 max-w-xs">
+              <label className="text-sm font-bold text-gray-800">
+                Begins
+              </label>
+              <input
+                type="date"
+                value={startDate}
+                onChange={(event) => setStartDate(event.target.value)}
+                className="mt-2 min-h-[50px] w-full rounded-[16px] border border-gray-200 bg-white px-4 text-sm"
+              />
+            </div>
+          </section>
+
+          {isCustom && (
+            <section className="rounded-[28px] border border-gray-200 bg-white px-5 py-6 shadow-sm sm:px-6 lg:px-8 lg:py-8">
+              <p className="text-[9px] font-bold uppercase tracking-[0.22em] text-[#F26A21]">
+                Payment
+              </p>
+              <h2 className="mt-2 text-2xl font-bold text-gray-950">
+                How this table is paid
+              </h2>
+              <p className="mt-2 max-w-xl text-sm leading-6 text-gray-500">
+                Automatic payment uses the menu price and opens payment when you continue. A kitchen quote waits until the amount is set.
+              </p>
+              <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                <button
+                  type="button"
+                  onClick={() => setCustomPaysNow(true)}
+                  className={`rounded-2xl border p-4 text-left ${
+                    customPaysNow
+                      ? "border-[#F26A21] bg-[#FFF7F2]"
+                      : "border-gray-200 bg-white"
+                  }`}
+                >
+                  <p className="text-sm font-bold text-gray-950">Automatic payment</p>
+                  <p className="mt-1 text-xs leading-5 text-gray-500">
+                    Choose each dish from the menu and pay that total now.
+                  </p>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCustomPaysNow(false)}
+                  className={`rounded-2xl border p-4 text-left ${
+                    customPaysNow
+                      ? "border-gray-200 bg-white"
+                      : "border-[#F26A21] bg-[#FFF7F2]"
+                  }`}
+                >
+                  <p className="text-sm font-bold text-gray-950">Kitchen quote</p>
+                  <p className="mt-1 text-xs leading-5 text-gray-500">
+                    Describe the dish. The kitchen sets the price before payment.
+                  </p>
+                </button>
+              </div>
+            </section>
+          )}
+
           {/* DAYS */}
 
           <section className="rounded-[28px] border border-gray-200 bg-white px-5 py-6 shadow-sm sm:px-6 lg:px-8 lg:py-8">
@@ -1306,7 +1595,7 @@ function SubscriptionBuilderContent() {
                   </p>
 
                   <h2 className="mt-2 text-2xl font-bold text-gray-950">
-                    Your Meal Schedule
+                    Your private menu
                   </h2>
                 </div>
 
@@ -1351,67 +1640,200 @@ function SubscriptionBuilderContent() {
                         )}
                       </div>
 
-                      <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-[1.5fr_0.7fr]">
-                        {/* MEAL */}
-
-                        <div>
-                          <label className="text-sm font-bold text-gray-800">
-                            Meal
-                          </label>
-
-                          <input
-                            type="text"
-                            value={
-                              timetable[
-                                day
-                              ]
-                                .meal_preference
-                            }
-                            onChange={(
-                              event
-                            ) =>
-                              updateTimetable(
-                                day,
-                                "meal_preference",
-                                event.target.value
-                              )
-                            }
-                            placeholder="e.g. Jollof rice & turkey"
-                            className="mt-2 min-h-[50px] w-full rounded-[16px] border border-gray-200 bg-white px-4 text-sm outline-none focus:border-[#F26A21]"
-                          />
-                        </div>
-
-                        {/* TIME */}
-
-                        <div>
-                          <label className="text-sm font-bold text-gray-800">
-                            Delivery Time
-                          </label>
-
-                          <input
-                            type="time"
-                            value={
-                              timetable[
-                                day
-                              ]
-                                .delivery_time
-                            }
-                            onChange={(
-                              event
-                            ) =>
-                              updateTimetable(
-                                day,
-                                "delivery_time",
-                                event.target.value
-                              )
-                            }
-                            className="mt-2 min-h-[50px] w-full rounded-[16px] border border-gray-200 bg-white px-4 text-sm"
-                          />
-                        </div>
+                      <div className="mt-5 space-y-4">
+                        {coursesForPlan(planSlug).map((course) => {
+                          const item = timetable[day].courses[course];
+                          return (
+                            <div
+                              key={course}
+                              className="rounded-2xl border border-gray-200 bg-white p-4"
+                            >
+                              <label className="flex items-center gap-3 text-sm font-bold text-gray-900">
+                                <input
+                                  type="checkbox"
+                                  checked={item.selected}
+                                  onChange={(event) => {
+                                    const selected = event.target.checked;
+                                    setTimetable((current) => ({
+                                      ...current,
+                                      [day]: {
+                                        ...current[day],
+                                        courses: {
+                                          ...current[day].courses,
+                                          [course]: {
+                                            ...current[day].courses[course],
+                                            selected,
+                                          },
+                                        },
+                                      },
+                                    }));
+                                  }}
+                                />
+                                {course}
+                              </label>
+                              {item.selected && (
+                                <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-[1.5fr_0.7fr]">
+                                  {!paysNow ? (
+                                    <input
+                                      type="text"
+                                      value={item.dish}
+                                      onChange={(event) => {
+                                        const dish = event.target.value;
+                                        setTimetable((current) => ({
+                                          ...current,
+                                          [day]: {
+                                            ...current[day],
+                                            courses: {
+                                              ...current[day].courses,
+                                              [course]: {
+                                                ...current[day].courses[course],
+                                                dish,
+                                                dishes: [],
+                                              },
+                                            },
+                                          },
+                                        }));
+                                      }}
+                                      placeholder="Describe the custom dish"
+                                      className="min-h-[48px] rounded-[16px] border border-gray-200 px-4 text-sm outline-none focus:border-[#F26A21]"
+                                    />
+                                  ) : (
+                                    <div>
+                                      {item.dishes.length > 0 && (
+                                        <ul className="mb-3 space-y-2">
+                                          {item.dishes.map((dish) => (
+                                            <li
+                                              key={dish.menuItemId}
+                                              className="flex items-center justify-between gap-3 rounded-2xl border border-[#F26A21]/20 bg-[#FFF7F2] px-3 py-2"
+                                            >
+                                              <span className="text-sm font-semibold text-gray-900">
+                                                {dish.name}
+                                                <span className="ml-2 font-medium text-gray-500">
+                                                  {naira(dish.unitPrice)}
+                                                </span>
+                                              </span>
+                                              <button
+                                                type="button"
+                                                onClick={() => {
+                                                  setTimetable((current) => ({
+                                                    ...current,
+                                                    [day]: {
+                                                      ...current[day],
+                                                      courses: {
+                                                        ...current[day].courses,
+                                                        [course]: {
+                                                          ...current[day].courses[course],
+                                                          dishes: current[day].courses[course].dishes.filter(
+                                                            (chosen) =>
+                                                              chosen.menuItemId !== dish.menuItemId
+                                                          ),
+                                                        },
+                                                      },
+                                                    },
+                                                  }));
+                                                }}
+                                                className="text-xs font-bold text-[#F26A21]"
+                                              >
+                                                Remove
+                                              </button>
+                                            </li>
+                                          ))}
+                                        </ul>
+                                      )}
+                                      <select
+                                        value=""
+                                        onChange={(event) => {
+                                          const menuItemId = event.target.value;
+                                          const choice = menuChoices.find(
+                                            (meal) => meal.id === menuItemId
+                                          );
+                                          if (!choice) return;
+                                          setTimetable((current) => {
+                                            const existing =
+                                              current[day].courses[course].dishes;
+                                            if (
+                                              existing.some(
+                                                (chosen) =>
+                                                  chosen.menuItemId === choice.id
+                                              )
+                                            ) {
+                                              return current;
+                                            }
+                                            return {
+                                              ...current,
+                                              [day]: {
+                                                ...current[day],
+                                                courses: {
+                                                  ...current[day].courses,
+                                                  [course]: {
+                                                    ...current[day].courses[course],
+                                                    dishes: [
+                                                      ...existing,
+                                                      {
+                                                        menuItemId: choice.id,
+                                                        name: choice.name,
+                                                        unitPrice: choice.price,
+                                                      },
+                                                    ],
+                                                  },
+                                                },
+                                              },
+                                            };
+                                          });
+                                        }}
+                                        className="min-h-[48px] w-full rounded-[16px] border border-gray-200 bg-white px-4 text-sm outline-none focus:border-[#F26A21]"
+                                      >
+                                        <option value="">
+                                          {item.dishes.length
+                                            ? "Add another dish"
+                                            : "Choose from the menu"}
+                                        </option>
+                                        {menuChoices
+                                          .filter(
+                                            (meal) =>
+                                              !item.dishes.some(
+                                                (chosen) =>
+                                                  chosen.menuItemId === meal.id
+                                              )
+                                          )
+                                          .map((meal) => (
+                                            <option key={meal.id} value={meal.id}>
+                                              {meal.name} — {naira(meal.price)}
+                                            </option>
+                                          ))}
+                                      </select>
+                                    </div>
+                                  )}
+                                  <input
+                                    type="time"
+                                    value={item.time}
+                                    onChange={(event) => {
+                                      const time = event.target.value;
+                                      setTimetable((current) => ({
+                                        ...current,
+                                        [day]: {
+                                          ...current[day],
+                                          courses: {
+                                            ...current[day].courses,
+                                            [course]: {
+                                              ...current[day].courses[course],
+                                              time,
+                                            },
+                                          },
+                                        },
+                                      }));
+                                    }}
+                                    className="min-h-[48px] rounded-[16px] border border-gray-200 px-4 text-sm"
+                                  />
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
 
                         {/* NOTES */}
 
-                        <div className="md:col-span-2">
+                        <div>
                           <label className="text-sm font-bold text-gray-800">
                             Notes{" "}
                             <span className="font-normal text-gray-400">
@@ -1475,9 +1897,88 @@ function SubscriptionBuilderContent() {
             />
           </section>
 
+          <section className="rounded-[28px] border border-gray-200 bg-white p-5 shadow-sm sm:p-6">
+            <p className="text-[9px] font-bold uppercase tracking-[0.22em] text-[#F26A21]">
+              Delivery
+            </p>
+            <h2 className="mt-2 text-2xl font-bold text-gray-950">
+              Who brings it
+            </h2>
+            <p className="mt-2 max-w-xl text-sm leading-6 text-gray-500">
+              A platform rider adds the Lagos delivery fee to every drop. Your own rider leaves delivery off the bill.
+            </p>
+            <div className="mt-5 grid gap-3 sm:grid-cols-2">
+              <button
+                type="button"
+                onClick={() => setDispatchMode("PLATFORM")}
+                className={`rounded-2xl border p-4 text-left ${
+                  dispatchMode === "PLATFORM"
+                    ? "border-[#F26A21] bg-[#FFF7F2]"
+                    : "border-gray-200 bg-white"
+                }`}
+              >
+                <p className="text-sm font-bold text-gray-950">Platform rider</p>
+                <p className="mt-1 text-xs leading-5 text-gray-500">
+                  {priceQuote.deliveryFeeEach
+                    ? `${naira(priceQuote.deliveryFeeEach)} each drop`
+                    : "₦2,500 to ₦9,900 each drop, from the area in your address"}
+                </p>
+              </button>
+              <button
+                type="button"
+                onClick={() => setDispatchMode("CUSTOMER_DISPATCH")}
+                className={`rounded-2xl border p-4 text-left ${
+                  dispatchMode === "CUSTOMER_DISPATCH"
+                    ? "border-[#F26A21] bg-[#FFF7F2]"
+                    : "border-gray-200 bg-white"
+                }`}
+              >
+                <p className="text-sm font-bold text-gray-950">My own rider</p>
+                <p className="mt-1 text-xs leading-5 text-gray-500">
+                  No delivery fee on this plan
+                </p>
+              </button>
+            </div>
+
+            {!paysNow ? (
+              <p className="mt-6 border-t border-gray-100 pt-5 text-sm leading-6 text-gray-500">
+                A custom table is priced by the kitchen before payment.
+              </p>
+            ) : (
+            <div className="mt-6 space-y-2 border-t border-gray-100 pt-5 text-sm">
+              <div className="flex justify-between text-gray-600">
+                <span>
+                  Menu
+                  {priceQuote.perWeek ? " this week" : ""}
+                </span>
+                <span>{naira(priceQuote.mealTotal)}</span>
+              </div>
+              <div className="flex justify-between text-gray-600">
+                <span>
+                  Delivery
+                  {dispatchMode === "PLATFORM" && priceQuote.drops
+                    ? ` · ${priceQuote.drops} drop${priceQuote.drops === 1 ? "" : "s"}`
+                    : ""}
+                </span>
+                <span>{naira(priceQuote.deliveryTotal)}</span>
+              </div>
+              <div className="flex justify-between pt-2 text-base font-bold text-gray-950">
+                <span>{priceQuote.perWeek ? "Each week" : "Total"}</span>
+                <span>{naira(priceQuote.total)}</span>
+              </div>
+              <p className="pt-2 text-xs leading-5 text-gray-400">
+                Every dish you add is charged at its menu price. One delivery fee covers all the dishes in the same course. Name the area in your address so the delivery fee matches the drop.
+              </p>
+            </div>
+            )}
+          </section>
+
           {/* SUBMIT */}
 
-          <section className="rounded-[28px] bg-[#111111] px-5 py-7 text-white sm:px-6 lg:px-8">
+          <section
+            ref={paySectionRef}
+            className="relative z-20 rounded-[28px] bg-[#111111] px-5 py-7 text-white sm:px-6 lg:px-8"
+          >
             <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
               <div>
                 <p className="text-[9px] font-bold uppercase tracking-[0.22em] text-[#F26A21]">
@@ -1493,12 +1994,24 @@ function SubscriptionBuilderContent() {
                 </h2>
 
                 <p className="mt-2 max-w-xl text-sm leading-6 text-white/60">
-                  Rhennie Studio will review your meals, confirm the dates and set the amount before payment.
+                  {!paysNow
+                    ? "The kitchen will set the price for this custom table before payment."
+                    : priceQuote.total
+                      ? `${priceQuote.perWeek ? "Each week" : "Total"} ${naira(priceQuote.total)}. Payment opens as soon as you continue.`
+                      : "Choose dishes from the menu and the price appears here."}
                 </p>
+                {errorMessage ? (
+                  <p className="mt-3 max-w-xl text-sm leading-6 text-red-300">
+                    {errorMessage}
+                  </p>
+                ) : null}
               </div>
 
               <button
-                type="submit"
+                type="button"
+                onClick={() => {
+                  void submitMealPlan();
+                }}
                 disabled={
                   submitting ||
                   selectedDays.length ===
@@ -1507,10 +2020,14 @@ function SubscriptionBuilderContent() {
                 className="min-h-[50px] rounded-full bg-[#F26A21] px-7 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {submitting
-                  ? "Submitting..."
-                  : isRenewal
-                    ? "Submit Renewal"
-                    : "Submit Meal Plan"}
+                  ? paysNow
+                    ? "Opening payment..."
+                    : "Submitting..."
+                  : paysNow
+                    ? isRenewal
+                      ? "Pay For Renewal"
+                      : "Pay Now"
+                    : "Submit Custom Plan"}
               </button>
             </div>
           </section>

@@ -4,6 +4,23 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { thankYouNote } from "@/lib/thank-you-notes";
+
+type DeliveryInfo = {
+  id: string;
+  mode: string;
+  status: string;
+  tracking_token: string;
+  order_code?: string | null;
+  external_rider_name: string | null;
+  external_rider_phone: string | null;
+  riders?: {
+    id: string;
+    full_name: string;
+    phone: string;
+    vehicle_type: string | null;
+  } | null;
+};
 
 type Order = {
   id: string;
@@ -14,6 +31,8 @@ type Order = {
   amount: number | null;
   status: string | null;
   created_at: string;
+  delivery_type?: string | null;
+  deliveries?: DeliveryInfo | DeliveryInfo[] | null;
 };
 
 const STATUS_STEPS = [
@@ -529,9 +548,83 @@ export default function OrdersPage() {
                             update here as our team
                             processes your request.
                           </p>
+                          <p className="mt-3 text-sm leading-6 text-[#D4AF37]">
+                            {thankYouNote(order.order_date || order.created_at)}
+                          </p>
 
                         </div>
                       )}
+
+                      {(() => {
+                        const deliveryRaw = order.deliveries;
+                        const delivery = Array.isArray(deliveryRaw)
+                          ? deliveryRaw[0]
+                          : deliveryRaw;
+
+                        if (!delivery?.tracking_token) {
+                          return null;
+                        }
+
+                        const riderName =
+                          delivery.riders?.full_name ||
+                          delivery.external_rider_name;
+                        const riderPhone =
+                          delivery.riders?.phone ||
+                          delivery.external_rider_phone;
+
+                        return (
+                          <div className="mt-6 rounded-2xl border border-[#D4AF37]/20 bg-[#0C0C0C] p-4">
+                            <p className="text-xs uppercase tracking-[0.2em] text-[#D4AF37]">
+                              Delivery tracking
+                            </p>
+                            <p className="mt-2 text-sm text-white">
+                              {delivery.mode === "CUSTOMER_DISPATCH"
+                                ? "Your own dispatch"
+                                : "Platform rider"}
+                              {" · "}
+                              {delivery.status.replaceAll("_", " ")}
+                            </p>
+                            {delivery.order_code ? (
+                              <p className="mt-2 text-sm text-white">
+                                Delivery code{" "}
+                                <span className="font-bold tracking-[0.2em] text-[#D4AF37]">
+                                  {delivery.order_code}
+                                </span>
+                              </p>
+                            ) : null}
+                            {riderName && (
+                              <p className="mt-1 text-sm text-[#999999]">
+                                Rider: {riderName}
+                                {riderPhone ? ` · ${riderPhone}` : ""}
+                              </p>
+                            )}
+                            <div className="mt-4 flex flex-wrap gap-2">
+                              <Link
+                                href={`/track/${encodeURIComponent(
+                                  delivery.tracking_token
+                                )}`}
+                                className="inline-flex min-h-[40px] items-center justify-center rounded-full bg-[#D4AF37] px-5 text-xs font-bold uppercase tracking-wider text-black"
+                              >
+                                Open tracking
+                              </Link>
+                              <button
+                                type="button"
+                                onClick={async () => {
+                                  const url = `${window.location.origin}/track/${delivery.tracking_token}`;
+                                  try {
+                                    await navigator.clipboard.writeText(url);
+                                  } catch {
+                                    /* ignore */
+                                  }
+                                }}
+                                className="inline-flex min-h-[40px] items-center justify-center rounded-full border border-[#D4AF37]/30 px-5 text-xs font-bold uppercase tracking-wider text-[#D4AF37]"
+                              >
+                                Copy link
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })()}
 
                     </div>
                   );

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { randomBytes } from "crypto";
 import { createClient } from "@supabase/supabase-js";
 
 export const dynamic = "force-dynamic";
@@ -52,9 +53,7 @@ function getBearerToken(request: Request) {
 }
 
 function createPaymentReference() {
-  return `RTS-SUB-${Date.now()}-${Math.floor(
-    Math.random() * 10000
-  )}`;
+  return `RTS-SUB-${Date.now()}-${randomBytes(8).toString("hex")}`;
 }
 
 export async function POST(

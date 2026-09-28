@@ -12,19 +12,19 @@ VALUES
 -- =========================
 
 (
-  'Jollof Rice + Turkey',
-  'Signature Meals',
-  'Premium jollof rice served with turkey.',
+  'Any Rice + Turkey',
+  'Executive Lunch',
+  'Pick any rice. Native rice, asun rice, and prawn rice are on the Asun Combo. Turkey is included with every plate.',
   8000,
   '',
   true
 ),
 
 (
-  'Jollof Rice + Chicken',
-  'Signature Meals',
-  'Premium jollof rice served with chicken.',
-  5500,
+  'Any Rice + Chicken',
+  'Executive Lunch',
+  'Pick any rice. Native rice, asun rice, and prawn rice are on the Asun Combo. Chicken is included with every plate.',
+  6500,
   '',
   true
 ),
@@ -99,7 +99,7 @@ VALUES
 (
   'Weekend Treat Box',
   'Food Boxes',
-  'A premium food box perfect for weekend indulgence.',
+  'Fried rice, stir fry pasta, 2 pieces of peppered turkey, 1 mini bottled water, 1 fruit juice, 5 samosa, 5 spring rolls, 10 puff-puff, 2 chocolates and 2 McVitie''s.',
   40000,
   '',
   true
@@ -133,5 +133,77 @@ VALUES
   'Premium seafood okra supplied by the litre.',
   45000,
   '',
+  true
+),
+
+(
+  'RTS Crave Combo',
+  'Executive Lunch',
+  'Stir fry pasta, one fried turkey, fried plantain and a bottled water.',
+  7500,
+  '/images/stir-fry-pasta-tray.jpg',
+  true
+),
+
+(
+  'Loaded Singapore Noodles',
+  'Executive Lunch',
+  'Prawns, sausage, peppers and mushrooms tossed through Singapore noodles.',
+  15000,
+  '/images/loaded-singapore-noodles.jpg',
+  true
+),
+
+(
+  'Loaded Singapore Noodles',
+  'Food By Litre',
+  'Prawns, sausage, peppers and mushrooms tossed through Singapore noodles.',
+  25000,
+  '/images/loaded-singapore-noodles.jpg',
+  true
+),
+
+(
+  'Loaded Singapore Noodles',
+  'Food By Litre',
+  'Prawns, sausage, peppers and mushrooms tossed through Singapore noodles.',
+  47000,
+  '/images/loaded-singapore-noodles.jpg',
+  true
+),
+
+(
+  'Loaded Singapore Noodles',
+  'Food By Litre',
+  'Prawns, sausage, peppers and mushrooms tossed through Singapore noodles.',
+  58000,
+  '/images/loaded-singapore-noodles.jpg',
+  true
+),
+
+(
+  'Loaded Singapore Noodles',
+  'Food By Litre',
+  'Prawns, sausage, peppers and mushrooms tossed through Singapore noodles.',
+  70000,
+  '/images/loaded-singapore-noodles.jpg',
+  true
+),
+
+(
+  'Loaded Singapore Noodles',
+  'Food By Litre',
+  'Prawns, sausage, peppers and mushrooms tossed through Singapore noodles.',
+  92000,
+  '/images/loaded-singapore-noodles.jpg',
+  true
+),
+
+(
+  'Loaded Singapore Noodles',
+  'Food By Litre',
+  'Prawns, sausage, peppers and mushrooms tossed through Singapore noodles.',
+  115000,
+  '/images/loaded-singapore-noodles.jpg',
   true
 );

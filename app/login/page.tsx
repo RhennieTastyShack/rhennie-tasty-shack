@@ -3,6 +3,8 @@
 import { Suspense, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import PasswordField from "@/app/components/PasswordField";
+import { loginNote } from "@/lib/thank-you-notes";
 import { supabase } from "@/lib/supabase";
 
 function getSafeNextPath(next: string | null) {
@@ -25,9 +27,6 @@ function LoginForm() {
     searchParams.get("next")
   );
 
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -35,6 +34,10 @@ function LoginForm() {
     e: React.FormEvent<HTMLFormElement>
   ) => {
     e.preventDefault();
+
+    const form = new FormData(e.currentTarget);
+    const email = String(form.get("email") || "").trim();
+    const password = String(form.get("password") || "");
 
     setLoading(true);
     setError("");
@@ -44,14 +47,45 @@ function LoginForm() {
       password,
     });
 
-    setLoading(false);
-
     if (error) {
+      setLoading(false);
       setError(error.message);
       return;
     }
 
-    router.push(nextPath);
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
+    if (!session?.access_token) {
+      setLoading(false);
+      setError("Unable to start your session. Please try again.");
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/auth/verification-status", {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        cache: "no-store",
+      });
+      const result = await response.json();
+
+      setLoading(false);
+
+      if (!result?.fully_verified) {
+        router.push(
+          `/verify-phone?next=${encodeURIComponent(nextPath)}`
+        );
+        return;
+      }
+
+      router.push(nextPath);
+    } catch {
+      setLoading(false);
+      router.push(nextPath);
+    }
   };
 
   return (
@@ -69,10 +103,15 @@ function LoginForm() {
           <p className="mt-3 text-[#B8B8B8]">
             Sign in to manage your orders, quotations and meal plans.
           </p>
+
+          <p className="mt-4 text-sm leading-6 text-[#D4AF37]">
+            {loginNote()}
+          </p>
         </div>
 
         <form
           onSubmit={handleLogin}
+          autoComplete="on"
           className="mt-10 space-y-6"
         >
           <div>
@@ -81,10 +120,11 @@ function LoginForm() {
             </label>
 
             <input
+              id="email"
+              name="email"
               type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
               placeholder="you@example.com"
+              autoComplete="username"
               required
               className="w-full rounded-xl border border-[#D4AF37]/20 bg-[#111111] px-4 py-4 text-white outline-none transition focus:border-[#D4AF37]"
             />
@@ -95,22 +135,22 @@ function LoginForm() {
               Password
             </label>
 
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
+            <PasswordField
+              id="password"
+              name="password"
               placeholder="••••••••"
               required
+              autoComplete="current-password"
               className="w-full rounded-xl border border-[#D4AF37]/20 bg-[#111111] px-4 py-4 text-white outline-none transition focus:border-[#D4AF37]"
             />
           </div>
 
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-end">
             <Link
-              href="/forgot-password"
-              className="text-sm text-[#D4AF37] hover:underline"
+              href={`/forgot-password?next=${encodeURIComponent(nextPath)}`}
+              className="text-sm font-semibold text-[#D4AF37] underline"
             >
-              Forgot Password?
+              Forgot password?
             </Link>
           </div>
 

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { getAuthUser, requireAdmin, userOwnsOrder } from "@/lib/supabase-admin";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -36,6 +37,19 @@ export async function GET(
       );
     }
 
+    const user = await getAuthUser(request);
+    const admin = user ? await requireAdmin(request) : null;
+
+    if (!user) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Please sign in to view this order.",
+        },
+        { status: 401 }
+      );
+    }
+
     const {
       data: order,
       error: orderError,
@@ -67,6 +81,16 @@ export async function GET(
           error: "Order not found.",
         },
         { status: 404 }
+      );
+    }
+
+    if (!admin && !userOwnsOrder(user, order)) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "This order belongs to another account.",
+        },
+        { status: 403 }
       );
     }
 

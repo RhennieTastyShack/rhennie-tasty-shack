@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { requireAdmin, getAuthUser, userOwnsOrder } from "@/lib/supabase-admin";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -57,45 +58,8 @@ export async function PATCH(
       quotation_notes,
     } = body;
 
-    // =================================================
-    // VALIDATE QUOTATION AMOUNT
-    // =================================================
-
     const quotedAmount = Number(quoted_amount);
-
-    if (
-      !Number.isFinite(quotedAmount) ||
-      quotedAmount < 0
-    ) {
-      return NextResponse.json(
-        {
-          error:
-            "Please enter a valid quotation amount.",
-        },
-        { status: 400 }
-      );
-    }
-
-    // =================================================
-    // VALIDATE DELIVERY FEE
-    // =================================================
-
-    const deliveryFee = Number(
-      delivery_fee ?? 0
-    );
-
-    if (
-      !Number.isFinite(deliveryFee) ||
-      deliveryFee < 0
-    ) {
-      return NextResponse.json(
-        {
-          error:
-            "Please enter a valid delivery fee.",
-        },
-        { status: 400 }
-      );
-    }
+    const deliveryFee = Number(delivery_fee ?? 0);
 
     // =================================================
     // VALIDATE QUOTATION STATUS
@@ -135,7 +99,7 @@ export async function PATCH(
     // CHECK ORDER EXISTS
     // =================================================
 
-    const {
+    let {
       data: existingOrder,
       error: orderLookupError,
     } = await supabaseAdmin
@@ -143,13 +107,43 @@ export async function PATCH(
       .select(
         `
         id,
+        customer_id,
+        customer_email,
         status,
         order_status,
-        quotation_status
+        quotation_status,
+        consultation_id
         `
       )
       .eq("id", id)
       .maybeSingle();
+
+    if (
+      orderLookupError?.message?.match(/consultation_id/i)
+    ) {
+      const fallback = await supabaseAdmin
+        .from("orders")
+        .select(
+          `
+          id,
+          status,
+          order_status,
+          quotation_status
+          `
+        )
+        .eq("id", id)
+        .maybeSingle();
+
+      existingOrder = fallback.data
+        ? {
+            ...fallback.data,
+            customer_id: null,
+            customer_email: null,
+            consultation_id: null,
+          }
+        : null;
+      orderLookupError = fallback.error;
+    }
 
     if (orderLookupError) {
       console.error(
@@ -175,45 +169,102 @@ export async function PATCH(
       );
     }
 
-    // =================================================
-    // CALCULATE TOTAL
-    // =================================================
+    const admin = await requireAdmin(request);
+    const now = new Date().toISOString();
 
-    const subtotal = quotedAmount;
-    const total = subtotal + deliveryFee;
-
-    const now =
-      new Date().toISOString();
-
-    // =================================================
-    // BUILD UPDATE OBJECT
-    // =================================================
-
-    const orderUpdate: Record<
-      string,
-      unknown
-    > = {
-      amount: quotedAmount,
-
-      subtotal,
-
-      delivery_fee:
-        deliveryFee,
-
-      total,
-
-      quotation_status:
-        finalQuotationStatus,
-
-      quotation_notes:
-        typeof quotation_notes === "string"
-          ? quotation_notes.trim() || null
-          : null,
-
-      quoted_at: now,
-
+    const orderUpdate: Record<string, unknown> = {
       updated_at: now,
     };
+
+    if (!admin) {
+      const user = await getAuthUser(request);
+
+      if (!user || !userOwnsOrder(user, existingOrder)) {
+        return NextResponse.json(
+          {
+            error: "Please sign in with the account that placed this order.",
+          },
+          { status: 401 }
+        );
+      }
+
+      const currentQuote = String(
+        existingOrder.quotation_status || ""
+      ).toUpperCase();
+
+      if (
+        finalQuotationStatus !== "ACCEPTED" &&
+        finalQuotationStatus !== "DECLINED" &&
+        finalQuotationStatus !== "NEGOTIATING"
+      ) {
+        return NextResponse.json(
+          {
+            error: "Only the kitchen can change the quotation price.",
+          },
+          { status: 401 }
+        );
+      }
+
+      if (
+        currentQuote !== "QUOTED" &&
+        currentQuote !== "NEGOTIATING"
+      ) {
+        return NextResponse.json(
+          {
+            error: "This quotation can no longer be changed.",
+          },
+          { status: 400 }
+        );
+      }
+
+      orderUpdate.quotation_status = finalQuotationStatus;
+
+      if (
+        finalQuotationStatus === "NEGOTIATING" &&
+        typeof quotation_notes === "string"
+      ) {
+        orderUpdate.quotation_notes =
+          quotation_notes.trim() || null;
+      }
+    } else {
+      if (
+        !Number.isFinite(quotedAmount) ||
+        quotedAmount < 0
+      ) {
+        return NextResponse.json(
+          {
+            error: "Please enter a valid quotation amount.",
+          },
+          { status: 400 }
+        );
+      }
+
+      if (
+        !Number.isFinite(deliveryFee) ||
+        deliveryFee < 0
+      ) {
+        return NextResponse.json(
+          {
+            error: "Please enter a valid delivery fee.",
+          },
+          { status: 400 }
+        );
+      }
+
+      const subtotal = quotedAmount;
+      const total = subtotal + deliveryFee;
+
+      orderUpdate.amount = quotedAmount;
+      orderUpdate.subtotal = subtotal;
+      orderUpdate.delivery_fee = deliveryFee;
+      orderUpdate.total = total;
+      orderUpdate.quotation_status = finalQuotationStatus;
+      orderUpdate.quotation_notes =
+        typeof quotation_notes === "string"
+          ? quotation_notes.trim() || null
+          : null;
+      orderUpdate.quoted_at = now;
+    }
 
     // =================================================
     // CUSTOMER ACCEPTS QUOTATION
@@ -233,11 +284,17 @@ export async function PATCH(
       finalQuotationStatus ===
       "ACCEPTED"
     ) {
-      orderUpdate.status =
-        "CONFIRMED";
+      const currentOrderStatus = String(
+        existingOrder.status || existingOrder.order_status || ""
+      ).toUpperCase();
 
-      orderUpdate.order_status =
-        "CONFIRMED";
+      if (currentOrderStatus !== "COMPLETED") {
+        orderUpdate.status =
+          "CONFIRMED";
+
+        orderUpdate.order_status =
+          "CONFIRMED";
+      }
     }
 
     // =================================================
@@ -286,6 +343,46 @@ export async function PATCH(
         },
         { status: 500 }
       );
+    }
+
+    const consultationStatus =
+      finalQuotationStatus === "ACCEPTED"
+        ? "confirmed"
+        : finalQuotationStatus === "QUOTED"
+          ? "quoted"
+          : null;
+
+    if (existingOrder.consultation_id && consultationStatus) {
+      const consultationUpdate: Record<string, unknown> = {
+        status: consultationStatus,
+        quotation_status: finalQuotationStatus,
+        updated_at: now,
+      };
+
+      for (let attempt = 0; attempt < 4; attempt += 1) {
+        const { error: consultationError } = await supabaseAdmin
+          .from("consultations")
+          .update(consultationUpdate)
+          .eq("id", existingOrder.consultation_id);
+
+        if (!consultationError) {
+          break;
+        }
+
+        const missing = consultationError.message.match(
+          /Could not find the '([^']+)' column/i
+        )?.[1];
+
+        if (!missing || !(missing in consultationUpdate)) {
+          console.error(
+            "Consultation status sync error:",
+            consultationError
+          );
+          break;
+        }
+
+        delete consultationUpdate[missing];
+      }
     }
 
     // =================================================

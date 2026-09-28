@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { supabase } from "@/lib/supabase";
 
 type Consultation = {
   full_name?: string | null;
@@ -33,6 +34,7 @@ type Order = {
   quotation_status?: string | null;
   quotation_notes?: string | null;
   quoted_at?: string | null;
+  payment_status?: string | null;
 
   status?: string | null;
 
@@ -128,8 +130,19 @@ export default function QuotationsPage() {
       setLoading(true);
       setError("");
 
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session?.access_token) {
+        throw new Error("Please sign in to see your quotations.");
+      }
+
       const response = await fetch("/api/orders", {
         cache: "no-store",
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
       });
 
       const result = await response.json();
@@ -159,11 +172,6 @@ export default function QuotationsPage() {
 
       setQuotations(quotationOrders);
     } catch (err) {
-      console.error(
-        "Quotation loading error:",
-        err
-      );
-
       setError(
         err instanceof Error
           ? err.message
@@ -420,12 +428,32 @@ export default function QuotationsPage() {
                             </p>
                           </div>
 
-                          <Link
-                            href={`/client-portal/event-concierge/quotation/${quotation.id}`}
-                            className="rounded-full bg-[#D4AF37] px-5 py-3 text-[10px] font-bold uppercase tracking-wider text-black transition hover:bg-[#E2C45A]"
-                          >
-                            View Quotation
-                          </Link>
+                          <div className="flex flex-col items-end gap-2">
+                            {(
+                              quotation.quotation_status ||
+                              ""
+                            ).toUpperCase() ===
+                              "ACCEPTED" &&
+                              (
+                                quotation.payment_status ||
+                                ""
+                              ).toLowerCase() !==
+                                "paid" && (
+                                <Link
+                                  href={`/client-portal/payment/${quotation.id}`}
+                                  className="rounded-full bg-white px-5 py-3 text-[10px] font-bold uppercase tracking-wider text-black transition hover:bg-white/80"
+                                >
+                                  Pay Now
+                                </Link>
+                              )}
+
+                            <Link
+                              href={`/client-portal/event-concierge/quotation/${quotation.id}`}
+                              className="rounded-full bg-[#D4AF37] px-5 py-3 text-[10px] font-bold uppercase tracking-wider text-black transition hover:bg-[#E2C45A]"
+                            >
+                              View Quotation
+                            </Link>
+                          </div>
                         </div>
                       </div>
 

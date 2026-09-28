@@ -38,16 +38,29 @@ export default function EventConciergePage() {
   async function loadRequests() {
     setLoading(true);
 
-    const { data, error } = await supabase
-      .from("event_requests")
-      .select("*")
-      .order("created_at", { ascending: false });
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
 
-    if (error) {
-      console.error("Error loading event requests:", error);
+    if (!session?.access_token) {
+      setRequests([]);
+      setLoading(false);
+      return;
+    }
+
+    const response = await fetch("/api/consultations", {
+      cache: "no-store",
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+      },
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
       setRequests([]);
     } else {
-      setRequests((data as EventRequest[]) || []);
+      setRequests((result.requests as EventRequest[]) || []);
     }
 
     setLoading(false);
@@ -60,13 +73,21 @@ export default function EventConciergePage() {
   async function updateStatus(id: string, status: string) {
     setUpdating(true);
 
-    const { error } = await supabase
-      .from("event_requests")
-      .update({ status })
-      .eq("id", id);
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
 
-    if (error) {
-      console.error("Error updating status:", error);
+    const response = await fetch("/api/consultations", {
+      method: "PATCH",
+      headers: {
+        Authorization: `Bearer ${session?.access_token || ""}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ id, status }),
+    });
+
+    if (!response.ok) {
+      console.error("Error updating status:", await response.json());
       alert("Unable to update request status.");
       setUpdating(false);
       return;
@@ -220,8 +241,8 @@ export default function EventConciergePage() {
             </h2>
 
             <p className="mt-1 text-xs text-black/40">
-              {requests.length} total request
-              {requests.length === 1 ? "" : "s"}
+              {requests.length} total{" "}
+              {requests.length === 1 ? "request" : "requests"}
             </p>
           </div>
 

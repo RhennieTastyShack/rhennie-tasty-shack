@@ -120,17 +120,17 @@ export async function GET(
 
     const user = userData.user;
 
+    const { data: adminRow } = await supabaseAdmin
+      .from("admin_users")
+      .select("user_id")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
     /*
-     * 3. Fetch ONLY this customer's orders.
-     *
-     * orders.customer_id is TEXT in the current database,
-     * while Supabase user.id is UUID represented as a string.
-     * Comparing against user.id is therefore correct here.
+     * Customers only see their own orders.
+     * Admins see every order.
      */
-    const {
-      data,
-      error,
-    } = await supabaseAdmin
+    let ordersQuery = supabaseAdmin
       .from("orders")
       .select(`
         *,
@@ -159,12 +159,44 @@ export async function GET(
           venue,
           budget,
           special_request
+        ),
+        deliveries (
+          id,
+          mode,
+          status,
+          tracking_token,
+          order_code,
+          external_rider_name,
+          external_rider_phone,
+          rider_id,
+          status_history,
+          updated_at,
+          riders (
+            id,
+            full_name,
+            phone,
+            vehicle_type
+          )
         )
       `)
-      .eq("customer_id", user.id)
       .order("created_at", {
         ascending: false,
       });
+
+    if (!adminRow) {
+      const email = user.email?.trim().replace(/"/g, "");
+
+      ordersQuery = email
+        ? ordersQuery.or(
+            `customer_id.eq.${user.id},customer_email.eq."${email}"`
+          )
+        : ordersQuery.eq("customer_id", user.id);
+    }
+
+    const {
+      data,
+      error,
+    } = await ordersQuery;
 
     if (error) {
       console.error(

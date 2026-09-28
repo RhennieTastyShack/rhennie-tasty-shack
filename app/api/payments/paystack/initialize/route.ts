@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { getAuthUser, requireAdmin, userOwnsOrder } from "@/lib/supabase-admin";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -97,6 +98,7 @@ export async function POST(request: Request) {
         order_number,
         customer_name,
         customer_email,
+        customer_id,
         consultation_id,
         quotation_status
       `)
@@ -120,6 +122,19 @@ export async function POST(request: Request) {
           error: "Order not found.",
         },
         { status: 404 }
+      );
+    }
+
+    const user = await getAuthUser(request);
+    const admin = user ? await requireAdmin(request) : null;
+
+    if (!user || (!admin && !userOwnsOrder(user, order))) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Please sign in with the account that placed this order.",
+        },
+        { status: 401 }
       );
     }
 
@@ -180,7 +195,7 @@ export async function POST(request: Request) {
     const callbackUrl =
       `${origin}/client-portal/payment/callback`;
 
-    const paystackResponse = await fetch(
+    let paystackResponse = await fetch(
       "https://api.paystack.co/transaction/initialize",
       {
         method: "POST",
@@ -194,6 +209,9 @@ export async function POST(request: Request) {
           currency: payment.currency,
           reference: payment.payment_reference,
           callback_url: callbackUrl,
+          ...(String(payment.currency || "NGN").toUpperCase() === "NGN"
+            ? { channels: ["card", "bank_transfer"] }
+            : {}),
           metadata: {
             payment_id: payment.id,
             order_id: order.id,
@@ -208,8 +226,41 @@ export async function POST(request: Request) {
       }
     );
 
-    const paystackData =
+    let paystackData =
       await paystackResponse.json();
+
+    if (
+      (!paystackResponse.ok || !paystackData.status) &&
+      String(payment.currency || "NGN").toUpperCase() === "NGN" &&
+      /channel/i.test(String(paystackData?.message || ""))
+    ) {
+      const retry = await fetch(
+        "https://api.paystack.co/transaction/initialize",
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${paystackSecretKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            email: customerEmail,
+            amount: amountInSubunit.toString(),
+            currency: payment.currency,
+            reference: payment.payment_reference,
+            callback_url: callbackUrl,
+            metadata: {
+              payment_id: payment.id,
+              order_id: order.id,
+              order_number: order.order_number || order.order_no,
+              customer_name: order.customer_name,
+              source: "rhennie_tasty_shack",
+            },
+          }),
+        }
+      );
+      paystackResponse = retry;
+      paystackData = await retry.json();
+    }
 
     if (
       !paystackResponse.ok ||

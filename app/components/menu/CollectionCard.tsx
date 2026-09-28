@@ -53,6 +53,13 @@ const collections = [
     category: "grand-pot",
   },
   {
+    icon: "🥂",
+    title: "Appetizers",
+    description: "Party bites served before the regular menu.",
+    meals: "Waffles, seafood, tapioca",
+    category: "appetizers",
+  },
+  {
     icon: "🎁",
     title: "Luxury Food Boxes",
     description: "Beautifully packaged premium food boxes.",

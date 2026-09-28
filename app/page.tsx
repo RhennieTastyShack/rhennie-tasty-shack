@@ -2,6 +2,7 @@ import Hero from "@/app/components/Hero";
 import FeaturedMeals from "@/app/components/FeaturedMeals";
 import ChefSpecial from "@/app/components/ChefSpecial";
 import FoodBoxes from "@/app/components/FoodBoxes";
+import PromoStrip from "@/app/components/PromoStrip";
 
 export default function HomePage() {
   return (
@@ -16,6 +17,7 @@ export default function HomePage() {
       <ChefSpecial />
 
       {/* Signature Food Boxes */}
+      <PromoStrip />
       <FoodBoxes />
     </main>
   );

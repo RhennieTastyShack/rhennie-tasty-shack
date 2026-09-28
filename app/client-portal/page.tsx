@@ -1,13 +1,38 @@
 "use client";
 
 import Link from "next/link";
+import { loginNote } from "@/lib/thank-you-notes";
 
 const quickLinks = [
   {
+    title: "RTS Wallet",
+    description: "Fund your wallet, pay for meals, and request a withdrawal.",
+    href: "/client-portal/wallet",
+    icon: "💳",
+  },
+  {
+    title: "Promos",
+    description: "See current offers and enter a code at checkout.",
+    href: "/promos",
+    icon: "🏷️",
+  },
+  {
     title: "My Orders",
     description: "View and track your current and previous orders.",
-    href: "/orders",
+    href: "/client-portal/orders",
     icon: "📦",
+  },
+  {
+    title: "Notifications",
+    description: "Order, delivery, and account updates.",
+    href: "/client-portal/notifications",
+    icon: "🔔",
+  },
+  {
+    title: "Rewards",
+    description: "Loyalty points and weekly, monthly, and yearly best customer.",
+    href: "/client-portal/rewards",
+    icon: "🎁",
   },
   {
     title: "Event Concierge",
@@ -52,6 +77,10 @@ export default function ClientPortalPage() {
             everything Rhennie Tasty Shack has to offer.
           </p>
 
+          <p className="mx-auto mt-4 max-w-2xl text-sm leading-7 text-[#D4AF37]">
+            {loginNote()}
+          </p>
+
         </div>
 
         {/* ================= QUICK ACTIONS ================= */}
@@ -70,7 +99,7 @@ export default function ClientPortalPage() {
 
           </div>
 
-          <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+          <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
 
             {quickLinks.map((item) => (
               <Link
@@ -126,7 +155,7 @@ export default function ClientPortalPage() {
             </div>
 
             <Link
-              href="/orders"
+              href="/client-portal/orders"
               className="inline-flex shrink-0 items-center justify-center rounded-full bg-[#D4AF37] px-7 py-3.5 text-sm font-bold text-black transition hover:bg-[#E5C65A]"
             >
               View My Orders →

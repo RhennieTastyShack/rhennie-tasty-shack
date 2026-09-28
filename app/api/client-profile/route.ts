@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { getAuthUser } from "@/lib/supabase-admin";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -35,6 +36,7 @@ export async function POST(request: NextRequest) {
     const authUserId = cleanText(body?.auth_user_id);
     const fullName = cleanText(body?.full_name);
     const email = cleanText(body?.email).toLowerCase();
+    const phone = cleanText(body?.phone);
 
     if (!authUserId) {
       return NextResponse.json(
@@ -65,10 +67,43 @@ export async function POST(request: NextRequest) {
     } = await supabaseAdmin.auth.admin.getUserById(authUserId);
 
     if (authError || !authData?.user) {
+      console.error(
+        "Client profile auth lookup:",
+        authError
+      );
+
       return NextResponse.json(
         {
           success: false,
-          message: "Unable to verify the new account.",
+          message:
+            authError?.message ||
+            "Unable to verify the new account. If you already signed up, sign in instead.",
+        },
+        { status: 401 }
+      );
+    }
+
+    const caller = await getAuthUser(request);
+    const createdAt = Date.parse(authData.user.created_at || "");
+    const justCreated =
+      Number.isFinite(createdAt) &&
+      Date.now() - createdAt < 15 * 60 * 1000;
+
+    if (caller && caller.id !== authUserId) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Sign in with this account to continue.",
+        },
+        { status: 401 }
+      );
+    }
+
+    if (!caller && !justCreated) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Sign in to continue.",
         },
         { status: 401 }
       );
@@ -114,6 +149,16 @@ export async function POST(request: NextRequest) {
     }
 
     if (existingByAuth) {
+      if (!caller) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: "Sign in to continue.",
+          },
+          { status: 401 }
+        );
+      }
+
       return NextResponse.json({
         success: true,
         profile: existingByAuth,
@@ -147,6 +192,16 @@ export async function POST(request: NextRequest) {
     }
 
     if (existingByEmail) {
+      if (!caller) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: "Sign in to continue.",
+          },
+          { status: 401 }
+        );
+      }
+
       const {
         data: linkedProfile,
         error: linkError,
@@ -157,6 +212,7 @@ export async function POST(request: NextRequest) {
           full_name:
             fullName ||
             existingByEmail.full_name,
+          ...(phone ? { phone } : {}),
           updated_at: new Date().toISOString(),
         })
         .eq("id", existingByEmail.id)
@@ -197,6 +253,7 @@ export async function POST(request: NextRequest) {
         auth_user_id: authUserId,
         full_name: fullName || null,
         email,
+        ...(phone ? { phone } : {}),
         status: "ACTIVE",
       })
       .select("*")

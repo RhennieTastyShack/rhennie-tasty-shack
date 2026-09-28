@@ -1,5 +1,23 @@
 import { NextResponse } from "next/server";
+import { randomBytes } from "crypto";
 import { createClient } from "@supabase/supabase-js";
+import {
+  buildStatusHistoryEntry,
+  createOrderCode,
+  createTrackingToken,
+  DeliveryMode,
+  DeliveryStatus,
+} from "@/lib/delivery";
+import { getCheckoutDeliveryFee } from "@/lib/delivery-fee";
+import { APPETIZER_MINIMUM, isAppetizerDish } from "@/lib/party-menu";
+import {
+  isPaymentCurrency,
+  NGN_PER_USD,
+  ngnToUsd,
+  PaymentCurrency,
+} from "@/lib/payment-currency";
+import { promoDiscount, quotePromo } from "@/lib/promos";
+import { debitWallet } from "@/lib/customer-wallet";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -41,6 +59,12 @@ type CheckoutBody = {
   deliveryAddress?: string;
   notes?: string;
   items: CheckoutItem[];
+  dispatchMode?: "CUSTOMER_DISPATCH" | "PLATFORM";
+  externalRiderName?: string;
+  externalRiderPhone?: string;
+  paymentCurrency?: PaymentCurrency;
+  promoCode?: string;
+  tipAmount?: number;
 };
 
 function generateOrderNumber() {
@@ -67,7 +91,17 @@ export async function POST(request: Request) {
       deliveryAddress,
       notes,
       items,
+      dispatchMode,
+      externalRiderName,
+      externalRiderPhone,
+      paymentCurrency: rawPaymentCurrency,
     } = body;
+
+    const paymentCurrency: PaymentCurrency = isPaymentCurrency(
+      String(rawPaymentCurrency || "NGN")
+    )
+      ? (rawPaymentCurrency as PaymentCurrency)
+      : "NGN";
 
     /* =====================================================
        VALIDATION
@@ -114,6 +148,38 @@ export async function POST(request: Request) {
       );
     }
 
+    const resolvedDispatchMode =
+      (dispatchMode || "PLATFORM") as DeliveryMode;
+
+    if (
+      deliveryType === "delivery" &&
+      resolvedDispatchMode !== "CUSTOMER_DISPATCH" &&
+      resolvedDispatchMode !== "PLATFORM"
+    ) {
+      return NextResponse.json(
+        { error: "Invalid dispatch mode." },
+        { status: 400 }
+      );
+    }
+
+    if (
+      deliveryType === "delivery" &&
+      resolvedDispatchMode === "CUSTOMER_DISPATCH"
+    ) {
+      const riderName = externalRiderName?.trim() || "";
+      const riderPhone = externalRiderPhone?.trim() || "";
+
+      if (!riderName || riderPhone.replace(/\D/g, "").length < 10) {
+        return NextResponse.json(
+          {
+            error:
+              "Dispatch rider name and a valid phone number are required.",
+          },
+          { status: 400 }
+        );
+      }
+    }
+
     if (
       !Array.isArray(items) ||
       items.length === 0
@@ -128,9 +194,156 @@ export async function POST(request: Request) {
        CALCULATE TOTAL
     ====================================================== */
 
+    const itemIds = [
+      ...new Set(
+        items
+          .map((item) => String(item.id || "").trim())
+          .filter(Boolean)
+      ),
+    ];
+
+    if (itemIds.length === 0) {
+      return NextResponse.json(
+        { error: "Choose each dish from the menu." },
+        { status: 400 }
+      );
+    }
+
+    const pricedById = new Map<
+      string,
+      { name: string; price: number }
+    >();
+
+    const { data: menuItemRows, error: menuItemError } =
+      await supabaseAdmin
+        .from("menu_items")
+        .select("id, name, price")
+        .in("id", itemIds);
+
+    if (menuItemError) {
+      return NextResponse.json(
+        { error: "Unable to price the menu." },
+        { status: 500 }
+      );
+    }
+
+    for (const row of menuItemRows || []) {
+      const price = Number(row.price);
+      const name = String(row.name || "").trim();
+
+      if (row.id && name && Number.isFinite(price) && price > 0) {
+        pricedById.set(row.id, { name, price });
+      }
+    }
+
+    const missingIds = itemIds.filter((id) => !pricedById.has(id));
+
+    if (missingIds.length > 0) {
+      const { data: menuRows, error: menuError } =
+        await supabaseAdmin
+          .from("menu")
+          .select("id, name, price")
+          .in("id", missingIds);
+
+      if (menuError) {
+        return NextResponse.json(
+          { error: "Unable to price the menu." },
+          { status: 500 }
+        );
+      }
+
+      for (const row of menuRows || []) {
+        const price = Number(row.price);
+        const name = String(row.name || "").trim();
+
+        if (row.id && name && Number.isFinite(price) && price > 0) {
+          pricedById.set(row.id, { name, price });
+        }
+      }
+    }
+
+    const sizedNames = [
+      ...new Set(
+        items
+          .filter((item) => String(item.selectedSize || "").trim())
+          .map((item) => pricedById.get(String(item.id || "").trim())?.name)
+          .filter((name): name is string => Boolean(name))
+      ),
+    ];
+
+    const pricesByName = new Map<string, number[]>();
+
+    async function collectNamedPrices(table: "menu_items" | "menu") {
+      if (sizedNames.length === 0) return;
+
+      const { data, error } = await supabaseAdmin
+        .from(table)
+        .select("name, price")
+        .in("name", sizedNames);
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      for (const row of data || []) {
+        const name = String(row.name || "").trim().toLowerCase();
+        const price = Math.round(Number(row.price));
+
+        if (!name || !Number.isFinite(price) || price <= 0) continue;
+
+        const current = pricesByName.get(name) || [];
+        if (!current.includes(price)) current.push(price);
+        pricesByName.set(name, current);
+      }
+    }
+
+    try {
+      await collectNamedPrices("menu_items");
+      await collectNamedPrices("menu");
+    } catch {
+      return NextResponse.json(
+        { error: "Unable to price the menu." },
+        { status: 500 }
+      );
+    }
+
     let subtotal = 0;
 
     for (const item of items) {
+      const priced = pricedById.get(String(item.id || "").trim());
+
+      if (!priced) {
+        return NextResponse.json(
+          {
+            error: `${item.name?.trim() || "A dish"} is not on the menu.`,
+          },
+          { status: 400 }
+        );
+      }
+
+      item.name = priced.name;
+
+      if (String(item.selectedSize || "").trim()) {
+        const allowed =
+          pricesByName.get(priced.name.toLowerCase()) || [
+            Math.round(priced.price),
+          ];
+        const requested = Math.round(Number(item.price));
+
+        if (!allowed.includes(requested)) {
+          return NextResponse.json(
+            {
+              error: `${priced.name} ${item.selectedSize} is not on the menu.`,
+            },
+            { status: 400 }
+          );
+        }
+
+        item.price = requested;
+      } else {
+        item.price = priced.price;
+      }
+
       if (!item.name?.trim()) {
         return NextResponse.json(
           { error: "An order item is missing its name." },
@@ -162,21 +375,52 @@ export async function POST(request: Request) {
         );
       }
 
+      if (
+        isAppetizerDish(item.name) &&
+        item.quantity < APPETIZER_MINIMUM
+      ) {
+        return NextResponse.json(
+          {
+            error: `${item.name} has a minimum order of ${APPETIZER_MINIMUM}.`,
+          },
+          { status: 400 }
+        );
+      }
+
       subtotal +=
         Number(item.price) *
         Number(item.quantity);
     }
 
-    /*
-     * Delivery pricing will be connected to
-     * your business delivery rules later.
-     *
-     * Current checkout:
-     * Delivery = ₦0
-     */
-    const deliveryFee = 0;
+    const deliveryFee = getCheckoutDeliveryFee(
+      deliveryType,
+      deliveryAddress || ""
+    );
 
-    const total = subtotal + deliveryFee;
+    const tipAmount = Math.min(
+      20000,
+      Math.max(0, Math.round(Number(body?.tipAmount) || 0))
+    );
+
+    const promo = quotePromo(String(body?.promoCode || ""));
+
+    if (promo.error) {
+      return NextResponse.json(
+        { error: promo.error },
+        { status: 400 }
+      );
+    }
+
+    const discount = promoDiscount(subtotal, promo.percent);
+    const total = subtotal - discount + deliveryFee + tipAmount;
+    const orderNotes = [
+      notes?.trim() || "",
+      discount > 0
+        ? `Promo ${promo.code} saved ₦${discount.toLocaleString("en-NG")} on the food.`
+        : "",
+    ]
+      .filter(Boolean)
+      .join(" ");
 
     if (total <= 0) {
       return NextResponse.json(
@@ -210,7 +454,7 @@ export async function POST(request: Request) {
         token
       ) {
         const supabaseAuth = createClient(
-          supabaseUrl,
+          supabaseUrl as string,
           publishableKey,
           {
             auth: {
@@ -275,7 +519,14 @@ export async function POST(request: Request) {
 
           payment_status: "pending",
 
-          payment_channel: "paystack",
+          payment_channel:
+            paymentCurrency === "CRYPTO"
+              ? "crypto"
+              : paymentCurrency === "USD"
+                ? "paystack-usd"
+                : paymentCurrency === "WALLET"
+                  ? "rts-wallet"
+                  : "paystack",
 
           delivery_type:
             deliveryType,
@@ -286,7 +537,7 @@ export async function POST(request: Request) {
               : null,
 
           notes:
-            notes?.trim() || null,
+            orderNotes || null,
         })
         .select("id")
         .single();
@@ -378,77 +629,330 @@ export async function POST(request: Request) {
     }
 
     /* =====================================================
+       CREATE DELIVERY RECORD
+    ====================================================== */
+
+    let trackingToken: string | null = null;
+    let orderCode: string | null = null;
+
+    if (deliveryType === "delivery") {
+      const initialStatus: DeliveryStatus =
+        resolvedDispatchMode === "CUSTOMER_DISPATCH"
+          ? "ASSIGNED"
+          : "UNASSIGNED";
+
+      trackingToken = createTrackingToken();
+      orderCode = createOrderCode();
+
+      const deliveryRow: Record<string, unknown> = {
+        order_id: order.id,
+        mode: resolvedDispatchMode,
+        rider_id: null,
+        external_rider_name:
+          resolvedDispatchMode === "CUSTOMER_DISPATCH"
+            ? externalRiderName?.trim() || null
+            : null,
+        external_rider_phone:
+          resolvedDispatchMode === "CUSTOMER_DISPATCH"
+            ? externalRiderPhone?.trim() || null
+            : null,
+        status: initialStatus,
+        tracking_token: trackingToken,
+        order_code: orderCode,
+        tip_amount: tipAmount,
+        status_history: [
+          buildStatusHistoryEntry(
+            initialStatus,
+            "checkout",
+            resolvedDispatchMode === "CUSTOMER_DISPATCH"
+              ? "Customer provided their own dispatch rider."
+              : "Platform rider requested at checkout."
+          ),
+        ],
+        updated_at: new Date().toISOString(),
+      };
+
+      let deliveryError: { message?: string } | null = null;
+
+      for (let attempt = 0; attempt < 6; attempt += 1) {
+        const { error } = await supabaseAdmin
+          .from("deliveries")
+          .insert(deliveryRow);
+
+        if (!error) {
+          deliveryError = null;
+          break;
+        }
+
+        const missingColumn = String(error.message || "").match(
+          /Could not find the '([^']+)' column of 'deliveries'/
+        );
+
+        if (missingColumn && missingColumn[1] in deliveryRow) {
+          delete deliveryRow[missingColumn[1]];
+          deliveryError = error;
+          continue;
+        }
+
+        deliveryError = error;
+        break;
+      }
+
+      if (deliveryError) {
+        console.error(
+          "Create delivery error:",
+          deliveryError
+        );
+
+        await supabaseAdmin
+          .from("orders")
+          .delete()
+          .eq("id", order.id);
+
+        return NextResponse.json(
+          {
+            error:
+              deliveryError.message ||
+              "Unable to create delivery record.",
+          },
+          { status: 500 }
+        );
+      }
+    }
+
+    if (paymentCurrency === "WALLET") {
+      if (!customerId) {
+        await supabaseAdmin.from("orders").delete().eq("id", order.id);
+
+        return NextResponse.json(
+          { error: "Sign in to pay with your RTS wallet." },
+          { status: 401 }
+        );
+      }
+
+      const debit = await debitWallet(customerId, total, order.id);
+
+      if (!debit.ok) {
+        await supabaseAdmin.from("orders").delete().eq("id", order.id);
+
+        return NextResponse.json(
+          { error: debit.message },
+          { status: 400 }
+        );
+      }
+
+      await supabaseAdmin
+        .from("orders")
+        .update({
+          payment_status: "paid",
+          payment_channel: "rts-wallet",
+          payment_reference: `RTS-WALLET-ORDER-${order.id}`,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", order.id);
+
+      try {
+        const { notifyOrderPaid } = await import("@/lib/notify/hooks");
+        void notifyOrderPaid(order.id);
+      } catch (notifyError) {
+        console.error("Wallet paid notice error:", notifyError);
+      }
+
+      return NextResponse.json({
+        success: true,
+        orderId: order.id,
+        orderNumber,
+        walletPaid: true,
+        trackingToken,
+        orderCode,
+      });
+    }
+
+    /* =====================================================
        PAYSTACK INITIALIZATION
     ====================================================== */
 
     const reference =
-      `${orderNumber}-${Date.now()}`;
+      `${orderNumber}-${Date.now()}-${randomBytes(8).toString("hex")}`;
 
     const appUrl =
       process.env.NEXT_PUBLIC_SITE_URL ||
       new URL(request.url).origin;
 
-    const callbackUrl =
-      `${appUrl}/checkout/success?order=${encodeURIComponent(
-        order.id
-      )}&reference=${encodeURIComponent(
-        reference
-      )}`;
+    const usdAmount = ngnToUsd(total);
+    const chargeCurrency = paymentCurrency === "USD" ? "USD" : "NGN";
+    const chargeAmount =
+      chargeCurrency === "USD"
+        ? Math.round(usdAmount * 100)
+        : Math.round(total * 100);
 
-    const paystackResponse =
-      await fetch(
+    async function insertPaymentRow(
+      row: Record<string, unknown>
+    ) {
+      const payload = { ...row };
+
+      for (let attempt = 0; attempt < 12; attempt += 1) {
+        const { error } = await supabaseAdmin
+          .from("payments")
+          .insert(payload);
+
+        if (!error) {
+          return null;
+        }
+
+        const missingColumn = String(error.message || "").match(
+          /Could not find the '([^']+)' column of 'payments'/
+        );
+
+        if (missingColumn && missingColumn[1] in payload) {
+          delete payload[missingColumn[1]];
+          continue;
+        }
+
+        return error;
+      }
+
+      return {
+        message: "Unable to create payment record.",
+      };
+    }
+
+    if (paymentCurrency === "CRYPTO") {
+      const paymentInsertError = await insertPaymentRow({
+        order_id: order.id,
+        subscription_id: null,
+        amount: usdAmount,
+        currency: "USDT",
+        payment_method: "crypto",
+        payment_provider: "crypto",
+        payment_status: "pending",
+        payment_reference: reference,
+        base_currency: "NGN",
+        base_amount: total,
+        exchange_rate: NGN_PER_USD,
+        paid_at: null,
+        updated_at: new Date().toISOString(),
+      });
+
+      if (paymentInsertError) {
+        console.error(
+          "Payment record insert error:",
+          paymentInsertError
+        );
+
+        await supabaseAdmin
+          .from("orders")
+          .delete()
+          .eq("id", order.id);
+
+        return NextResponse.json(
+          {
+            error:
+              paymentInsertError.message ||
+              "Unable to create payment record.",
+          },
+          { status: 500 }
+        );
+      }
+
+      await supabaseAdmin
+        .from("orders")
+        .update({
+          payment_reference: reference,
+          payment_status: "pending",
+          payment_channel: "crypto",
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", order.id);
+
+      return NextResponse.json(
+        {
+          success: true,
+          orderId: order.id,
+          orderNumber,
+          reference,
+          trackingToken,
+          orderCode,
+          crypto: true,
+          usdtAmount: usdAmount,
+          amountNgn: total,
+          wallet: process.env.USDT_WALLET_ADDRESS || null,
+          network: process.env.USDT_NETWORK || "TRC20",
+        },
+        { status: 200 }
+      );
+    }
+
+    const successParams = new URLSearchParams({
+      order: order.id,
+      reference,
+    });
+
+    if (trackingToken) {
+      successParams.set("tracking", trackingToken);
+    }
+
+    if (orderCode) {
+      successParams.set("code", orderCode);
+    }
+
+    const callbackUrl =
+      `${appUrl}/checkout/success?${successParams.toString()}`;
+
+    const paystackBody: Record<string, unknown> = {
+      email: customerEmail.trim(),
+      amount: String(chargeAmount),
+      currency: chargeCurrency,
+      reference,
+      callback_url: callbackUrl,
+      metadata: {
+        order_id: order.id,
+        order_number: orderNumber,
+        customer_name: customerName.trim(),
+        customer_phone: customerPhone.trim(),
+        delivery_type: deliveryType,
+        payment_currency: chargeCurrency,
+        amount_ngn: total,
+      },
+    };
+
+    if (chargeCurrency === "NGN") {
+      paystackBody.channels = ["card", "bank_transfer"];
+    }
+
+    async function openPaystack(body: Record<string, unknown>) {
+      const response = await fetch(
         "https://api.paystack.co/transaction/initialize",
         {
           method: "POST",
-
           headers: {
-            Authorization:
-              `Bearer ${paystackSecretKey}`,
-
-            "Content-Type":
-              "application/json",
+            Authorization: `Bearer ${paystackSecretKey}`,
+            "Content-Type": "application/json",
           },
-
-          body: JSON.stringify({
-            email:
-              customerEmail.trim(),
-
-            amount:
-              String(
-                Math.round(
-                  total * 100
-                )
-              ),
-
-            currency: "NGN",
-
-            reference,
-
-            callback_url:
-              callbackUrl,
-
-            metadata: {
-              order_id:
-                order.id,
-
-              order_number:
-                orderNumber,
-
-              customer_name:
-                customerName.trim(),
-
-              customer_phone:
-                customerPhone.trim(),
-
-              delivery_type:
-                deliveryType,
-            },
-          }),
+          body: JSON.stringify(body),
         }
       );
+      const data = await response.json();
+      return { response, data };
+    }
 
-    const paystackData =
-      await paystackResponse.json();
+    let { response: paystackResponse, data: paystackData } =
+      await openPaystack(paystackBody);
+
+    if (
+      chargeCurrency === "NGN" &&
+      (
+        !paystackResponse.ok ||
+        !paystackData?.status ||
+        !paystackData?.data?.authorization_url
+      ) &&
+      /channel/i.test(String(paystackData?.message || ""))
+    ) {
+      delete paystackBody.channels;
+      const retry = await openPaystack(paystackBody);
+      paystackResponse = retry.response;
+      paystackData = retry.data;
+    }
 
     if (
       !paystackResponse.ok ||
@@ -510,39 +1014,21 @@ export async function POST(request: Request) {
       );
     }
 
-    const {
-      error: paymentInsertError,
-    } = await supabaseAdmin
-      .from("payments")
-      .insert({
-        order_id: order.id,
-
-        subscription_id: null,
-
-        customer_id: customerId,
-
-        amount: total,
-
-        currency: "NGN",
-
-        payment_method: "paystack",
-
-        payment_provider: "paystack",
-
-        payment_status: "pending",
-
-        payment_reference: paymentReference,
-
-        base_currency: "NGN",
-
-        base_amount: total,
-
-        exchange_rate: 1,
-
-        paid_at: null,
-
-        updated_at: new Date().toISOString(),
-      });
+    const paymentInsertError = await insertPaymentRow({
+      order_id: order.id,
+      subscription_id: null,
+      amount: chargeCurrency === "USD" ? usdAmount : total,
+      currency: chargeCurrency,
+      payment_method: "paystack",
+      payment_provider: "paystack",
+      payment_status: "pending",
+      payment_reference: paymentReference,
+      base_currency: "NGN",
+      base_amount: total,
+      exchange_rate: chargeCurrency === "USD" ? NGN_PER_USD : 1,
+      paid_at: null,
+      updated_at: new Date().toISOString(),
+    });
 
     if (paymentInsertError) {
       console.error(
@@ -580,6 +1066,8 @@ export async function POST(request: Request) {
 
         reference:
           paymentReference,
+
+        trackingToken,
 
         authorizationUrl:
           paystackData.data.authorization_url,

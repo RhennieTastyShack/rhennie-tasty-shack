@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { requireAdmin } from "@/lib/supabase-admin";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -28,6 +29,15 @@ const VALID_STATUSES = [
 
 export async function PATCH(request: Request) {
   try {
+    const admin = await requireAdmin(request);
+
+    if (!admin) {
+      return NextResponse.json(
+        { error: "Only the kitchen can change an order status." },
+        { status: 401 }
+      );
+    }
+
     const body = await request.json();
 
     const orderId = body.orderId;
@@ -104,6 +114,24 @@ export async function PATCH(request: Request) {
           status: 404,
         }
       );
+    }
+
+    try {
+      const { notifyOrderStatusChange } = await import(
+        "@/lib/notify/hooks"
+      );
+      void notifyOrderStatusChange({
+        id: data.id,
+        order_no: data.order_no,
+        order_number: data.order_number,
+        customer_id: data.customer_id,
+        customer_email: data.customer_email,
+        customer_phone: data.customer_phone,
+        customer_name: data.customer_name,
+        status: data.status || normalizedStatus,
+      });
+    } catch (notifyError) {
+      console.error("Order status notify error:", notifyError);
     }
 
     return NextResponse.json(

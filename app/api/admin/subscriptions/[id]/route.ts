@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireAdmin } from "@/lib/supabase-admin";
 import { createClient } from "@supabase/supabase-js";
 
 export const runtime = "nodejs";
@@ -152,6 +153,18 @@ export async function GET(
       );
     }
 
+    const admin = await requireAdmin(request);
+
+    if (!admin) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Only the kitchen can view a subscription.",
+        },
+        { status: 401 }
+      );
+    }
+
     const supabaseAdmin = getSupabaseAdmin();
 
     const {
@@ -249,6 +262,18 @@ export async function PATCH(
         {
           status: 400,
         }
+      );
+    }
+
+    const admin = await requireAdmin(request);
+
+    if (!admin) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Only the kitchen can update a subscription.",
+        },
+        { status: 401 }
       );
     }
 

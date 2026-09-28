@@ -8,6 +8,7 @@ import {
   Grid2X2,
   ShoppingBag,
   Users,
+  Bike,
   Star,
   Image,
   Settings,
@@ -33,6 +34,11 @@ const menuItems = [
     title: "Orders",
     href: "/admin/orders",
     icon: ShoppingBag,
+  },
+  {
+    title: "Riders",
+    href: "/admin/riders",
+    icon: Bike,
   },
   {
     title: "Customers",

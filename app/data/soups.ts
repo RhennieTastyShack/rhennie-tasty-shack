@@ -80,7 +80,7 @@ export const soups = [
     collection: "Heritage Soup Collection",
     badge: "House Favourite",
     preparationTime: "25 mins",
-    available: true,
+    available: false,
     featured: false,
   },
 ];

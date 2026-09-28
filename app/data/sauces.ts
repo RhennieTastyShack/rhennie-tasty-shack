@@ -56,7 +56,7 @@ export const sauces = [
     name: "Asun Sauce",
     premiumName: "Smoky Asun Royale",
     description: "Tender spicy goat meat cooked in our smoky signature pepper sauce.",
-    price: 6900,
+    price: 3500,
     category: "Sauce",
     collection: "Signature Sauces",
     badge: "Premium Selection",

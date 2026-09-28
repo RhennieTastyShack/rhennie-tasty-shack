@@ -6,9 +6,9 @@ const boxes = [
     number: "01",
     title: "Jollof & Pasta Feast Box",
     price: "₦32,000",
-    image: "/images/Jollof & Pasta Feast Box.png",
+    image: "/images/Luxury Brunch Box.png",
     description:
-      "Jollof pasta, fried rice, two pieces of turkey, fried plantain and a refreshing fruit juice.",
+      "A luxurious three-meal experience featuring jollof rice, fried rice and pasta, served with four generous pieces of seasoned chicken.",
   },
   {
     number: "02",
@@ -23,28 +23,52 @@ const boxes = [
     number: "03",
     title: "Weekend Treat Box",
     price: "₦40,000",
-    image: "/images/Weekend Treat Box.png",
+    image: "/images/box-45-turkey.jpg",
     description:
-      "Four delicious meals paired with two pieces of chicken, a signature shawarma and refreshing fruit juice.",
+      "Fried rice, stir fry pasta, 2 pieces of peppered turkey, 1 mini bottled water, 1 fruit juice, 5 samosa, 5 spring rolls, 10 puff-puff, 2 chocolates and 2 McVitie's.",
   },
   {
     number: "04",
-    title: "Family Feast Box",
-    price: "₦50,000",
-    image: "/images/Family Feast Box.png",
+    title: "Peppered Turkey Box",
+    price: "₦45,000",
+    image: "/images/box-45-turkey.jpg",
     description:
-      "A generous family spread featuring jollof rice, fried rice, turkey, beef, samosa, spring rolls, puff-puff, apples and fruit juice.",
+      "Fried rice, stir fry pasta, 2 pieces of peppered turkey, 1 mini bottled water, 1 fruit juice, 5 samosa, 5 spring rolls, 10 puff-puff, 2 chocolates and 2 McVitie's.",
   },
   {
     number: "05",
-    title: "Heritage Feast Box",
-    price: "₦60,000",
-    image: "/images/Heritage Feast Box.png",
+    title: "Family Feast Box",
+    price: "₦50,000",
+    image: "/images/box-50-family.jpg",
     description:
-      "Efo Riro with panla fish and assorted, semo, peppered turkey, small chops, fresh fruits and fruit juice. Soup served in two bowls.",
+      "2 apples, 2 pieces of peppered turkey, 10 pieces of peppered beef, 10 samosa, 10 spring rolls, 15 puff-puff, 1 fruit juice, fried rice and jollof rice.",
   },
   {
     number: "06",
+    title: "Plantain Feast Box",
+    price: "₦50,000",
+    image: "/images/box-50-plantain.jpg",
+    description:
+      "2 pieces of peppered turkey, stir fry pasta, fried rice, fried plantain, 10 puff-puff, 5 samosa, 5 spring rolls, 1 fruit juice, 1 Pringles, 1 Vitamilk and 3 McVitie's.",
+  },
+  {
+    number: "07",
+    title: "Bento Celebration Box",
+    price: "₦55,000",
+    image: "/images/box-55-bento.jpg",
+    description:
+      "A bento cake, 2 pieces of peppered turkey, stir fry pasta, fried rice, 5 samosa, 5 spring rolls, 10 puff-puff, 2 cookies, 2 chocolates, 1 fruit juice and 1 mini bottled water.",
+  },
+  {
+    number: "08",
+    title: "Heritage Feast Box",
+    price: "₦60,000",
+    image: "/images/box-60-waffles.jpg",
+    description:
+      "Stir fry pasta, fried rice, 5 waffles, 4 pieces of peppered turkey, 2 fruit juices, 2 chocolates, 2 cookies, 5 samosa, 5 spring rolls, 10 puff-puff and 1 Pringles.",
+  },
+  {
+    number: "09",
     title: "Ultimate Brunch Box",
     price: "₦70,000",
     image: "/images/Ultimate Brunch Box.png",
@@ -52,7 +76,7 @@ const boxes = [
       "A premium brunch spread featuring sandwiches, waffles, pancakes, turkey, bento cake, jollof rice, fried rice, chocolates, fruit and drinks.",
   },
   {
-    number: "07",
+    number: "10",
     title: "Grand Celebration Box",
     price: "₦80,000",
     image: "/images/Grand Celebration Box.png",

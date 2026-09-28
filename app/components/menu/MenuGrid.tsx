@@ -4,7 +4,9 @@ import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
 import { supabase } from "@/lib/supabase";
+import { RETIRED_CATALOG_NAMES } from "@/lib/catalog-dishes";
 import { polishCollectionName } from "@/lib/menu-images";
+import { PARTY_DISHES, RETIRED_PARTY_DISHES } from "@/lib/party-menu";
 import MenuFilters from "./MenuFilters";
 import MealCard from "./MealCard";
 import FoodByLitreCard from "./FoodByLitreCard";
@@ -120,6 +122,13 @@ function matchesCategory(
 
       "sauces",
       "sauce",
+    ],
+
+    appetizers: [
+      "appetizers",
+      "appetizer",
+      "party table",
+      "party-table",
     ],
 
     "food-boxes": [
@@ -317,7 +326,85 @@ export default function MenuGrid() {
           };
         });
 
-      setMeals(formattedMeals);
+      let merged = formattedMeals;
+
+      try {
+        const partyResponse = await fetch("/api/menu", {
+          cache: "no-store",
+        });
+        const partyRows = await partyResponse.json();
+
+        if (Array.isArray(partyRows)) {
+          const hiddenNames = new Set(
+            [
+              ...RETIRED_PARTY_DISHES,
+              ...PARTY_DISHES.flatMap((dish) => dish.previousNames || []),
+            ].map((name) => name.toLowerCase())
+          );
+
+          const partyMeals: MenuItem[] = partyRows
+            .filter((row) =>
+              /appetizer|party table/i.test(String(row.collection || ""))
+            )
+            .filter((row) => row.available !== false)
+            .filter(
+              (row) =>
+                !hiddenNames.has(String(row.name || "").toLowerCase())
+            )
+            .map((row, index) => ({
+              id: String(row.id),
+              name: String(row.name || ""),
+              collection: "Appetizers",
+              collectionSlug: "appetizers",
+              description: String(row.description || ""),
+              price: Number(row.price) || 0,
+              image_url: row.image_url || null,
+              available: true,
+              featured: false,
+              display_order: 80 + index,
+              sort_order: index,
+            }));
+
+          const partyByName = new Map(
+            partyMeals.map((meal) => [meal.name.toLowerCase(), meal])
+          );
+
+          const refreshed = formattedMeals
+            .filter(
+              (meal) => !hiddenNames.has(meal.name.toLowerCase())
+            )
+            .map((meal) => {
+              const party = partyByName.get(meal.name.toLowerCase());
+              const isAppetizer = /appetizer|party/i.test(
+                `${meal.collection} ${meal.collectionSlug}`
+              );
+
+              if (!party || !isAppetizer) return meal;
+
+              return {
+                ...meal,
+                description: party.description,
+                price: party.price,
+                image_url: party.image_url || meal.image_url,
+              };
+            });
+
+          const names = new Set(
+            refreshed.map((meal) => meal.name.toLowerCase())
+          );
+
+          merged = [
+            ...refreshed,
+            ...partyMeals.filter(
+              (meal) => !names.has(meal.name.toLowerCase())
+            ),
+          ];
+        }
+      } catch {
+        merged = formattedMeals;
+      }
+
+      setMeals(merged);
       setLoading(false);
     }
 
@@ -359,7 +446,10 @@ export default function MenuGrid() {
 
       return (
         categoryMatch &&
-        searchMatch
+        searchMatch &&
+        meal.available !== false &&
+        !RETIRED_CATALOG_NAMES.includes(meal.name) &&
+        !/titus\s*pepper/i.test(meal.name)
       );
     });
   }, [
@@ -408,16 +498,20 @@ export default function MenuGrid() {
                 b.sort_order
           );
 
-          const options: LitreOption[] =
-            sorted
-              .slice(0, litreSizes.length)
-              .map((item, index) => ({
-                size:
-                  litreSizes[index],
+          const seenPrices = new Set<number>();
+          const unique = sorted.filter((item) => {
+            if (item.available === false) return false;
+            if (seenPrices.has(item.price)) return false;
+            seenPrices.add(item.price);
+            return true;
+          });
 
-                price:
-                  item.price,
-              }));
+          const options: LitreOption[] = unique
+            .slice(0, litreSizes.length)
+            .map((item, index) => ({
+              size: litreSizes[index],
+              price: item.price,
+            }));
 
           return {
             id:

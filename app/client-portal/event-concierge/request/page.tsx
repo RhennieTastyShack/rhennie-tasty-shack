@@ -270,6 +270,9 @@ export default function EventConciergeRequestPage() {
                   required
                 />
               </div>
+              <p className="mt-4 text-sm leading-6 text-black/45">
+                Event logistics is quoted for this occasion. It follows the venue, the hour and the number of guests.
+              </p>
             </div>
 
             {/* BUDGET */}

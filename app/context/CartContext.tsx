@@ -1,5 +1,6 @@
 "use client";
 
+import { APPETIZER_MINIMUM, isAppetizerDish } from "@/lib/party-menu";
 import {
   createContext,
   useContext,
@@ -173,15 +174,24 @@ export function CartProvider({
 
       if (existingItemIndex !== -1) {
         return currentItems.map(
-          (existingItem, index) =>
-            index === existingItemIndex
-              ? {
-                  ...existingItem,
-                  quantity:
-                    existingItem.quantity +
-                    item.quantity,
-                }
-              : existingItem
+          (existingItem, index) => {
+            if (index !== existingItemIndex) {
+              return existingItem;
+            }
+
+            const floor = isAppetizerDish(existingItem.name)
+              ? APPETIZER_MINIMUM
+              : 1;
+            const added =
+              existingItem.quantity < floor
+                ? floor
+                : item.quantity;
+
+            return {
+              ...existingItem,
+              quantity: existingItem.quantity + added,
+            };
+          }
         );
       }
 
@@ -193,8 +203,9 @@ export function CartProvider({
         ...currentItems,
         {
           ...item,
-          quantity:
-            item.quantity > 0
+          quantity: isAppetizerDish(item.name)
+            ? Math.max(APPETIZER_MINIMUM, item.quantity || 0)
+            : item.quantity > 0
               ? item.quantity
               : 1,
         },
@@ -253,16 +264,23 @@ export function CartProvider({
     }
 
     setItems((currentItems) =>
-      currentItems.map((item) =>
-        item.id === id &&
-        item.selectedSize ===
-          selectedSize
-          ? {
-              ...item,
-              quantity,
-            }
-          : item
-      )
+      currentItems.map((item) => {
+        if (
+          item.id !== id ||
+          item.selectedSize !== selectedSize
+        ) {
+          return item;
+        }
+
+        const floor = isAppetizerDish(item.name)
+          ? APPETIZER_MINIMUM
+          : 1;
+
+        return {
+          ...item,
+          quantity: Math.max(floor, quantity),
+        };
+      })
     );
   }
 

@@ -1,5 +1,11 @@
 import { NextResponse } from "next/server";
+import { randomBytes } from "crypto";
 import { createClient } from "@supabase/supabase-js";
+import {
+  NGN_PER_USD,
+  ngnToUsd,
+} from "@/lib/payment-currency";
+import { getAuthUser, requireAdmin, userOwnsOrder } from "@/lib/supabase-admin";
 
 const supabaseUrl =
   process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -37,13 +43,9 @@ export async function POST(
 
     const {
       order_id,
-      amount,
       currency,
       payment_method,
       payment_provider,
-      base_currency,
-      base_amount,
-      exchange_rate,
 
       crypto_currency,
       crypto_network,
@@ -75,6 +77,8 @@ export async function POST(
       .from("orders")
       .select(`
         id,
+        customer_id,
+        customer_email,
         order_no,
         total,
         status,
@@ -108,6 +112,31 @@ export async function POST(
       );
     }
 
+    const user = await getAuthUser(request);
+    const admin = user ? await requireAdmin(request) : null;
+
+    if (!user || (!admin && !userOwnsOrder(user, order))) {
+      return NextResponse.json(
+        {
+          error: "Please sign in with the account that placed this order.",
+        },
+        { status: 401 }
+      );
+    }
+
+    if (
+      String(order.payment_status || "")
+        .toLowerCase() === "paid"
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "This order has already been paid.",
+        },
+        { status: 400 }
+      );
+    }
+
     // =================================================
     // ONLY ACCEPTED QUOTATIONS CAN BE PAID
     // =================================================
@@ -129,17 +158,16 @@ export async function POST(
     // VALIDATE AMOUNT
     // =================================================
 
-    const paymentAmount =
-      Number(amount);
+    const orderTotal = Number(order.total);
 
     if (
-      !Number.isFinite(paymentAmount) ||
-      paymentAmount <= 0
+      !Number.isFinite(orderTotal) ||
+      orderTotal <= 0
     ) {
       return NextResponse.json(
         {
           error:
-            "Please enter a valid payment amount.",
+            "This order has no amount to pay.",
         },
         { status: 400 }
       );
@@ -180,73 +208,147 @@ export async function POST(
     // CREATE INTERNAL PAYMENT REFERENCE
     // =================================================
 
-    const timestamp =
-      Date.now();
+    const timestamp = Date.now();
+    const paymentReference = `RTS-PAY-${timestamp}-${randomBytes(8).toString("hex")}`;
 
-    const random =
-      Math.floor(
-        1000 +
-          Math.random() * 9000
+    const isCrypto =
+      finalCurrency === "CRYPTO";
+
+    const paymentAmount =
+      finalCurrency === "USD"
+        ? ngnToUsd(orderTotal)
+        : orderTotal;
+
+    const baseNgn = orderTotal;
+
+    const usdtAmount = isCrypto
+      ? ngnToUsd(baseNgn)
+      : null;
+
+    const usdtNetwork =
+      process.env.USDT_NETWORK || "TRC20";
+
+    const usdtWallet =
+      process.env.USDT_WALLET_ADDRESS?.trim() ||
+      null;
+
+    if (
+      isCrypto &&
+      (
+        !Number.isFinite(usdtAmount) ||
+        Number(usdtAmount) <= 0
+      )
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "This order has no amount to convert to USDT.",
+        },
+        { status: 400 }
       );
-
-    const paymentReference =
-      `RTS-PAY-${timestamp}-${random}`;
+    }
 
     // =================================================
     // CREATE PAYMENT
     // =================================================
 
-    const {
-      data: payment,
-      error: paymentError,
-    } = await supabaseAdmin
-      .from("payments")
-      .insert({
-        order_id,
+    const paymentRow: Record<string, unknown> = {
+      order_id,
 
-        amount:
-          paymentAmount,
+      amount: isCrypto
+        ? usdtAmount
+        : paymentAmount,
 
-        currency:
-          finalCurrency,
+      currency: isCrypto
+        ? "USDT"
+        : finalCurrency,
 
-        payment_method:
-          payment_method || null,
+      payment_method: isCrypto
+        ? "crypto"
+        : payment_method || null,
 
-        payment_provider:
-          payment_provider || null,
+      payment_provider: isCrypto
+        ? "crypto"
+        : payment_provider || null,
 
-        payment_status:
-          "pending",
+      payment_status: "pending",
 
-        payment_reference:
-          paymentReference,
+      payment_reference: paymentReference,
 
-        base_currency:
-          base_currency || "NGN",
+      base_currency: "NGN",
 
-        base_amount:
-          base_amount ?? order.total,
+      base_amount: baseNgn,
 
-        exchange_rate:
-          exchange_rate ?? null,
+      exchange_rate:
+        isCrypto || finalCurrency === "USD"
+          ? NGN_PER_USD
+          : null,
 
-        crypto_currency:
-          crypto_currency || null,
+      crypto_currency: isCrypto
+        ? "USDT"
+        : crypto_currency || null,
 
-        crypto_network:
-          crypto_network || null,
+      crypto_network: isCrypto
+        ? usdtNetwork
+        : crypto_network || null,
 
-        crypto_amount:
-          crypto_amount ?? null,
+      crypto_amount: isCrypto
+        ? usdtAmount
+        : crypto_amount ?? null,
 
-        crypto_wallet_address:
-          crypto_wallet_address || null,
-      })
-      .select()
-      .single();
+      crypto_wallet_address: isCrypto
+        ? usdtWallet
+        : crypto_wallet_address || null,
 
-    if (paymentError) {
+      provider_metadata: isCrypto
+        ? {
+            crypto_currency: "USDT",
+            crypto_network: usdtNetwork,
+            crypto_amount: usdtAmount,
+            crypto_wallet_address: usdtWallet,
+          }
+        : null,
+
+      updated_at: new Date().toISOString(),
+    };
+
+    let payment: Record<string, unknown> | null =
+      null;
+    let paymentError: { message?: string } | null =
+      null;
+
+    for (let attempt = 0; attempt < 12; attempt += 1) {
+      const inserted = await supabaseAdmin
+        .from("payments")
+        .insert(paymentRow)
+        .select()
+        .single();
+
+      if (!inserted.error) {
+        payment = inserted.data;
+        paymentError = null;
+        break;
+      }
+
+      const missingColumn = String(
+        inserted.error.message || ""
+      ).match(
+        /Could not find the '([^']+)' column of 'payments'/
+      );
+
+      if (
+        missingColumn &&
+        missingColumn[1] in paymentRow
+      ) {
+        delete paymentRow[missingColumn[1]];
+        continue;
+      }
+
+      paymentError = inserted.error;
+      break;
+    }
+
+    if (paymentError || !payment) {
       console.error(
         "Payment creation error:",
         paymentError
@@ -255,7 +357,8 @@ export async function POST(
       return NextResponse.json(
         {
           error:
-            paymentError.message,
+            paymentError?.message ||
+            "Unable to create payment record.",
         },
         { status: 500 }
       );
@@ -276,9 +379,10 @@ export async function POST(
         payment_reference:
           paymentReference,
 
-        payment_channel:
-          payment_method ||
-          finalCurrency,
+        payment_channel: isCrypto
+          ? "crypto"
+          : payment_method ||
+            finalCurrency,
 
         updated_at:
           new Date().toISOString(),
@@ -304,6 +408,22 @@ export async function POST(
           "Payment record created successfully.",
 
         payment,
+
+        crypto: isCrypto,
+
+        usdtAmount,
+
+        amountNgn: isCrypto
+          ? baseNgn
+          : null,
+
+        wallet: isCrypto
+          ? usdtWallet
+          : null,
+
+        network: isCrypto
+          ? usdtNetwork
+          : null,
 
         order: {
           id: order.id,

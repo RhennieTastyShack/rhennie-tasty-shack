@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
+import { supabase } from "@/lib/supabase";
 
 interface Consultation {
   full_name?: string;
@@ -27,8 +29,19 @@ export default function AdminDashboard() {
   useEffect(() => {
     async function loadOrders() {
       try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+
+        const headers: Record<string, string> = {};
+
+        if (session?.access_token) {
+          headers.Authorization = `Bearer ${session.access_token}`;
+        }
+
         const response = await fetch("/api/orders", {
           cache: "no-store",
+          headers,
         });
 
         const data = await response.json();
@@ -63,6 +76,11 @@ export default function AdminDashboard() {
       order.created_at?.split("T")[0] === today
     );
   });
+
+  const endOfDaySales = todaysOrders.reduce(
+    (total, order) => total + Number(order.amount || 0),
+    0
+  );
 
   const totalRevenue = orders.reduce(
     (total, order) =>
@@ -164,7 +182,21 @@ export default function AdminDashboard() {
       )}
 
       {/* STATS */}
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-5">
+
+        <div className="rounded-xl border-l-4 border-[#B08D22] bg-white p-6 shadow-lg">
+          <h3 className="text-gray-500">
+            End of day sales
+          </h3>
+
+          <p className="mt-2 text-4xl font-bold text-gray-900">
+            {formatAmount(endOfDaySales)}
+          </p>
+
+          <p className="mt-2 text-sm text-gray-400">
+            Sales recorded today
+          </p>
+        </div>
 
         {/* TODAY'S ORDERS */}
         <div className="rounded-xl border-l-4 border-yellow-500 bg-white p-6 shadow-lg">
@@ -296,7 +328,12 @@ export default function AdminDashboard() {
                   >
 
                     <td className="py-4 font-semibold text-gray-900">
-                      {order.order_no}
+                      <Link
+                        href={`/admin/orders?open=${encodeURIComponent(order.id)}`}
+                        className="text-[#B08D22] underline-offset-4 hover:underline"
+                      >
+                        {order.order_no}
+                      </Link>
                     </td>
 
                     <td className="py-4 text-gray-700">

@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { supabase } from "@/lib/supabase";
+import { selectionLabel } from "@/lib/menu-choices";
 
 interface OrderItem {
   id: string;
@@ -117,6 +119,47 @@ export default function OrdersPage() {
     useState(false);
 
   // ============================================================
+  // DELIVERY TRACKING STATE
+  // ============================================================
+
+  type DeliveryRecord = {
+    id: string;
+    mode: string;
+    status: string;
+    tracking_token: string;
+    external_rider_name: string | null;
+    external_rider_phone: string | null;
+    rider_id: string | null;
+    riders?: {
+      id: string;
+      full_name: string;
+      phone: string;
+      vehicle_type: string | null;
+    } | null;
+  };
+
+  type AvailableRider = {
+    id: string;
+    full_name: string;
+    phone: string;
+    vehicle_type: string | null;
+    is_available: boolean;
+  };
+
+  const [orderDelivery, setOrderDelivery] =
+    useState<DeliveryRecord | null>(null);
+  const [availableRiders, setAvailableRiders] = useState<
+    AvailableRider[]
+  >([]);
+  const [deliveryLoading, setDeliveryLoading] = useState(false);
+  const [deliveryBusy, setDeliveryBusy] = useState(false);
+  const [assignRiderId, setAssignRiderId] = useState("");
+  const [editExternalName, setEditExternalName] = useState("");
+  const [editExternalPhone, setEditExternalPhone] = useState("");
+  const [deliveryStatusDraft, setDeliveryStatusDraft] =
+    useState("");
+
+  // ============================================================
   // LOAD ORDERS
   // ============================================================
 
@@ -130,8 +173,19 @@ export default function OrdersPage() {
 
       setError("");
 
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      const headers: Record<string, string> = {};
+
+      if (session?.access_token) {
+        headers.Authorization = `Bearer ${session.access_token}`;
+      }
+
       const response = await fetch("/api/orders", {
         cache: "no-store",
+        headers,
       });
 
       const result = await response.json();
@@ -145,6 +199,23 @@ export default function OrdersPage() {
       setOrders(
         Array.isArray(result) ? result : []
       );
+
+      const openId = new URLSearchParams(window.location.search).get(
+        "open"
+      );
+
+      if (openId) {
+        const list = Array.isArray(result) ? result : [];
+        const match = list.find((order) => {
+          const number = String(order.order_no || "").replace(/[^a-z0-9]/gi, "");
+          const wanted = openId.replace(/[^a-z0-9]/gi, "");
+          return order.id === openId || number.toLowerCase() === wanted.toLowerCase();
+        });
+
+        if (match) {
+          openOrder(match);
+        }
+      }
     } catch (err) {
       console.error("Orders loading error:", err);
 
@@ -315,6 +386,24 @@ export default function OrdersPage() {
   // UPDATE ORDER STATUS
   // ============================================================
 
+  async function authHeaders(
+    extra?: Record<string, string>
+  ) {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
+    const headers: Record<string, string> = {
+      ...(extra || {}),
+    };
+
+    if (session?.access_token) {
+      headers.Authorization = `Bearer ${session.access_token}`;
+    }
+
+    return headers;
+  }
+
   async function updateOrderStatus(
     orderId: string,
     status: string
@@ -327,9 +416,9 @@ export default function OrdersPage() {
         "/api/orders/status",
         {
           method: "PATCH",
-          headers: {
+          headers: await authHeaders({
             "Content-Type": "application/json",
-          },
+          }),
           body: JSON.stringify({
             orderId,
             status,
@@ -418,6 +507,108 @@ export default function OrdersPage() {
     );
 
     setError("");
+    void loadDeliveryForOrder(order);
+  }
+
+  async function loadDeliveryForOrder(order: Order) {
+    setDeliveryLoading(true);
+    setOrderDelivery(null);
+    setAssignRiderId("");
+    setEditExternalName("");
+    setEditExternalPhone("");
+    setDeliveryStatusDraft("");
+
+    try {
+      const headers = await authHeaders();
+      const [deliveryRes, ridersRes] = await Promise.all([
+        fetch(
+          `/api/deliveries?order_id=${encodeURIComponent(order.id)}`,
+          { cache: "no-store", headers }
+        ),
+        fetch("/api/riders?scope=available", {
+          cache: "no-store",
+          headers,
+        }),
+      ]);
+
+      const deliveryJson = await deliveryRes.json();
+      const ridersJson = await ridersRes.json();
+
+      if (ridersJson?.success) {
+        setAvailableRiders(ridersJson.riders || []);
+      }
+
+      if (deliveryJson?.success && deliveryJson.delivery) {
+        const delivery = deliveryJson.delivery as DeliveryRecord;
+        const rider = Array.isArray(delivery.riders)
+          ? delivery.riders[0]
+          : delivery.riders;
+
+        setOrderDelivery({
+          ...delivery,
+          riders: rider || null,
+        });
+        setEditExternalName(delivery.external_rider_name || "");
+        setEditExternalPhone(delivery.external_rider_phone || "");
+        setDeliveryStatusDraft(delivery.status || "");
+        setAssignRiderId(delivery.rider_id || "");
+      }
+    } catch (err) {
+      console.error("Delivery load error:", err);
+    } finally {
+      setDeliveryLoading(false);
+    }
+  }
+
+  async function patchDelivery(body: Record<string, unknown>) {
+    if (!orderDelivery) return;
+
+    setDeliveryBusy(true);
+    setError("");
+
+    try {
+      const response = await fetch("/api/deliveries", {
+        method: "PATCH",
+        headers: await authHeaders({
+          "Content-Type": "application/json",
+        }),
+        body: JSON.stringify({
+          delivery_id: orderDelivery.id,
+          by: "admin",
+          ...body,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !result?.success) {
+        throw new Error(
+          result?.message || "Unable to update delivery."
+        );
+      }
+
+      const delivery = result.delivery as DeliveryRecord;
+      const rider = Array.isArray(delivery.riders)
+        ? delivery.riders[0]
+        : delivery.riders;
+
+      setOrderDelivery({
+        ...delivery,
+        riders: rider || null,
+      });
+      setEditExternalName(delivery.external_rider_name || "");
+      setEditExternalPhone(delivery.external_rider_phone || "");
+      setDeliveryStatusDraft(delivery.status || "");
+      setAssignRiderId(delivery.rider_id || "");
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Unable to update delivery."
+      );
+    } finally {
+      setDeliveryBusy(false);
+    }
   }
 
   async function saveQuotation() {
@@ -454,9 +645,9 @@ export default function OrdersPage() {
         )}/quotation`,
         {
           method: "PATCH",
-          headers: {
+          headers: await authHeaders({
             "Content-Type": "application/json",
-          },
+          }),
           body: JSON.stringify({
             quoted_amount: quotedAmount,
             delivery_fee: deliveryFee,
@@ -978,7 +1169,18 @@ export default function OrdersPage() {
               return (
                 <article
                   key={order.id}
-                  className="overflow-hidden rounded-[28px] border border-white/10 bg-[#111111]"
+                  onClick={(event) => {
+                    const target = event.target as HTMLElement;
+                    if (
+                      target.closest(
+                        "button, a, select, input, textarea, option, label"
+                      )
+                    ) {
+                      return;
+                    }
+                    openOrder(order);
+                  }}
+                  className="cursor-pointer overflow-hidden rounded-[28px] border border-white/10 bg-[#111111] transition hover:border-[#D4AF37]/40"
                 >
 
                   {/* ==================================================
@@ -991,14 +1193,20 @@ export default function OrdersPage() {
 
                       <div className="min-w-0">
 
-                        <p className="text-[9px] font-bold uppercase tracking-[0.25em] text-[#D4AF37]">
-                          {order.order_no}
-                        </p>
+                        <button
+                          type="button"
+                          onClick={() => openOrder(order)}
+                          className="text-left"
+                        >
+                          <p className="text-[9px] font-bold uppercase tracking-[0.25em] text-[#D4AF37] underline-offset-4 hover:underline">
+                            {order.order_no}
+                          </p>
 
-                        <h2 className="mt-2 font-serif text-2xl font-bold sm:text-3xl">
-                          {order.title ||
-                            "Online Food Order"}
-                        </h2>
+                          <h2 className="mt-2 font-serif text-2xl font-bold sm:text-3xl">
+                            {order.title ||
+                              "Online Food Order"}
+                          </h2>
+                        </button>
 
                         <p className="mt-2 text-xs text-white/35">
                           Created{" "}
@@ -1265,7 +1473,7 @@ export default function OrdersPage() {
 
                                     <p className="mt-1 text-[10px] text-white/35">
                                       {item.selected_size &&
-                                        `Size: ${item.selected_size} • `}
+                                        `${selectionLabel(item.name)}: ${item.selected_size} • `}
 
                                       Qty:{" "}
                                       {
@@ -1836,7 +2044,7 @@ export default function OrdersPage() {
 
                                   {item.selected_size && (
                                     <span>
-                                      Size:{" "}
+                                      {selectionLabel(item.name)}:{" "}
                                       <strong className="text-white/70">
                                         {
                                           item.selected_size
@@ -1952,7 +2160,7 @@ export default function OrdersPage() {
                           htmlFor="quotationDeliveryFee"
                           className="mb-2 block text-[9px] font-bold uppercase tracking-[0.18em] text-white/45"
                         >
-                          Delivery / Logistics Fee
+                          Event logistics
                         </label>
 
                         <div className="relative">
@@ -1973,6 +2181,9 @@ export default function OrdersPage() {
                             className="min-h-[52px] w-full rounded-xl border border-white/10 bg-[#181818] pl-9 pr-4 text-sm font-semibold text-white outline-none placeholder:text-white/20 focus:border-[#D4AF37]"
                           />
                         </div>
+                        <p className="mt-2 text-[11px] leading-5 text-white/35">
+                          Set this for the event. Each venue, hour and guest count has its own logistics fee.
+                        </p>
                       </div>
 
                       <div>
@@ -2145,6 +2356,212 @@ export default function OrdersPage() {
               )}
 
               {/* ====================================================
+                  RIDER DELIVERY TRACKING
+              ===================================================== */}
+
+              {!selectedOrder.consultation &&
+                selectedOrder.delivery_type === "delivery" && (
+                <section>
+                  <div className="mb-4">
+                    <p className="text-[8px] font-bold uppercase tracking-[0.25em] text-[#D4AF37]">
+                      Rider Dispatch
+                    </p>
+                    <h3 className="mt-1 font-serif text-xl font-bold">
+                      Delivery Tracking
+                    </h3>
+                  </div>
+
+                  <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-5">
+                    {deliveryLoading ? (
+                      <p className="text-sm text-white/50">
+                        Loading delivery...
+                      </p>
+                    ) : !orderDelivery ? (
+                      <p className="text-sm text-white/50">
+                        No delivery record for this order yet.
+                      </p>
+                    ) : (
+                      <div className="space-y-5">
+                        <div className="grid gap-4 sm:grid-cols-2">
+                          <Info
+                            label="Dispatch Mode"
+                            value={
+                              orderDelivery.mode ===
+                              "CUSTOMER_DISPATCH"
+                                ? "Customer own dispatch"
+                                : "Platform rider"
+                            }
+                          />
+                          <Info
+                            label="Delivery Status"
+                            value={orderDelivery.status.replaceAll(
+                              "_",
+                              " "
+                            )}
+                          />
+                          <Info
+                            label="Assigned Rider"
+                            value={
+                              orderDelivery.riders?.full_name ||
+                              orderDelivery.external_rider_name ||
+                              "Unassigned"
+                            }
+                          />
+                          <Info
+                            label="Rider Phone"
+                            value={
+                              orderDelivery.riders?.phone ||
+                              orderDelivery.external_rider_phone ||
+                              "—"
+                            }
+                          />
+                        </div>
+
+                        <div className="flex flex-wrap gap-2">
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              const url = `${window.location.origin}/track/${orderDelivery.tracking_token}`;
+                              try {
+                                await navigator.clipboard.writeText(url);
+                              } catch {
+                                /* ignore */
+                              }
+                            }}
+                            className="rounded-full border border-[#D4AF37]/40 px-4 py-2 text-xs font-bold uppercase tracking-wider text-[#D4AF37]"
+                          >
+                            Copy tracking link
+                          </button>
+                          <a
+                            href={`/track/${orderDelivery.tracking_token}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="rounded-full border border-white/15 px-4 py-2 text-xs font-bold uppercase tracking-wider text-white/70"
+                          >
+                            Open track page
+                          </a>
+                        </div>
+
+                        {orderDelivery.mode === "PLATFORM" && (
+                          <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
+                            <select
+                              value={assignRiderId}
+                              onChange={(e) =>
+                                setAssignRiderId(e.target.value)
+                              }
+                              className="rounded-xl border border-white/10 bg-black/40 px-3 py-3 text-sm text-white"
+                            >
+                              <option value="">
+                                Select available rider
+                              </option>
+                              {availableRiders.map((rider) => (
+                                <option key={rider.id} value={rider.id}>
+                                  {rider.full_name} · {rider.phone}
+                                </option>
+                              ))}
+                            </select>
+                            <button
+                              type="button"
+                              disabled={
+                                deliveryBusy || !assignRiderId
+                              }
+                              onClick={() =>
+                                patchDelivery({
+                                  rider_id: assignRiderId,
+                                  note: "Assigned by admin",
+                                })
+                              }
+                              className="rounded-xl bg-[#D4AF37] px-4 py-3 text-xs font-bold uppercase tracking-wider text-black disabled:opacity-50"
+                            >
+                              Assign
+                            </button>
+                          </div>
+                        )}
+
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          <div>
+                            <label className="mb-2 block text-xs text-white/50">
+                              External rider name
+                            </label>
+                            <input
+                              value={editExternalName}
+                              onChange={(e) =>
+                                setEditExternalName(e.target.value)
+                              }
+                              className="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-3 text-sm text-white"
+                            />
+                          </div>
+                          <div>
+                            <label className="mb-2 block text-xs text-white/50">
+                              External rider phone
+                            </label>
+                            <input
+                              value={editExternalPhone}
+                              onChange={(e) =>
+                                setEditExternalPhone(e.target.value)
+                              }
+                              className="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-3 text-sm text-white"
+                            />
+                          </div>
+                        </div>
+
+                        <button
+                          type="button"
+                          disabled={deliveryBusy}
+                          onClick={() =>
+                            patchDelivery({
+                              external_rider_name: editExternalName,
+                              external_rider_phone: editExternalPhone,
+                              note: "Updated external rider contact",
+                            })
+                          }
+                          className="rounded-xl border border-white/15 px-4 py-2 text-xs font-bold uppercase tracking-wider text-white/70 disabled:opacity-50"
+                        >
+                          Save dispatch contact
+                        </button>
+
+                        <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
+                          <select
+                            value={deliveryStatusDraft}
+                            onChange={(e) =>
+                              setDeliveryStatusDraft(e.target.value)
+                            }
+                            className="rounded-xl border border-white/10 bg-black/40 px-3 py-3 text-sm text-white"
+                          >
+                            {[
+                              "UNASSIGNED",
+                              "ASSIGNED",
+                              "PICKED_UP",
+                              "ON_THE_WAY",
+                              "DELIVERED",
+                              "CANCELLED",
+                            ].map((status) => (
+                              <option key={status} value={status}>
+                                {status.replaceAll("_", " ")}
+                              </option>
+                            ))}
+                          </select>
+                          <button
+                            type="button"
+                            disabled={deliveryBusy || !deliveryStatusDraft}
+                            onClick={() =>
+                              patchDelivery({
+                                status: deliveryStatusDraft,
+                                note: `Status set to ${deliveryStatusDraft} by admin`,
+                              })
+                            }
+                            className="rounded-xl bg-white px-4 py-3 text-xs font-bold uppercase tracking-wider text-black disabled:opacity-50"
+                          >
+                            Update status
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </section>
+              )}
+
+              {/* ====================================================
                   PAYMENT
               ===================================================== */}
 
@@ -2226,7 +2643,7 @@ export default function OrdersPage() {
                     />
 
                     <Info
-                      label="Delivery / Logistics Fee"
+                      label="Event logistics"
                       value={formatAmount(selectedOrder.delivery_fee)}
                     />
 
@@ -2287,7 +2704,9 @@ export default function OrdersPage() {
                     <div className="flex justify-between gap-4 text-sm">
 
                       <span className="text-white/40">
-                        Delivery Fee
+                        {selectedOrder.consultation
+                          ? "Event logistics"
+                          : "Delivery Fee"}
                       </span>
 
                       <span className="font-bold">
@@ -2295,7 +2714,9 @@ export default function OrdersPage() {
                           ? formatAmount(
                               selectedOrder.delivery_fee
                             )
-                          : "Free"}
+                          : selectedOrder.consultation
+                            ? "Set for this event"
+                            : "Free"}
                       </span>
 
                     </div>

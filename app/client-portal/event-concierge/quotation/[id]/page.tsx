@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabase";
 
 type Order = {
   id: string;
@@ -145,11 +146,18 @@ export default function QuotationPage() {
          * We use the orders endpoint because the quotation
          * belongs to an order.
          */
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+
         const response = await fetch(
           `/api/orders/${encodeURIComponent(id)}`,
           {
             method: "GET",
             cache: "no-store",
+            headers: session?.access_token
+              ? { Authorization: `Bearer ${session.access_token}` }
+              : {},
           }
         );
 
@@ -210,6 +218,10 @@ export default function QuotationPage() {
       setError("");
       setSuccessMessage("");
 
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
       const response = await fetch(
         `/api/orders/${encodeURIComponent(id)}/quotation`,
         {
@@ -217,6 +229,9 @@ export default function QuotationPage() {
           headers: {
             "Content-Type":
               "application/json",
+            ...(session?.access_token
+              ? { Authorization: `Bearer ${session.access_token}` }
+              : {}),
           },
           body: JSON.stringify({
             quoted_amount:
@@ -283,7 +298,7 @@ export default function QuotationPage() {
   if (loading) {
     return (
       <>
-        <style jsx>{styles}</style>
+        <style>{styles}</style>
 
         <main className="quotation-page">
           <div className="loading-wrapper">
@@ -308,7 +323,7 @@ export default function QuotationPage() {
   if (error || !order) {
     return (
       <>
-        <style jsx>{styles}</style>
+        <style>{styles}</style>
 
         <main className="quotation-page">
           <div className="error-card">
@@ -371,6 +386,11 @@ export default function QuotationPage() {
   const isAccepted =
     status === "ACCEPTED";
 
+  const isPaid =
+    (
+      order.payment_status || ""
+    ).toLowerCase() === "paid";
+
   const isDeclined =
     status === "DECLINED";
 
@@ -380,7 +400,7 @@ export default function QuotationPage() {
 
   return (
     <>
-      <style jsx>{styles}</style>
+      <style>{styles}</style>
 
       <main className="quotation-page">
         <div className="quotation-container">
@@ -439,6 +459,18 @@ export default function QuotationPage() {
                   order.id}
               </strong>
             </div>
+
+            {order.payment_reference && (
+              <div>
+                <span>
+                  PAYMENT REFERENCE
+                </span>
+
+                <strong>
+                  {order.payment_reference}
+                </strong>
+              </div>
+            )}
 
             <div className="status-area">
               <span>
@@ -622,7 +654,7 @@ export default function QuotationPage() {
 
             <div className="price-row">
               <span>
-                Delivery / Logistics
+                Event logistics
               </span>
 
               <strong>
@@ -751,9 +783,19 @@ export default function QuotationPage() {
                 <p>
                   Rhennie Tasty Shack has
                   received your acceptance.
-                  We will proceed with the
-                  next steps for your event.
+                  {isPaid
+                    ? " This quotation has been paid."
+                    : " Pay the quotation total to confirm the booking."}
                 </p>
+
+                {!isPaid && (
+                  <a
+                    className="pay-button"
+                    href={`/client-portal/payment/${id}`}
+                  >
+                    PAY NOW
+                  </a>
+                )}
               </div>
             </section>
           )}
@@ -1171,6 +1213,21 @@ const styles = `
   .accepted-card .decision-icon {
     background: #cdeed8;
     color: #087d40;
+  }
+
+  .pay-button {
+    display: inline-block;
+    margin-top: 18px;
+    border: 0;
+    border-radius: 10px;
+    padding: 14px 22px;
+    background: #d87926;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 900;
+    letter-spacing: 0.1em;
+    text-decoration: none;
+    cursor: pointer;
   }
 
   .declined-card {

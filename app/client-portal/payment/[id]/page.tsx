@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabase";
+import { ngnToUsd } from "@/lib/payment-currency";
 
 type Order = {
   id: string;
@@ -11,6 +13,7 @@ type Order = {
   total?: number | null;
   quotation_status?: string | null;
   payment_status?: string | null;
+  payment_reference?: string | null;
   customer_name?: string | null;
   full_name?: string | null;
 };
@@ -58,10 +61,17 @@ export default function PaymentPage() {
         setLoading(true);
         setError("");
 
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+
         const response = await fetch(
           `/api/orders/${id}`,
           {
             cache: "no-store",
+            headers: session?.access_token
+              ? { Authorization: `Bearer ${session.access_token}` }
+              : {},
           }
         );
 
@@ -151,14 +161,20 @@ export default function PaymentPage() {
       // CREATE PAYMENT RECORD
       // =================================================
 
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
       const response = await fetch(
         "/api/payments",
         {
           method: "POST",
 
           headers: {
-            "Content-Type":
-              "application/json",
+            "Content-Type": "application/json",
+            ...(session?.access_token
+              ? { Authorization: `Bearer ${session.access_token}` }
+              : {}),
           },
 
           body: JSON.stringify({
@@ -226,8 +242,10 @@ export default function PaymentPage() {
               method: "POST",
 
               headers: {
-                "Content-Type":
-                  "application/json",
+                "Content-Type": "application/json",
+                ...(session?.access_token
+                  ? { Authorization: `Bearer ${session.access_token}` }
+                  : {}),
               },
 
               body: JSON.stringify({
@@ -272,12 +290,28 @@ export default function PaymentPage() {
       // CRYPTO
       // =================================================
 
-      if (
-        selectedOption === "CRYPTO"
-      ) {
-        setMessage(
-          "Crypto payment created successfully. Crypto checkout will be connected next."
-        );
+      if (data.crypto) {
+        const params = new URLSearchParams({
+          order: order.id,
+          reference:
+            data.payment?.payment_reference ||
+            "",
+          usdt: String(data.usdtAmount ?? ""),
+          ngn: String(
+            data.amountNgn ?? order.total ?? ""
+          ),
+        });
+
+        if (data.wallet) {
+          params.set("wallet", data.wallet);
+        }
+
+        if (data.network) {
+          params.set("network", data.network);
+        }
+
+        window.location.href =
+          `/checkout/crypto?${params.toString()}`;
 
         return;
       }
@@ -398,6 +432,15 @@ export default function PaymentPage() {
                   order.order_no ||
                   order.id}
               </p>
+
+              {order.payment_reference && (
+                <p className="mt-3 text-sm text-white">
+                  <span className="text-neutral-500">
+                    Payment reference{" "}
+                  </span>
+                  {order.payment_reference}
+                </p>
+              )}
             </div>
 
             <div className="sm:text-right">
@@ -550,12 +593,11 @@ export default function PaymentPage() {
                   </h3>
 
                   <p className="mt-2 text-sm leading-6 text-neutral-400">
-                    For eligible
-                    international
-                    payments. Currency
-                    conversion will be
-                    completed before USD
-                    goes live.
+                    Paystack charges the
+                    dollar amount at
+                    ₦1,600 per dollar.
+                    Card checkout opens
+                    next.
                   </p>
 
                   <p className="mt-5 text-xs font-semibold uppercase tracking-[0.18em] text-[#D6B15E]">
@@ -589,18 +631,20 @@ export default function PaymentPage() {
                   </div>
 
                   <h3 className="mt-5 text-lg font-semibold">
-                    Pay with Crypto
+                    Pay with USDT
                   </h3>
 
                   <p className="mt-2 text-sm leading-6 text-neutral-400">
-                    Choose from supported
-                    coins and blockchain
-                    networks once crypto
-                    checkout is enabled.
+                    Send{" "}
+                    {ngnToUsd(
+                      Number(order.total ?? 0)
+                    ).toFixed(2)}{" "}
+                    USDT. The rate is
+                    ₦1,600 per USDT.
                   </p>
 
                   <p className="mt-5 text-xs font-semibold uppercase tracking-[0.18em] text-[#D6B15E]">
-                    Crypto
+                    USDT • Crypto
                   </p>
                 </button>
               </div>
@@ -660,9 +704,14 @@ export default function PaymentPage() {
                 {creatingPayment
                   ? "Preparing Payment..."
                   : selectedOption ===
-                      "NGN"
+                      "NGN" ||
+                    selectedOption ===
+                      "USD"
                     ? "Continue to Paystack"
-                    : "Continue to Payment"}
+                    : selectedOption ===
+                        "CRYPTO"
+                      ? "Continue to USDT"
+                      : "Continue to Payment"}
               </button>
             </div>
           </>

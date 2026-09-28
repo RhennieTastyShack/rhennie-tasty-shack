@@ -166,12 +166,11 @@ export default function EventConciergePage() {
             </h2>
 
             <p className="mt-6 max-w-md text-sm leading-7 text-black/55">
-              From intimate birthdays to large
-              celebrations, conferences and special
-              occasions, our Event Concierge team
-              will review your requirements and
-              prepare the right catering experience
-              for your event.
+              Tell us the celebration, the guests and the venue.
+              Appetizers can include waffle boxes, a seafood platter of
+              crabs, prawns, glazed corn, fish and sauce, and tapioca.
+              Every appetizer has a minimum order of 10. The regular menu is the meal.
+              Logistics is written for this event.
             </p>
 
             <div className="mt-8 space-y-4">
@@ -450,6 +449,10 @@ export default function EventConciergePage() {
                 placeholder="Event venue or area"
                 required
               />
+
+              <p className="mt-2 text-sm leading-6 text-black/45">
+                Event logistics is quoted for this occasion. It follows the venue, the hour and the number of guests.
+              </p>
 
               {/* BUDGET */}
 

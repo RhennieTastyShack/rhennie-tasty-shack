@@ -6,6 +6,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { supabase } from "@/lib/supabase";
 
 /* =========================================================
    TYPES
@@ -328,6 +329,22 @@ export default function AdminSubscriptionsPage() {
      LOAD SUBSCRIPTIONS
   ======================================================= */
 
+  async function authHeaders() {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
+
+    if (session?.access_token) {
+      headers.Authorization = `Bearer ${session.access_token}`;
+    }
+
+    return headers;
+  }
+
   async function loadSubscriptions() {
     setLoading(true);
     setErrorMessage("");
@@ -340,6 +357,7 @@ export default function AdminSubscriptionsPage() {
             method: "GET",
             cache:
               "no-store",
+            headers: await authHeaders(),
           }
         );
 
@@ -601,10 +619,7 @@ export default function AdminSubscriptionsPage() {
             method:
               "PATCH",
 
-            headers: {
-              "Content-Type":
-                "application/json",
-            },
+            headers: await authHeaders(),
 
             body:
               JSON.stringify(
@@ -1075,7 +1090,7 @@ export default function AdminSubscriptionsPage() {
                         .timetable
                         ?.length ||
                         0}{" "}
-                      days
+                      courses
                     </span>
                   </div>
 

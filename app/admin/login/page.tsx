@@ -1,20 +1,23 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
+import PasswordField from "@/app/components/PasswordField";
 import { supabase } from "@/lib/supabase";
 
 export default function AdminLoginPage() {
   const router = useRouter();
-
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   async function handleLogin(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+
+    const form = new FormData(e.currentTarget);
+    const email = String(form.get("email") || "").trim();
+    const password = String(form.get("password") || "");
 
     setLoading(true);
     setError("");
@@ -88,7 +91,7 @@ export default function AdminLoginPage() {
 
         {/* Login Card */}
         <div className="rounded-[28px] border border-[#D4AF37]/20 bg-[#171717] p-8 shadow-2xl">
-          <form onSubmit={handleLogin} className="space-y-6">
+          <form onSubmit={handleLogin} autoComplete="on" className="space-y-6">
             {/* Email */}
             <div>
               <label className="mb-2 block text-sm font-medium text-[#D4AF37]">
@@ -96,11 +99,11 @@ export default function AdminLoginPage() {
               </label>
 
               <input
+                id="email"
+                name="email"
                 type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
                 placeholder="admin@example.com"
-                autoComplete="email"
+                autoComplete="username"
                 required
                 className="w-full rounded-xl border border-white/10 bg-[#0F0F0F] px-4 py-4 text-white outline-none transition placeholder:text-white/20 focus:border-[#D4AF37]"
               />
@@ -112,15 +115,23 @@ export default function AdminLoginPage() {
                 Password
               </label>
 
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
+              <PasswordField
+                id="password"
+                name="password"
                 placeholder="••••••••"
                 autoComplete="current-password"
                 required
                 className="w-full rounded-xl border border-white/10 bg-[#0F0F0F] px-4 py-4 text-white outline-none transition placeholder:text-white/20 focus:border-[#D4AF37]"
               />
+            </div>
+
+            <div className="flex justify-end">
+              <Link
+                href="/admin-forgot-password"
+                className="text-sm font-semibold text-[#D4AF37] underline"
+              >
+                Forgot password?
+              </Link>
             </div>
 
             {/* Error */}

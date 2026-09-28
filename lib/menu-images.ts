@@ -25,14 +25,104 @@ const IMAGE_MATCHES: Array<{
   keywords: string[];
   image: string;
 }> = [
+  {
+    keywords: [
+      "rts crave combo",
+      "crave combo",
+      "stir fry pasta and turkey",
+      "stir fry pasta",
+      "executive stir fry tray",
+      "stir fry tray",
+    ],
+    image: "stir-fry-pasta-tray.jpg",
+  },
+  {
+    keywords: ["loaded singapore noodles", "singapore noodles"],
+    image: "loaded-singapore-noodles.jpg",
+  },
+
+  /* PARTY TABLE */
+  {
+    keywords: ["abula on the spot with fish"],
+    image: "abula-fish.jpg",
+  },
+  {
+    keywords: ["abula on the spot with assorted", "abula on the spot"],
+    image: "abula-assorted.jpg",
+  },
+  {
+    keywords: ["cocktails"],
+    image: "cocktails.jpg",
+  },
+  {
+    keywords: ["pasta cups"],
+    image: "pasta-cups.jpg",
+  },
+  {
+    keywords: ["ocean royale"],
+    image: "ocean-royale.jpg",
+  },
+  {
+    keywords: ["suya jollof"],
+    image: "suya-jollof-bowl.jpg",
+  },
+  {
+    keywords: ["chinese rice platter"],
+    image: "chinese-rice-platter.jpg",
+  },
+  {
+    keywords: ["seafood platter"],
+    image: "seafood-platter.jpg",
+  },
+  {
+    keywords: ["tapioca fish fries"],
+    image: "fish-fries-coleslaw.jpg",
+  },
+  {
+    keywords: ["tapioca shrimps", "eja yoyo"],
+    image: "tapioca-shrimps-eja-yoyo.jpg",
+  },
+  {
+    keywords: ["bbq tapioca", "tapioca and fish", "tapioca & fish"],
+    image: "bbq fish.jpeg",
+  },
+  {
+    keywords: ["grilled fish"],
+    image: "grilled-fish-platter.jpg",
+  },
+  {
+    keywords: ["fruit and cream", "fruit cream"],
+    image: "fruit-and-cream.jpg",
+  },
+  {
+    keywords: ["small chops"],
+    image: "small-chops.jpg",
+  },
+  {
+    keywords: ["prawn kebab"],
+    image: "prawn kebab.jpeg",
+  },
+
   /* FOOD BOXES & PLATTERS */
   {
     keywords: ["jollof pasta food box", "jollof and pasta feast", "32k jollof"],
-    image: "Jollof & Pasta Feast Box.png",
+    image: "Luxury Brunch Box.png",
+  },
+  {
+    keywords: ["plantain feast box"],
+    image: "box-50-plantain.jpg",
   },
   {
     keywords: ["50k premium food box", "family feast box"],
-    image: "Family Feast Box.png",
+    image: "box-50-family.jpg",
+  },
+  {
+    keywords: ["peppered turkey box"],
+    image: "box-45-turkey.jpg",
+  },
+  {
+    keywords: ["bento celebration box"],
+    image: "box-55-bento.jpg",
   },
   {
     keywords: ["70k luxury food box", "ultimate brunch box"],
@@ -43,8 +133,12 @@ const IMAGE_MATCHES: Array<{
     image: "Grand Celebration Box.png",
   },
   {
-    keywords: ["heritage feast", "chief s heritage"],
-    image: "Heritage Feast Box.png",
+    keywords: ["heritage feast box"],
+    image: "box-60-waffles.jpg",
+  },
+  {
+    keywords: ["chief s heritage feast", "chief s heritage"],
+    image: "turkey.jpeg",
   },
   {
     keywords: ["luxury brunch box"],
@@ -52,7 +146,7 @@ const IMAGE_MATCHES: Array<{
   },
   {
     keywords: ["weekend treat box"],
-    image: "Weekend Treat Box.png",
+    image: "box-45-turkey.jpg",
   },
   {
     keywords: ["45k premium platter", "chicken and small chops platter"],
@@ -64,7 +158,7 @@ const IMAGE_MATCHES: Array<{
   },
   {
     keywords: ["efo riro feast platter"],
-    image: "efo riro.jpeg",
+    image: "efo-riro-tray.jpg",
   },
 
   /* SIGNATURE / COMBOS */
@@ -73,8 +167,32 @@ const IMAGE_MATCHES: Array<{
     image: "ayamaseroyal.jpeg",
   },
   {
-    keywords: ["jollof rice turkey", "jollof turkey", "imperial jollof"],
+    keywords: ["any rice turkey", "jollof rice turkey", "jollof turkey", "imperial jollof"],
     image: "jollofrice-turkey.jpeg",
+  },
+  {
+    keywords: ["any rice chicken drumstick", "chicken drumstick"],
+    image: "jollofrice withdrumstick.jpeg",
+  },
+  {
+    keywords: ["any rice chicken"],
+    image: "jollof-chicken.jpeg",
+  },
+  {
+    keywords: ["any spaghetti with chicken"],
+    image: "any-spaghetti-chicken.jpg",
+  },
+  {
+    keywords: ["swallow soup and beef", "swallow soup"],
+    image: "okra.jpeg",
+  },
+  {
+    keywords: ["king s asun feast"],
+    image: "asun rice.jpeg",
+  },
+  {
+    keywords: ["asun combo"],
+    image: "asun.jpeg",
   },
   {
     keywords: ["jollof rice chicken", "jollof chicken"],
@@ -109,6 +227,10 @@ const IMAGE_MATCHES: Array<{
   {
     keywords: ["seafood rice"],
     image: "seafood-rice.jpg",
+  },
+  {
+    keywords: ["chinese delight"],
+    image: "chineserice.jpeg",
   },
   {
     keywords: ["chinese prawn rice", "prawn rice"],
@@ -165,6 +287,18 @@ const IMAGE_MATCHES: Array<{
 
   /* PASTA */
   {
+    keywords: ["loaded turkey pasta"],
+    image: "loaded-turkey-pasta.jpg",
+  },
+  {
+    keywords: ["asun pasta"],
+    image: "any-spaghetti-chicken.jpg",
+  },
+  {
+    keywords: ["mixed pasta"],
+    image: "spaghetti.jpeg",
+  },
+  {
     keywords: ["reload spag", "reload spaghetti"],
     image: "reload spag.jpeg",
   },
@@ -173,16 +307,35 @@ const IMAGE_MATCHES: Array<{
     image: "fishgetti.jpeg",
   },
   {
-    keywords: ["native pasta"],
+    keywords: ["native spaghetti", "native pasta"],
     image: "native pasta.jpeg",
   },
   {
-    keywords: ["penne pasta", "penne"],
+    keywords: [
+      "creamy penne",
+      "executive penne",
+      "penne royale",
+      "penne supreme",
+      "penne pasta",
+      "penne",
+    ],
     image: "penne pasta.jpeg",
   },
   {
-    keywords: ["shredded pasta"],
+    keywords: ["shredded beef pasta", "shredded pasta"],
     image: "shredded pasta.jpeg",
+  },
+  {
+    keywords: ["cravings pasta"],
+    image: "cravings-pasta.jpg",
+  },
+  {
+    keywords: ["premium beefghetti", "beefghetti deluxe"],
+    image: "premium-beefghetti-deluxe.jpg",
+  },
+  {
+    keywords: ["smoky beefghetti"],
+    image: "smoky-beefghetti-chicken-clean.jpg",
   },
   {
     keywords: ["royale pasta", "pasta", "spaghetti", "spag"],
@@ -193,6 +346,10 @@ const IMAGE_MATCHES: Array<{
   {
     keywords: ["seafood okra", "seafood okro"],
     image: "seafoodokra.jpeg",
+  },
+  {
+    keywords: ["pepper soup and bread", "peppersoup and bread"],
+    image: "pepper-soup-bread-rolls.jpg",
   },
   {
     keywords: ["assorted pepper soup", "assorted peppersoup"],
@@ -219,7 +376,7 @@ const IMAGE_MATCHES: Array<{
     image: "turkeypeppersoup.jpeg",
   },
   {
-    keywords: ["efo riro"],
+    keywords: ["afang", "efo riro"],
     image: "efo riro.jpeg",
   },
   {
@@ -235,7 +392,7 @@ const IMAGE_MATCHES: Array<{
     image: "amala.jpeg",
   },
   {
-    keywords: ["pounded yam"],
+    keywords: ["poundo", "pounded yam"],
     image: "pounded yam.jpeg",
   },
   {
@@ -256,6 +413,14 @@ const IMAGE_MATCHES: Array<{
   },
 
   /* FISH */
+  {
+    keywords: ["peppered fish"],
+    image: "peppered-fish.jpg",
+  },
+  {
+    keywords: ["croaker fish"],
+    image: "fried croaker.jpeg",
+  },
   {
     keywords: ["peppered stew fish", "tilapia in stew"],
     image: "tilapia in stew.jpeg",
@@ -311,7 +476,7 @@ const IMAGE_MATCHES: Array<{
     image: "currysauce.jpeg",
   },
   {
-    keywords: ["cabbage sauce"],
+    keywords: ["combination sauce", "cabbage sauce"],
     image: "cabbage sauce.jpeg",
   },
   {
@@ -328,7 +493,7 @@ const IMAGE_MATCHES: Array<{
   },
   {
     keywords: ["sausage kebab"],
-    image: "sausage kebab.jpeg",
+    image: "sausage-kebab.jpg",
   },
   {
     keywords: ["peppered goat", "goat meat"],
@@ -375,7 +540,7 @@ const IMAGE_MATCHES: Array<{
     image: "chicken.jpeg",
   },
   {
-    keywords: ["gizzard"],
+    keywords: ["gizzard kebab", "gizzard"],
     image: "gizzard.jpeg",
   },
   {
@@ -411,7 +576,7 @@ const IMAGE_MATCHES: Array<{
     image: "beans and corn.jpeg",
   },
   {
-    keywords: ["beans porridge"],
+    keywords: ["porridge beans", "beans porridge"],
     image: "beans porridge.jpeg",
   },
   {
@@ -431,6 +596,14 @@ const IMAGE_MATCHES: Array<{
   {
     keywords: ["bread warma", "breadwarma"],
     image: "breadwarma.jpeg",
+  },
+  {
+    keywords: ["garden salad"],
+    image: "garden-salad.jpg",
+  },
+  {
+    keywords: ["sunrise brunch"],
+    image: "signature brunch.jpeg",
   },
   {
     keywords: ["pancake"],
@@ -458,20 +631,70 @@ const IMAGE_MATCHES: Array<{
   },
 ];
 
-function matchLocalImage(mealName: string): string | null {
+const GENERIC_IMAGE_TOKENS = new Set([
+  "box",
+  "feast",
+  "with",
+  "and",
+  "the",
+  "for",
+  "meal",
+  "food",
+]);
+
+function significantTokens(value: string) {
+  return normalizeName(value)
+    .split(" ")
+    .filter(
+      (token) => token.length >= 4 && !GENERIC_IMAGE_TOKENS.has(token)
+    );
+}
+
+function imageSharesMeal(mealName: string, imagePath: string) {
+  const nameTokens = significantTokens(mealName);
+  const file = decodeURIComponent(imagePath.split("/").pop() || "").replace(
+    /\.[a-z0-9]+$/i,
+    ""
+  );
+
+  return significantTokens(file).some((token) =>
+    nameTokens.some(
+      (nameToken) =>
+        nameToken.includes(token) || token.includes(nameToken)
+    )
+  );
+}
+
+function matchLocalImage(
+  mealName: string
+): { path: string; length: number } | null {
   const normalized = normalizeName(mealName);
 
   if (!normalized) {
     return null;
   }
 
-  const match = IMAGE_MATCHES.find(({ keywords }) =>
-    keywords.some((keyword) =>
-      normalized.includes(normalizeName(keyword))
-    )
-  );
+  let bestImage: string | null = null;
+  let bestLength = 0;
 
-  return match ? toPublicImagePath(match.image) : null;
+  for (const { keywords, image } of IMAGE_MATCHES) {
+    for (const keyword of keywords) {
+      const normalizedKeyword = normalizeName(keyword);
+
+      if (
+        normalizedKeyword &&
+        normalized.includes(normalizedKeyword) &&
+        normalizedKeyword.length > bestLength
+      ) {
+        bestImage = image;
+        bestLength = normalizedKeyword.length;
+      }
+    }
+  }
+
+  return bestImage
+    ? { path: toPublicImagePath(bestImage), length: bestLength }
+    : null;
 }
 
 function normalizeStoredImageUrl(imageUrl?: string | null): string | null {
@@ -506,27 +729,50 @@ export function resolveMenuImage(
 ): string | null {
   const localMatch = matchLocalImage(mealName);
   const stored = normalizeStoredImageUrl(imageUrl);
+  const localPath = localMatch?.path || null;
 
   // Prefer local curated match when the meal name is clearly mapped
-  // and the stored URL is empty or a generic pasta/fallback.
-  if (localMatch) {
+  // and the stored URL is empty, generic, or a different food.
+  if (localPath) {
     if (!stored) {
-      return localMatch;
+      return localPath;
+    }
+
+    if (
+      localMatch &&
+      localMatch.length >= 8 &&
+      imageSharesMeal(mealName, localPath) &&
+      !imageSharesMeal(mealName, stored)
+    ) {
+      return localPath;
     }
 
     const storedNormalized = stored.toLowerCase();
-    const isGenericFallback =
+    const localIsProductBox =
+      /box-|box\.png|platter\.png/i.test(localPath);
+    const mealIsProductBox = /\bbox\b|\bplatter\b/i.test(mealName);
+    const genericBrunch = storedNormalized.includes("food-brunch.jpeg");
+    const genericPasta =
       storedNormalized.includes("pasta.jpg") &&
       /box|platter|feast|jollof|rice|soup|fish|shawarma|amala/i.test(
         mealName
       );
 
-    if (isGenericFallback) {
-      return localMatch;
+    const localIsSpecificPasta =
+      /reload%20spag|shredded%20pasta|native%20pasta|penne%20pasta|fishgetti|cravings-pasta|beefghetti-deluxe|smoky-beefghetti/i.test(
+        localPath
+      );
+
+    if (
+      ((genericBrunch || genericPasta) &&
+        !(localIsProductBox && !mealIsProductBox)) ||
+      (storedNormalized.includes("pasta.jpg") && localIsSpecificPasta)
+    ) {
+      return localPath;
     }
   }
 
-  return stored || localMatch;
+  return stored || localPath;
 }
 
 export function polishCollectionName(

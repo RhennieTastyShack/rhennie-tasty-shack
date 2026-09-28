@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -12,6 +12,9 @@ import {
 } from "lucide-react";
 
 import { useCart } from "@/app/context/CartContext";
+import { getCheckoutDeliveryFee } from "@/lib/delivery-fee";
+import { selectionLabel } from "@/lib/menu-choices";
+import { ngnToUsd, PaymentCurrency } from "@/lib/payment-currency";
 
 function formatPrice(price: number) {
   return new Intl.NumberFormat("en-NG", {
@@ -21,7 +24,17 @@ function formatPrice(price: number) {
   }).format(price);
 }
 
+function formatUsd(price: number) {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(price);
+}
+
 type DeliveryType = "delivery" | "pickup";
+type DispatchMode = "CUSTOMER_DISPATCH" | "PLATFORM";
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -43,23 +56,80 @@ export default function CheckoutPage() {
   const [deliveryAddress, setDeliveryAddress] =
     useState("");
 
+  const [dispatchMode, setDispatchMode] =
+    useState<DispatchMode>("PLATFORM");
+
+  const [externalRiderName, setExternalRiderName] =
+    useState("");
+
+  const [externalRiderPhone, setExternalRiderPhone] =
+    useState("");
+
   const [notes, setNotes] = useState("");
+  const [tipAmount, setTipAmount] = useState(0);
+  const [promoCode, setPromoCode] = useState("");
+  const [promoPercent, setPromoPercent] = useState(0);
+  const [promoNote, setPromoNote] = useState("");
+  const [paymentCurrency, setPaymentCurrency] =
+    useState<PaymentCurrency>("NGN");
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [mounted, setMounted] = useState(false);
 
-  /*
-   * Delivery fee will be connected to the
-   * business delivery rules later.
-   *
-   * For now:
-   * Delivery fee = ₦0
-   */
-  const deliveryFee = 0;
+  const deliveryFee = getCheckoutDeliveryFee(
+    deliveryType,
+    deliveryAddress
+  );
+
+  const discount = useMemo(() => {
+    if (promoPercent <= 0) return 0;
+    return Math.min(
+      subtotal,
+      Math.round((subtotal * promoPercent) / 100)
+    );
+  }, [promoPercent, subtotal]);
 
   const total = useMemo(() => {
-    return subtotal + deliveryFee;
-  }, [subtotal, deliveryFee]);
+    return subtotal - discount + deliveryFee + tipAmount;
+  }, [subtotal, discount, deliveryFee, tipAmount]);
+
+  const usdTotal = ngnToUsd(total);
+
+  const payLabel =
+    paymentCurrency === "USD"
+      ? formatUsd(usdTotal)
+      : paymentCurrency === "CRYPTO"
+        ? `${usdTotal.toFixed(2)} USDT`
+        : formatPrice(total);
+
+  async function applyPromo() {
+    setPromoNote("");
+    setError("");
+
+    if (!promoCode.trim()) {
+      setPromoPercent(0);
+      setPromoNote("No promo code applied.");
+      return;
+    }
+
+    const response = await fetch(
+      `/api/promos?code=${encodeURIComponent(promoCode.trim())}`
+    );
+    const result = await response.json();
+    const quote = result?.quote;
+
+    if (!quote || quote.error) {
+      setPromoPercent(0);
+      setPromoNote(quote?.error || "That promo code is not active.");
+      return;
+    }
+
+    setPromoPercent(Number(quote.percent) || 0);
+    setPromoNote(
+      quote.label || `${quote.percent}% off the food.`
+    );
+  }
 
   async function handleSubmit(
     event: FormEvent<HTMLFormElement>
@@ -97,6 +167,25 @@ export default function CheckoutPage() {
     ) {
       setError("Please enter your delivery address.");
       return;
+    }
+
+    if (
+      deliveryType === "delivery" &&
+      dispatchMode === "CUSTOMER_DISPATCH"
+    ) {
+      if (!externalRiderName.trim()) {
+        setError("Please enter your dispatch rider's name.");
+        return;
+      }
+
+      if (
+        externalRiderPhone.replace(/\D/g, "").length < 10
+      ) {
+        setError(
+          "Please enter a valid phone number for your dispatch rider."
+        );
+        return;
+      }
     }
 
     try {
@@ -137,6 +226,26 @@ export default function CheckoutPage() {
 
             notes: notes.trim(),
 
+            tipAmount,
+
+            paymentCurrency,
+
+            promoCode: promoCode.trim(),
+
+            ...(deliveryType === "delivery"
+              ? {
+                  dispatchMode,
+                  externalRiderName:
+                    dispatchMode === "CUSTOMER_DISPATCH"
+                      ? externalRiderName.trim()
+                      : undefined,
+                  externalRiderPhone:
+                    dispatchMode === "CUSTOMER_DISPATCH"
+                      ? externalRiderPhone.trim()
+                      : undefined,
+                }
+              : {}),
+
             /*
              * Send the cart price as well.
              */
@@ -165,6 +274,30 @@ export default function CheckoutPage() {
           data?.error ||
             "Unable to initialize payment."
         );
+      }
+
+      if (data.crypto) {
+        clearCart();
+        const params = new URLSearchParams({
+          order: data.orderId,
+          reference: data.reference,
+          usdt: String(data.usdtAmount),
+          ngn: String(data.amountNgn),
+        });
+        if (data.trackingToken) {
+          params.set("tracking", data.trackingToken);
+        }
+        if (data.wallet) {
+          params.set("wallet", data.wallet);
+        }
+        if (data.network) {
+          params.set("network", data.network);
+        }
+        if (data.orderCode) {
+          params.set("code", data.orderCode);
+        }
+        router.push(`/checkout/crypto?${params.toString()}`);
+        return;
       }
 
       /*
@@ -210,6 +343,21 @@ export default function CheckoutPage() {
 
       setLoading(false);
     }
+  }
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  /*
+   * Wait until the cart has loaded from this browser.
+   * The server has no cart, so rendering it immediately
+   * causes a hydration mismatch.
+   */
+  if (!mounted) {
+    return (
+      <main className="min-h-screen bg-[#F8F6F2]" />
+    );
   }
 
   /*
@@ -523,29 +671,134 @@ export default function CheckoutPage() {
 
                 {deliveryType ===
                   "delivery" && (
-                  <div className="mt-5">
+                  <>
+                    <div className="mt-5">
 
-                    <label
-                      htmlFor="deliveryAddress"
-                      className="mb-2 block text-xs font-bold text-black/65"
-                    >
-                      Delivery Address
-                    </label>
+                      <label
+                        htmlFor="deliveryAddress"
+                        className="mb-2 block text-xs font-bold text-black/65"
+                      >
+                        Delivery Address
+                      </label>
 
-                    <textarea
-                      id="deliveryAddress"
-                      value={deliveryAddress}
-                      onChange={(event) =>
-                        setDeliveryAddress(
-                          event.target.value
-                        )
-                      }
-                      placeholder="Enter your complete delivery address"
-                      rows={4}
-                      autoComplete="street-address"
-                      className="w-full resize-none rounded-2xl border border-black/10 bg-[#F8F6F2] px-4 py-3 text-sm outline-none transition-all placeholder:text-black/30 focus:border-[#F26A21] focus:bg-white focus:ring-4 focus:ring-[#F26A21]/10"
-                    />
-                  </div>
+                      <textarea
+                        id="deliveryAddress"
+                        value={deliveryAddress}
+                        onChange={(event) =>
+                          setDeliveryAddress(
+                            event.target.value
+                          )
+                        }
+                        placeholder="Street, area in Lagos (for example Isolo, Ikeja, Lekki)"
+                        rows={4}
+                        autoComplete="street-address"
+                        className="w-full resize-none rounded-2xl border border-black/10 bg-[#F8F6F2] px-4 py-3 text-sm outline-none transition-all placeholder:text-black/30 focus:border-[#F26A21] focus:bg-white focus:ring-4 focus:ring-[#F26A21]/10"
+                      />
+                      <p className="mt-2 text-xs leading-5 text-black/45">
+                        We deliver anywhere in Lagos. Mainland to island is ₦2,500 to ₦9,900 based on the area. Include the area name so the price is right.
+                      </p>
+                    </div>
+
+                    <div className="mt-5">
+                      <p className="mb-2 text-xs font-bold text-black/65">
+                        Who will deliver?
+                      </p>
+
+                      <p className="mb-3 text-xs leading-5 text-black/45">
+                        Send your own dispatch rider, or request a Rhennie platform rider.
+                      </p>
+
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setDispatchMode("PLATFORM")
+                          }
+                          className={`rounded-2xl border p-4 text-left transition-all ${
+                            dispatchMode === "PLATFORM"
+                              ? "border-[#F26A21] bg-[#FFF7F2]"
+                              : "border-black/10 bg-white hover:border-[#F26A21]/40"
+                          }`}
+                        >
+                          <h3 className="text-sm font-bold">
+                            Request platform rider
+                          </h3>
+                          <p className="mt-1 text-xs leading-5 text-black/45">
+                            We will assign an approved Rhennie rider.
+                          </p>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setDispatchMode(
+                              "CUSTOMER_DISPATCH"
+                            )
+                          }
+                          className={`rounded-2xl border p-4 text-left transition-all ${
+                            dispatchMode ===
+                            "CUSTOMER_DISPATCH"
+                              ? "border-[#F26A21] bg-[#FFF7F2]"
+                              : "border-black/10 bg-white hover:border-[#F26A21]/40"
+                          }`}
+                        >
+                          <h3 className="text-sm font-bold">
+                            Send my own dispatch
+                          </h3>
+                          <p className="mt-1 text-xs leading-5 text-black/45">
+                            Enter your rider&apos;s name and phone.
+                          </p>
+                        </button>
+                      </div>
+                    </div>
+
+                    {dispatchMode ===
+                      "CUSTOMER_DISPATCH" && (
+                      <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                        <div>
+                          <label
+                            htmlFor="externalRiderName"
+                            className="mb-2 block text-xs font-bold text-black/65"
+                          >
+                            Dispatch rider name
+                          </label>
+                          <input
+                            id="externalRiderName"
+                            type="text"
+                            value={externalRiderName}
+                            onChange={(event) =>
+                              setExternalRiderName(
+                                event.target.value
+                              )
+                            }
+                            placeholder="Rider full name"
+                            className="w-full rounded-2xl border border-black/10 bg-[#F8F6F2] px-4 py-3 text-sm outline-none transition-all placeholder:text-black/30 focus:border-[#F26A21] focus:bg-white focus:ring-4 focus:ring-[#F26A21]/10"
+                          />
+                        </div>
+
+                        <div>
+                          <label
+                            htmlFor="externalRiderPhone"
+                            className="mb-2 block text-xs font-bold text-black/65"
+                          >
+                            Dispatch rider phone
+                          </label>
+                          <input
+                            id="externalRiderPhone"
+                            type="tel"
+                            value={externalRiderPhone}
+                            onChange={(event) =>
+                              setExternalRiderPhone(
+                                event.target.value
+                              )
+                            }
+                            placeholder="08012345678"
+                            className="w-full rounded-2xl border border-black/10 bg-[#F8F6F2] px-4 py-3 text-sm outline-none transition-all placeholder:text-black/30 focus:border-[#F26A21] focus:bg-white focus:ring-4 focus:ring-[#F26A21]/10"
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </>
                 )}
 
                 {/* NOTES */}
@@ -639,7 +892,7 @@ export default function CheckoutPage() {
 
                             {item.selectedSize && (
                               <p className="mt-1 text-[11px] text-black/40">
-                                Size:{" "}
+                                {selectionLabel(item.name)}:{" "}
                                 <span className="font-semibold text-[#F26A21]">
                                   {item.selectedSize}
                                 </span>
@@ -686,6 +939,15 @@ export default function CheckoutPage() {
 
                   </div>
 
+                  {discount > 0 && (
+                    <div className="mt-3 flex items-center justify-between text-sm">
+                      <span className="text-black/45">Promo</span>
+                      <span className="font-bold text-[#F26A21]">
+                        -{formatPrice(discount)}
+                      </span>
+                    </div>
+                  )}
+
                   <div className="mt-3 flex items-center justify-between text-sm">
 
                     <span className="text-black/45">
@@ -693,14 +955,23 @@ export default function CheckoutPage() {
                     </span>
 
                     <span className="font-bold">
-                      {deliveryFee === 0
-                        ? "Free"
-                        : formatPrice(
-                            deliveryFee
-                          )}
+                      {deliveryType === "pickup"
+                        ? "Pickup"
+                        : !deliveryAddress.trim()
+                          ? "₦2,500 – ₦9,900"
+                          : formatPrice(deliveryFee)}
                     </span>
 
                   </div>
+
+                  {deliveryType === "delivery" && (
+                    <div className="mt-3 flex items-center justify-between text-sm">
+                      <span className="text-black/45">Rider tip</span>
+                      <span className="font-bold">
+                        {tipAmount ? formatPrice(tipAmount) : "None"}
+                      </span>
+                    </div>
+                  )}
 
                   <div className="my-5 h-px bg-black/[0.08]" />
 
@@ -713,14 +984,25 @@ export default function CheckoutPage() {
                       </p>
 
                       <p className="mt-1 text-xs text-black/40">
-                        Pay securely with Paystack
+                        {paymentCurrency === "CRYPTO"
+                          ? "Pay with USDT"
+                          : paymentCurrency === "USD"
+                            ? "Pay in US dollars"
+                            : "Pay in Naira"}
                       </p>
 
                     </div>
 
-                    <p className="text-2xl font-extrabold tracking-tight text-[#F26A21] sm:text-3xl">
-                      {formatPrice(total)}
-                    </p>
+                    <div className="text-right">
+                      <p className="text-2xl font-extrabold tracking-tight text-[#F26A21] sm:text-3xl">
+                        {payLabel}
+                      </p>
+                      {paymentCurrency !== "NGN" && (
+                        <p className="mt-1 text-xs text-black/40">
+                          {formatPrice(total)}
+                        </p>
+                      )}
+                    </div>
 
                   </div>
 
@@ -738,6 +1020,86 @@ export default function CheckoutPage() {
 
                 <div className="px-5 pb-6 pt-5 sm:px-6">
 
+                  {deliveryType === "delivery" && (
+                    <div className="mb-4">
+                      <p className="mb-2 text-xs font-bold text-black/65">
+                        Tip your rider
+                      </p>
+                      <div className="grid grid-cols-4 gap-2">
+                        {[0, 200, 500, 1000].map((amount) => (
+                          <button
+                            key={amount}
+                            type="button"
+                            onClick={() => setTipAmount(amount)}
+                            className={`rounded-2xl border px-2 py-3 text-sm font-bold ${
+                              tipAmount === amount
+                                ? "border-[#F26A21] bg-[#FFF7F2] text-[#F26A21]"
+                                : "border-black/10 bg-white text-black/60"
+                            }`}
+                          >
+                            {amount === 0 ? "No tip" : `₦${amount}`}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="mb-4">
+                    <p className="mb-2 text-xs font-bold text-black/65">
+                      Promo code
+                    </p>
+                    <div className="flex gap-2">
+                      <input
+                        value={promoCode}
+                        onChange={(event) => {
+                          setPromoCode(event.target.value);
+                          setPromoPercent(0);
+                          setPromoNote("");
+                        }}
+                        placeholder="Enter a code"
+                        className="min-h-[48px] flex-1 rounded-2xl border border-black/10 px-4 text-sm"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => void applyPromo()}
+                        className="rounded-2xl border border-black/10 px-4 text-sm font-bold"
+                      >
+                        Apply
+                      </button>
+                    </div>
+                    {promoNote && (
+                      <p className="mt-2 text-xs text-black/50">{promoNote}</p>
+                    )}
+                  </div>
+
+                  <p className="mb-2 text-xs font-bold text-black/65">
+                    Pay with
+                  </p>
+
+                  <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                    {(
+                      [
+                        ["NGN", "Naira"],
+                        ["USD", "Dollar"],
+                        ["CRYPTO", "Crypto"],
+                        ["WALLET", "RTS Wallet"],
+                      ] as const
+                    ).map(([value, label]) => (
+                      <button
+                        key={value}
+                        type="button"
+                        onClick={() => setPaymentCurrency(value)}
+                        className={`rounded-2xl border px-2 py-3 text-sm font-bold transition-all ${
+                          paymentCurrency === value
+                            ? "border-[#F26A21] bg-[#FFF7F2] text-[#F26A21]"
+                            : "border-black/10 bg-white text-black/60 hover:border-[#F26A21]/40"
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+
                   <button
                     type="submit"
                     disabled={loading}
@@ -754,8 +1116,7 @@ export default function CheckoutPage() {
                       </>
                     ) : (
                       <>
-                        Pay{" "}
-                        {formatPrice(total)}
+                        Pay {payLabel}
 
                         <span className="ml-2 text-lg">
                           →
@@ -765,10 +1126,13 @@ export default function CheckoutPage() {
                   </button>
 
                   <p className="mt-4 text-center text-[10px] leading-5 text-black/35">
-                    Your payment will be processed
-                    securely by Paystack. We never
-                    receive or store your card
-                    details.
+                    {paymentCurrency === "CRYPTO"
+                      ? "USDT is charged at ₦1,600 per dollar. Send the exact amount, then we confirm the transfer."
+                      : paymentCurrency === "USD"
+                        ? "Dollar checkout uses Paystack at ₦1,600 per dollar. We never receive or store your card details."
+                        : paymentCurrency === "WALLET"
+                          ? "RTS Wallet pays from the balance you funded. Sign in before you pay."
+                          : "Naira checkout opens Paystack with card and bank transfer. We never receive or store your card details."}
                   </p>
 
                 </div>

@@ -3,6 +3,8 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useCart } from "@/app/context/CartContext";
+import { selectionLabel } from "@/lib/menu-choices";
+import { thankYouNote } from "@/lib/thank-you-notes";
 
 function formatPrice(price: number) {
   return new Intl.NumberFormat("en-NG", {
@@ -105,7 +107,7 @@ ${form.notes}`
 
 Please confirm my order, delivery fee and final total.
 
-Thank you.`;
+${thankYouNote()}`;
   }, [
     items,
     subtotal,
@@ -807,7 +809,7 @@ Thank you.`;
 
                           {item.selectedSize && (
                             <p className="mt-1 text-xs font-semibold text-black/45">
-                              Size:{" "}
+                              {selectionLabel(item.name)}:{" "}
                               <span className="text-[#F26A21]">
                                 {item.selectedSize}
                               </span>

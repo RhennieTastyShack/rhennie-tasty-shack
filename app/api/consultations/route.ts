@@ -127,44 +127,50 @@ export async function POST(request: Request) {
     // CREATE CONSULTATION
     // =================================================
 
-    const { data: consultation, error: consultationError } =
-      await supabaseAdmin
+    const year = new Date().getFullYear();
+    const randomPart = Math.floor(1000 + Math.random() * 9000);
+    const consultationPayload: Record<string, unknown> = {
+      customer_id: customer_id || null,
+      consultation_no: `RTS-${year}-${randomPart}`,
+      full_name: full_name.trim(),
+      email: email.trim(),
+      phone: phone.trim(),
+      event_type: event_type.trim(),
+      event_date,
+      event_time: event_time || null,
+      guest_count: guestCount,
+      venue: venue.trim(),
+      budget: budget?.trim() || null,
+      special_request: special_request?.trim() || null,
+    };
+
+    let consultation: Record<string, unknown> | null = null;
+    let consultationError: { message: string } | null = null;
+
+    for (let attempt = 0; attempt < 12; attempt += 1) {
+      const inserted = await supabaseAdmin
         .from("consultations")
-        .insert({
-          customer_id:
-            customer_id || null,
-
-          full_name:
-            full_name.trim(),
-
-          email:
-            email.trim(),
-
-          phone:
-            phone.trim(),
-
-          event_type:
-            event_type.trim(),
-
-          event_date,
-
-          event_time:
-            event_time || null,
-
-          guest_count:
-            guestCount,
-
-          venue:
-            venue.trim(),
-
-          budget:
-            budget?.trim() || null,
-
-          special_request:
-            special_request?.trim() || null,
-        })
+        .insert(consultationPayload)
         .select()
         .single();
+
+      if (!inserted.error) {
+        consultation = inserted.data;
+        consultationError = null;
+        break;
+      }
+
+      consultationError = inserted.error;
+      const missing = inserted.error.message.match(
+        /Could not find the '([^']+)' column/i
+      )?.[1];
+
+      if (!missing || !(missing in consultationPayload)) {
+        break;
+      }
+
+      delete consultationPayload[missing];
+    }
 
     if (consultationError) {
       console.error(
@@ -181,23 +187,22 @@ export async function POST(request: Request) {
       );
     }
 
-    consultationId = consultation.id;
+    if (!consultation?.id) {
+      return NextResponse.json(
+        { error: "Unable to submit event request." },
+        { status: 500 }
+      );
+    }
+
+    consultationId = String(consultation.id);
 
     // =================================================
     // GENERATE ORDER NUMBER
     // =================================================
 
-    const year = new Date()
-      .getFullYear();
-
-    const randomPart =
-      Math.floor(
-        1000 +
-          Math.random() * 9000
-      );
-
-    const orderNo =
-      `RTS-${year}-${randomPart}`;
+    const orderNo = String(
+      consultation.consultation_no || `RTS-${year}-${randomPart}`
+    );
 
     // =================================================
     // CREATE ORDER
@@ -216,79 +221,58 @@ export async function POST(request: Request) {
     // Admin will later enter the real quotation.
     // =================================================
 
-    const { data: order, error: orderError } =
-      await supabaseAdmin
+    const orderPayload: Record<string, unknown> = {
+      order_no: orderNo,
+      customer_id: customer_id || null,
+      title: `${event_type.trim()} Catering`,
+      order_date: event_date,
+      amount: 0,
+      status: "pending",
+      consultation_id: consultationId,
+      order_number: orderNo,
+      customer_name: full_name.trim(),
+      customer_email: email.trim(),
+      customer_phone: phone.trim(),
+      delivery_type: "event",
+      delivery_address: venue.trim(),
+      notes: special_request?.trim() || null,
+      subtotal: 0,
+      delivery_fee: 0,
+      total: 0,
+      payment_status: "pending",
+      payment_reference: null,
+      payment_channel: null,
+      order_status: "pending",
+      updated_at: new Date().toISOString(),
+    };
+
+    let order: Record<string, unknown> | null = null;
+    let orderError: { message: string } | null = null;
+
+    for (let attempt = 0; attempt < 16; attempt += 1) {
+      const inserted = await supabaseAdmin
         .from("orders")
-        .insert({
-          order_no:
-            orderNo,
-
-          customer_id:
-            customer_id || null,
-
-          title:
-            `${event_type.trim()} Catering`,
-
-          order_date:
-            event_date,
-
-          amount:
-            0,
-
-          status:
-            "pending",
-
-          consultation_id:
-            consultation.id,
-
-          order_number:
-            orderNo,
-
-          customer_name:
-            full_name.trim(),
-
-          customer_email:
-            email.trim(),
-
-          customer_phone:
-            phone.trim(),
-
-          delivery_type:
-            "event",
-
-          delivery_address:
-            venue.trim(),
-
-          notes:
-            special_request?.trim() ||
-            null,
-
-          subtotal:
-            0,
-
-          delivery_fee:
-            0,
-
-          total:
-            0,
-
-          payment_status:
-            "pending",
-
-          payment_reference:
-            null,
-
-          payment_channel:
-            null,
-
-          order_status:
-            "pending",
-
-          updated_at:
-            new Date().toISOString(),
-        })
+        .insert(orderPayload)
         .select()
         .single();
+
+      if (!inserted.error) {
+        order = inserted.data;
+        orderError = null;
+        break;
+      }
+
+      orderError = inserted.error;
+      const missing = inserted.error.message.match(
+        /Could not find the '([^']+)' column/i
+      )?.[1];
+
+      if (!missing || !(missing in orderPayload)) {
+        break;
+      }
+
+      delete orderPayload[missing];
+    }
 
     // =================================================
     // IF ORDER CREATION FAILS
@@ -298,23 +282,6 @@ export async function POST(request: Request) {
       console.error(
         "Order creation error:",
         orderError
-      );
-
-      // Remove consultation that was just created
-      // so we do not leave an orphan consultation.
-      if (consultationId) {
-        await supabaseAdmin
-          .from("consultations")
-          .delete()
-          .eq("id", consultationId);
-      }
-
-      return NextResponse.json(
-        {
-          error:
-            orderError.message,
-        },
-        { status: 500 }
       );
     }
 
@@ -367,4 +334,214 @@ export async function POST(request: Request) {
       { status: 500 }
     );
   }
+}
+
+async function requireAdmin(request: Request) {
+  const authorization = request.headers.get("authorization");
+
+  if (!authorization?.toLowerCase().startsWith("bearer ")) {
+    return null;
+  }
+
+  const accessToken = authorization.slice(7).trim();
+
+  if (!accessToken) {
+    return null;
+  }
+
+  const { data: userData, error: userError } =
+    await supabaseAdmin.auth.getUser(accessToken);
+
+  if (userError || !userData.user) {
+    return null;
+  }
+
+  const { data: adminRow } = await supabaseAdmin
+    .from("admin_users")
+    .select("user_id")
+    .eq("user_id", userData.user.id)
+    .maybeSingle();
+
+  return adminRow ? userData.user : null;
+}
+
+export async function GET(request: Request) {
+  const admin = await requireAdmin(request);
+
+  if (!admin) {
+    return NextResponse.json(
+      { error: "Unauthorized." },
+      { status: 401 }
+    );
+  }
+
+  const { data, error } = await supabaseAdmin
+    .from("consultations")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    return NextResponse.json(
+      { error: error.message },
+      { status: 500 }
+    );
+  }
+
+  const ids = (data || []).map((row) => row.id).filter(Boolean);
+  const ordersByConsultation = new Map<string, Record<string, unknown>>();
+
+  if (ids.length) {
+    const { data: orders } = await supabaseAdmin
+      .from("orders")
+      .select("consultation_id, quotation_status, status, order_status")
+      .in("consultation_id", ids);
+
+    for (const order of orders || []) {
+      if (order.consultation_id) {
+        ordersByConsultation.set(String(order.consultation_id), order);
+      }
+    }
+  }
+
+  return NextResponse.json({
+    requests: (data || []).map((row) => {
+      const order = ordersByConsultation.get(String(row.id));
+      const quotation = String(order?.quotation_status || "").toUpperCase();
+      const orderStatus = String(
+        order?.status || order?.order_status || ""
+      ).toUpperCase();
+      let status = String(row.status || "new").trim().toLowerCase();
+
+      if (orderStatus === "COMPLETED") {
+        status = "completed";
+      } else if (quotation === "ACCEPTED" || orderStatus === "CONFIRMED") {
+        status = "confirmed";
+      } else if (quotation === "DECLINED" || orderStatus === "CANCELLED") {
+        status = "cancelled";
+      } else if (quotation === "QUOTED" || quotation === "NEGOTIATING") {
+        status = "quoted";
+      }
+
+      return {
+        id: row.id,
+        created_at: row.created_at,
+        name: row.full_name || row.name,
+        email: row.email,
+        phone: row.phone,
+        event_type: row.event_type,
+        event_date: row.event_date,
+        guest_count: row.guest_count,
+        location: row.venue || row.location,
+        budget: row.budget,
+        message: row.special_request || row.message,
+        status,
+      };
+    }),
+  });
+}
+
+export async function PATCH(request: Request) {
+  const admin = await requireAdmin(request);
+
+  if (!admin) {
+    return NextResponse.json(
+      { error: "Unauthorized." },
+      { status: 401 }
+    );
+  }
+
+  const body = await request.json();
+  const id = String(body.id || "").trim();
+  const status = String(body.status || "").trim().toLowerCase();
+  const allowed = [
+    "new",
+    "contacted",
+    "quoted",
+    "confirmed",
+    "completed",
+    "cancelled",
+  ];
+
+  if (!id || !allowed.includes(status)) {
+    return NextResponse.json(
+      { error: "Choose a valid request status." },
+      { status: 400 }
+    );
+  }
+
+  const consultationUpdate: Record<string, unknown> = {
+    status,
+    updated_at: new Date().toISOString(),
+  };
+
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    const { error } = await supabaseAdmin
+      .from("consultations")
+      .update(consultationUpdate)
+      .eq("id", id);
+
+    if (!error) {
+      break;
+    }
+
+    const missing = error.message.match(
+      /Could not find the '([^']+)' column/i
+    )?.[1];
+
+    if (!missing || !(missing in consultationUpdate)) {
+      return NextResponse.json(
+        { error: error.message },
+        { status: 500 }
+      );
+    }
+
+    delete consultationUpdate[missing];
+
+    if (Object.keys(consultationUpdate).length === 0) {
+      break;
+    }
+  }
+
+  const orderUpdate: Record<string, unknown> = {
+    updated_at: new Date().toISOString(),
+  };
+
+  if (status === "quoted") {
+    orderUpdate.quotation_status = "QUOTED";
+  }
+
+  if (status === "confirmed") {
+    orderUpdate.quotation_status = "ACCEPTED";
+    orderUpdate.status = "CONFIRMED";
+    orderUpdate.order_status = "CONFIRMED";
+  }
+
+  if (status === "cancelled") {
+    orderUpdate.quotation_status = "DECLINED";
+  }
+
+  if (orderUpdate.quotation_status) {
+    for (let attempt = 0; attempt < 4; attempt += 1) {
+      const { error } = await supabaseAdmin
+        .from("orders")
+        .update(orderUpdate)
+        .eq("consultation_id", id);
+
+      if (!error) {
+        break;
+      }
+
+      const missing = error.message.match(
+        /Could not find the '([^']+)' column/i
+      )?.[1];
+
+      if (!missing || !(missing in orderUpdate)) {
+        break;
+      }
+
+      delete orderUpdate[missing];
+    }
+  }
+
+  return NextResponse.json({ success: true });
 }

@@ -44,6 +44,11 @@ const categories = [
   },
 
   {
+    label: "Appetizers",
+    value: "appetizers",
+  },
+
+  {
     label: "Food Boxes",
     value: "food-boxes",
   },
