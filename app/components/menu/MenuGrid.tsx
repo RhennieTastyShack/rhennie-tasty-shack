@@ -326,7 +326,8 @@ export default function MenuGrid() {
           };
         });
 
-      let merged = formattedMeals;
+      setMeals(formattedMeals);
+      setLoading(false);
 
       try {
         const partyResponse = await fetch("/api/menu", {
@@ -393,19 +394,18 @@ export default function MenuGrid() {
             refreshed.map((meal) => meal.name.toLowerCase())
           );
 
-          merged = [
+          if (!mounted) return;
+
+          setMeals([
             ...refreshed,
             ...partyMeals.filter(
               (meal) => !names.has(meal.name.toLowerCase())
             ),
-          ];
+          ]);
         }
       } catch {
-        merged = formattedMeals;
+        // The dishes already on screen stay visible if the appetizer refresh is slow.
       }
-
-      setMeals(merged);
-      setLoading(false);
     }
 
     loadMeals();

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import DailyVibes from "@/app/components/DailyVibes";
 import { loginNote } from "@/lib/thank-you-notes";
 
 const quickLinks = [
@@ -80,6 +81,8 @@ export default function ClientPortalPage() {
           <p className="mx-auto mt-4 max-w-2xl text-sm leading-7 text-[#D4AF37]">
             {loginNote()}
           </p>
+
+          <DailyVibes />
 
         </div>
 

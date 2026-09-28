@@ -74,3 +74,7 @@ export function thankYouNote(on: Date | string | null | undefined = new Date()) 
 export function loginNote(on: Date | string | null | undefined = new Date()) {
   return `Thank you for coming back to Rhennie Tasty Shack. ${thankYouNote(on)}`;
 }
+
+export function orderAppreciation() {
+  return "Thank you for ordering from Rhennie Tasty Shack. The kitchen appreciates you, and your plate is already on the way.";
+}

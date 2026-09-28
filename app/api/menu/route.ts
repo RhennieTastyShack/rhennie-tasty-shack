@@ -613,10 +613,31 @@ async function syncCatalogMenuItem(
   await writeFlexible(client, "menu_items", values);
 }
 
+let catalogSync: Promise<void> | null = null;
+let catalogSyncedAt = 0;
+const CATALOG_SYNC_GAP_MS = 15 * 60 * 1000;
+
+function startCatalogSync() {
+  if (catalogSync || Date.now() - catalogSyncedAt < CATALOG_SYNC_GAP_MS) {
+    return;
+  }
+
+  catalogSync = (async () => {
+    try {
+      await ensurePartyMenu(supabaseAdmin);
+      await ensureCatalog(supabaseAdmin);
+      catalogSyncedAt = Date.now();
+    } catch (error) {
+      console.error("Menu sync error:", error);
+    } finally {
+      catalogSync = null;
+    }
+  })();
+}
+
 export async function GET() {
   try {
-    await ensurePartyMenu(supabaseAdmin);
-    await ensureCatalog(supabaseAdmin);
+    startCatalogSync();
 
     const { data, error } = await supabaseAdmin
       .from("menu")

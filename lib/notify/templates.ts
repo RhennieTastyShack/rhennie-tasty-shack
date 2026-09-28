@@ -1,4 +1,4 @@
-import { thankYouNote } from "@/lib/thank-you-notes";
+import { orderAppreciation, thankYouNote } from "@/lib/thank-you-notes";
 
 export type NotifyChannel = "email" | "sms" | "whatsapp";
 
@@ -95,14 +95,16 @@ export function buildOrderPaidTemplate(data: {
     : "";
 
   const note = thankYouNote();
+  const appreciation = orderAppreciation();
   const title = "Payment confirmed";
   const sms = `Rhennie: Payment received for ${orderLabel} (${amount}). ${note}${trackLine}`;
   const whatsapp = sms;
   const emailSubject = `Payment confirmed — ${orderLabel}`;
-  const emailText = `We received your payment for ${orderLabel} (${amount}). ${note}${trackLine}`;
+  const emailText = `${appreciation} We received your payment for ${orderLabel} (${amount}). ${note}${trackLine}`;
   const emailHtml = brandShell(
     title,
-    `<p>Thank you! Payment for <strong>${orderLabel}</strong> (${amount}) was successful.</p>
+    `<p>${appreciation}</p>
+     <p>Payment for <strong>${orderLabel}</strong> (${amount}) was successful.</p>
      <p>${note}</p>
      ${
        data.trackingUrl

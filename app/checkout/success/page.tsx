@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 
 import { useCart } from "@/app/context/CartContext";
-import { thankYouNote } from "@/lib/thank-you-notes";
+import { orderAppreciation, thankYouNote } from "@/lib/thank-you-notes";
 
 type VerifyState =
   | "loading"
@@ -262,7 +262,10 @@ function CheckoutSuccessContent() {
               Order Confirmed!
             </h1>
 
-            <p className="mx-auto mt-4 max-w-md text-sm leading-7 text-black/50">
+            <p className="mx-auto mt-4 max-w-md text-base font-semibold leading-7 text-[#171717]">
+              {orderAppreciation()}
+            </p>
+            <p className="mx-auto mt-3 max-w-md text-sm leading-7 text-black/50">
               {thankYouNote()} Your payment was received and your order is now being processed.
             </p>
 
