@@ -51,7 +51,9 @@ export default function MealCard({
         }
       : dishChoiceUi(name);
   const [selectedCups, setSelectedCups] = useState<string[]>([]);
-  const [cupsOpen, setCupsOpen] = useState(false);
+  const [cupsOpen, setCupsOpen] = useState(() =>
+    /heritage feast|royal native bowl/i.test(name)
+  );
 
   const imagePath = resolveMenuImage(name, imageUrl);
 

@@ -144,8 +144,8 @@ export const CATALOG_DISHES: CatalogDish[] = [
   },
   {
     name: "Loaded Turkey Pasta",
-    collection: "Signature Feast Collection",
-    collectionMatch: ["signature feast", "signature-feast"],
+    collection: "Executive Lunch",
+    collectionMatch: EXECUTIVE_LUNCH,
     description:
       "Spaghetti tossed with peppered beef and peppers, served with a glazed turkey piece.",
     price: 13500,

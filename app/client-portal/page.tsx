@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import DailyVibes from "@/app/components/DailyVibes";
+import LogoutButton from "@/app/components/LogoutButton";
 import { loginNote } from "@/lib/thank-you-notes";
 
 const quickLinks = [
@@ -83,6 +84,8 @@ export default function ClientPortalPage() {
           </p>
 
           <DailyVibes />
+
+          <LogoutButton className="mt-6 inline-flex min-h-[48px] items-center justify-center rounded-full border border-white/30 bg-white px-8 text-sm font-bold text-[#171717]" />
 
         </div>
 

@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 
 import { useCart } from "@/app/context/CartContext";
+import LogoutButton from "@/app/components/LogoutButton";
 
 const navLinks = [
   {
@@ -166,6 +167,8 @@ export default function Navbar() {
             )}
           </button>
 
+          <LogoutButton className="inline-flex rounded-full border border-white/40 px-5 py-3 text-sm font-bold text-white transition hover:border-[#F26A21] hover:text-[#F26A21]" />
+
           {/* Order Now */}
 
           <a
@@ -265,6 +268,11 @@ export default function Navbar() {
           {/* =================================================
               MOBILE MENU HEADER
           ================================================== */}
+
+          <LogoutButton
+            onDone={closeMenu}
+            className="mb-4 flex min-h-[54px] w-full items-center justify-center rounded-full border border-white/30 bg-white text-[15px] font-bold text-[#171717]"
+          />
 
           <div className="mb-5 flex items-center gap-3">
 

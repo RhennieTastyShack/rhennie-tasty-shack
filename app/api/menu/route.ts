@@ -252,6 +252,7 @@ async function ensureCatalog(client: SupabaseClient) {
       .update({ name: "Shredded Beef Pasta" })
       .eq("name", "Shredded Pasta");
     await collapseCatfishPepperSoup(client, table);
+    await collapseChickenPepperSoup(client, table);
     await hideTitusPepperSoup(client, table);
   }
 
@@ -328,6 +329,33 @@ async function setPortionPrices(
       if (row.id === keeper.id) continue;
       await client.from(table).update({ available: false }).eq("id", row.id);
     }
+  }
+}
+
+async function collapseChickenPepperSoup(
+  client: SupabaseClient,
+  table: "menu" | "menu_items"
+) {
+  const { data, error } = await client
+    .from(table)
+    .select("id, name, available")
+    .or("name.ilike.%chicken pepper soup%,name.ilike.%chicken peppersoup%");
+
+  if (error || !data || data.length < 2) return;
+
+  const keeper =
+    data.find(
+      (row) =>
+        String(row.name).trim().toLowerCase() === "chicken peppersoup" &&
+        row.available !== false
+    ) ||
+    data.find((row) => row.available !== false) ||
+    data[0];
+
+  for (const row of data) {
+    if (row.id === keeper.id) continue;
+
+    await client.from(table).update({ available: false }).eq("id", row.id);
   }
 }
 

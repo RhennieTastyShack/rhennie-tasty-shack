@@ -13,6 +13,12 @@ const ANY_RICE = [
 
 const ASUN_RICE = ["Native Rice", "Asun Rice", "Prawn Rice"];
 
+const SWALLOWS = ["Eba", "Poundo", "Amala", "Semo", "Fufu"];
+const SOUPS = ["Egusi Soup", "Okro Soup", "Efo Riro", "Ewedu"];
+const SWALLOW_AND_SOUP = SWALLOWS.flatMap((swallow) =>
+  SOUPS.map((soup) => `${swallow} + ${soup}`)
+);
+
 type ChoiceGroup = {
   names: string[];
   label: string;
@@ -55,16 +61,26 @@ const GROUPS: ChoiceGroup[] = [
     choose: "Choose swallow and soup",
     hide: "Hide plates",
     hint: "Beef is included. Each plate is ordered on its own.",
-    options: [
-      "Eba + Okro Soup",
-      "Eba + Egusi Soup",
-      "Eba + Efo Riro",
-      "Amala + Ewedu",
-      "Amala + Egusi Soup",
-      "Poundo + Egusi Soup",
-      "Semo + Okro Soup",
-      "Fufu + Okro Soup",
+    options: SWALLOW_AND_SOUP,
+  },
+  {
+    names: [
+      "Chief's Heritage Feast (Turkey)",
+      "Chief's Heritage Feast (Swallow & Turkey)",
     ],
+    label: "Plate",
+    choose: "Choose swallow and soup",
+    hide: "Hide plates",
+    hint: "Turkey is included. Choose the swallow and soup for this plate.",
+    options: SWALLOW_AND_SOUP,
+  },
+  {
+    names: ["Royal Native Bowl (Swallow & Chicken)"],
+    label: "Plate",
+    choose: "Choose swallow and soup",
+    hide: "Hide plates",
+    hint: "Chicken is included. Choose the swallow and soup for this plate.",
+    options: SWALLOW_AND_SOUP,
   },
   {
     names: [
@@ -95,11 +111,19 @@ const GROUPS: ChoiceGroup[] = [
   },
 ];
 
+function normalizeChoiceName(value: string) {
+  return value
+    .toLowerCase()
+    .replace(/['’]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 function groupFor(name: string) {
-  const normalized = name.trim().toLowerCase();
+  const normalized = normalizeChoiceName(name);
 
   return GROUPS.find((group) =>
-    group.names.some((item) => item.toLowerCase() === normalized)
+    group.names.some((item) => normalizeChoiceName(item) === normalized)
   );
 }
 
