@@ -36,16 +36,17 @@ export async function payRiderForDelivery(deliveryId: string) {
   const platformShare = Math.round(deliveryFee * 0.15);
   const riderFee = Math.max(0, deliveryFee - platformShare);
   const amount = riderFee + tip;
+  const commissionNote = `Rhennie keeps 15% of the delivery fee (₦${platformShare.toLocaleString("en-NG")}). The rider receives ₦${riderFee.toLocaleString("en-NG")} plus the full tip of ₦${tip.toLocaleString("en-NG")}.`;
 
   let status = "pending";
   let providerReference: string | null = null;
-  let note = `Rhennie keeps 15% of the delivery fee (₦${platformShare.toLocaleString("en-NG")}). The rider receives ₦${riderFee.toLocaleString("en-NG")} plus the full tip. Waiting to send it to the rider bank account.`;
+  let note = `${commissionNote} Waiting to send it to the rider bank account.`;
 
   const account = String(rider?.bank_account_number || "").replace(/\D/g, "");
   const secret = process.env.PAYSTACK_SECRET_KEY;
 
   if (!rider?.bank_code || account.length < 10) {
-    note = "Add a bank account in the rider portal to receive this payout.";
+    note = `${commissionNote} Add a bank account in the rider portal to receive this payout.`;
   } else if (secret && amount > 0) {
     try {
       const recipientResponse = await fetch("https://api.paystack.co/transferrecipient", {
@@ -83,32 +84,53 @@ export async function payRiderForDelivery(deliveryId: string) {
         if (transfer?.status) {
           status = "paid";
           providerReference = transfer?.data?.transfer_code || transfer?.data?.reference || null;
-          note = "Sent to the rider bank account.";
+          note = `${commissionNote} Sent to the rider bank account.`;
         } else {
           status = "failed";
-          note = transfer?.message || "Bank transfer was not completed.";
+          note = `${commissionNote} ${transfer?.message || "Bank transfer was not completed."}`;
         }
       } else {
         status = "failed";
-        note = recipient?.message || "Bank account could not be verified.";
+        note = `${commissionNote} ${recipient?.message || "Bank account could not be verified."}`;
       }
     } catch {
       status = "failed";
-      note = "Bank transfer could not be started.";
+      note = `${commissionNote} Bank transfer could not be started.`;
     }
   }
 
-  await supabase.from("rider_payouts").insert({
+  const payout: Record<string, unknown> = {
     delivery_id: deliveryId,
     rider_id: delivery.rider_id,
     order_id: delivery.order_id,
     amount,
     delivery_fee: deliveryFee,
+    platform_share: platformShare,
+    rider_fee: riderFee,
     tip_amount: tip,
     status,
     bank_name: rider?.bank_name || null,
     bank_account_number: account || null,
     provider_reference: providerReference,
     note,
-  });
+  };
+
+  let error: { message: string } | null = null;
+
+  for (let attempt = 0; attempt < 6; attempt += 1) {
+    const result = await supabase.from("rider_payouts").insert(payout);
+    error = result.error;
+    if (!error) break;
+
+    const missing = error.message.match(
+      /Could not find the '([^']+)' column|column [\w.]+\.(\w+) does not exist/i
+    );
+    const column = missing?.[1] || missing?.[2];
+    if (!column || !(column in payout)) break;
+    delete payout[column];
+  }
+
+  if (error) {
+    console.error("Rider payout insert error:", error.message);
+  }
 }

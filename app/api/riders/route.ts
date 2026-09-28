@@ -163,7 +163,7 @@ export async function POST(request: NextRequest) {
         {
           success: false,
           message:
-            "Accept the 15% platform fee before submitting your application.",
+            "Accept the rider terms, including the 15% platform fee, before submitting your application.",
         },
         { status: 400 }
       );
@@ -417,7 +417,20 @@ export async function PATCH(request: NextRequest) {
     }
 
     if (body?.full_name) {
+      if (body?.platform_fee_accepted !== true) {
+        return NextResponse.json(
+          {
+            success: false,
+            message:
+              "Accept the rider terms, including the 15% platform fee, before submitting your application.",
+          },
+          { status: 400 }
+        );
+      }
+
       updateData.full_name = cleanText(body.full_name);
+      updateData.platform_fee_accepted = true;
+      updateData.platform_fee_percent = 15;
     }
 
     if (body?.phone) {
@@ -505,12 +518,27 @@ export async function PATCH(request: NextRequest) {
       updateData.id_document_path = path;
     }
 
-    const { data, error } = await supabaseAdmin
-      .from("riders")
-      .update(updateData)
-      .eq("id", rider.id)
-      .select()
-      .single();
+    let data: unknown = null;
+    let error: { message: string } | null = null;
+
+    for (let attempt = 0; attempt < 8; attempt += 1) {
+      const result = await supabaseAdmin
+        .from("riders")
+        .update(updateData)
+        .eq("id", rider.id)
+        .select()
+        .single();
+      data = result.data;
+      error = result.error;
+      if (!error) break;
+
+      const missing = error.message.match(
+        /Could not find the '([^']+)' column|column [\w.]+\.(\w+) does not exist/i
+      );
+      const column = missing?.[1] || missing?.[2];
+      if (!column || !(column in updateData)) break;
+      delete updateData[column];
+    }
 
     if (error) {
       return NextResponse.json(

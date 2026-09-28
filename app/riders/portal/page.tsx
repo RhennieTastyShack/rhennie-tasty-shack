@@ -519,7 +519,7 @@ export default function RiderPortalPage() {
         <section className="mt-8 rounded-[24px] border border-white/10 bg-[#141414] p-5">
           <h2 className="font-serif text-xl font-bold">Payout account</h2>
           <p className="mt-2 text-sm text-white/50">
-            Delivery fee and tips are sent here after you mark an order delivered.
+            Rhennie keeps 15% of each delivery fee. The remaining fee and the full tip are sent here after the delivery is completed with the customer’s code.
           </p>
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
             <select

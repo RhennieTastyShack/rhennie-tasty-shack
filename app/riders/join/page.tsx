@@ -172,7 +172,7 @@ export default function RiderJoinPage() {
 
       if (!acceptedFee) {
         throw new Error(
-          "Accept the 15% platform fee before submitting your application."
+          "Accept the rider terms, including the 15% platform fee, before submitting your application."
         );
       }
 
@@ -462,18 +462,41 @@ export default function RiderJoinPage() {
               </p>
             </Field>
 
+            <section className="rounded-2xl border border-white/10 bg-black/30 p-4 text-sm leading-6 text-white/70">
+              <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-[#D4AF37]">
+                Rider terms
+              </h2>
+              <ul className="mt-3 list-disc space-y-2 pl-5">
+                <li>
+                  Rhennie Tasty Shack keeps 15% of every delivery fee as its
+                  commission for this platform.
+                </li>
+                <li>
+                  The 15% is deducted after the delivery is completed with the
+                  customer’s delivery code.
+                </li>
+                <li>
+                  You receive the remaining 85% of the delivery fee. The
+                  customer’s tip is yours in full and is not part of the 15%.
+                </li>
+                <li>
+                  Payouts go to the bank account you save in the rider portal.
+                </li>
+              </ul>
+            </section>
+
             <label className="flex items-start gap-3 text-sm leading-6 text-white/70">
               <input
                 type="checkbox"
                 checked={acceptedFee}
                 onChange={(event) => setAcceptedFee(event.target.checked)}
+                required
+                disabled={locked}
                 className="mt-1"
               />
               <span>
-                Rhennie keeps 15% of each delivery fee for providing this
-                platform. After a delivery is completed with the customer’s
-                code, that 15% is deducted. You receive the remaining delivery
-                fee plus the full tip.
+                I have read and accept the rider terms, including Rhennie’s 15%
+                commission on each delivery fee.
               </span>
             </label>
 
