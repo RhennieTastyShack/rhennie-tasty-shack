@@ -117,6 +117,15 @@ export default function Footer() {
 
               <li>
                 <Link
+                  href="/riders/join"
+                  className="text-sm text-gray-400 transition-colors hover:text-[#D4AF37]"
+                >
+                  Ride with 701
+                </Link>
+              </li>
+
+              <li>
+                <Link
                   href="/orders"
                   className="text-sm text-gray-400 transition-colors hover:text-[#F97316]"
                 >
