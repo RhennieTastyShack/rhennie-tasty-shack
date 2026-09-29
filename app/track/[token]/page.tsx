@@ -213,9 +213,15 @@ export default function TrackDeliveryPage() {
               </p>
             </div>
 
-            {["ASSIGNED", "PICKED_UP", "ON_THE_WAY", "DELIVERED"].includes(
-              delivery.status
-            ) && (
+            {[
+              "ASSIGNED",
+              "HEADING_TO_RESTAURANT",
+              "ARRIVED_AT_RESTAURANT",
+              "PICKED_UP",
+              "ON_THE_WAY",
+              "ARRIVED_AT_CUSTOMER",
+              "DELIVERED",
+            ].includes(delivery.status) && (
               <div className="mt-5 overflow-hidden rounded-2xl border border-black/10">
                 {delivery.rider_latitude != null &&
                 delivery.rider_longitude != null ? (
@@ -318,7 +324,7 @@ export default function TrackDeliveryPage() {
                 />
               </div>
 
-              <div className="mt-4 grid grid-cols-5 gap-1">
+              <div className="mt-4 grid grid-cols-4 gap-2 sm:grid-cols-8">
                 {DELIVERY_STATUS_FLOW.map((step, index) => {
                   const done =
                     delivery.status !== "CANCELLED" &&
@@ -335,19 +341,11 @@ export default function TrackDeliveryPage() {
                         {index + 1}
                       </div>
                       <p
-                        className={`mt-2 text-[9px] font-semibold uppercase leading-3 tracking-wide ${
+                        className={`mt-2 text-[8px] font-semibold uppercase leading-3 tracking-wide ${
                           done ? "text-[#F26A21]" : "text-black/30"
                         }`}
                       >
-                        {step === "UNASSIGNED"
-                          ? "Waiting"
-                          : step === "ASSIGNED"
-                            ? "Assigned"
-                            : step === "PICKED_UP"
-                              ? "Picked up"
-                              : step === "ON_THE_WAY"
-                                ? "On the way"
-                                : "Delivered"}
+                        {getDeliveryStatusLabel(step)}
                       </p>
                     </div>
                   );

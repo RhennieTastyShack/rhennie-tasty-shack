@@ -67,6 +67,7 @@ export async function GET(request: NextRequest) {
     }
 
     if (scope === "available") {
+      const requiredVehicle = cleanText(searchParams.get("vehicle"));
       const { data, error } = await supabaseAdmin
         .from("riders")
         .select(
@@ -83,9 +84,16 @@ export async function GET(request: NextRequest) {
         );
       }
 
+      const { isEligibleDeliveryPartner } = await import(
+        "@/lib/rider-match"
+      );
+      const riders = (data || []).filter((rider) =>
+        isEligibleDeliveryPartner(rider, requiredVehicle || null)
+      );
+
       return NextResponse.json({
         success: true,
-        riders: data || [],
+        riders,
       });
     }
 

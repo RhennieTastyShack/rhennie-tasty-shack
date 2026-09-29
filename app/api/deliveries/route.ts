@@ -5,7 +5,9 @@ import {
   createTrackingToken,
   DeliveryMode,
   DeliveryStatus,
+  foodStatusForDelivery,
 } from "@/lib/delivery";
+import { isEligibleDeliveryPartner } from "@/lib/rider-match";
 import {
   cleanText,
   getAuthUser,
@@ -457,12 +459,7 @@ async function syncOrderWithDelivery(
 ) {
   if (!orderId) return;
 
-  const orderStatus =
-    deliveryStatus === "DELIVERED"
-      ? "COMPLETED"
-      : deliveryStatus === "PICKED_UP" || deliveryStatus === "ON_THE_WAY"
-        ? "OUT FOR DELIVERY"
-        : null;
+  const orderStatus = foodStatusForDelivery(deliveryStatus);
 
   if (!orderStatus) return;
 
@@ -556,41 +553,10 @@ export async function PATCH(request: NextRequest) {
         updated_at: new Date().toISOString(),
       };
 
-      if (delivery.status === "PICKED_UP") {
-        const history = Array.isArray(delivery.status_history)
-          ? [...delivery.status_history]
-          : [];
-        history.push(
-          buildStatusHistoryEntry(
-            "ON_THE_WAY",
-            "system",
-            "Started delivery after pickup"
-          )
-        );
-        locationUpdate.status = "ON_THE_WAY";
-        locationUpdate.status_history = history;
-      }
-
       const { error } = await supabaseAdmin
         .from("deliveries")
         .update(locationUpdate)
         .eq("id", delivery.id);
-
-      if (!error && locationUpdate.status === "ON_THE_WAY") {
-        await syncOrderWithDelivery(
-          supabaseAdmin,
-          delivery.order_id,
-          "ON_THE_WAY"
-        );
-        try {
-          const { notifyDeliveryStatusChange } = await import(
-            "@/lib/notify/hooks"
-          );
-          void notifyDeliveryStatusChange(delivery.id);
-        } catch (notifyError) {
-          console.error("Delivery status notify error:", notifyError);
-        }
-      }
 
       if (error) {
         return NextResponse.json(
@@ -660,7 +626,7 @@ export async function PATCH(request: NextRequest) {
     if (riderId) {
       const { data: rider, error: riderError } = await supabaseAdmin
         .from("riders")
-        .select("id, status, full_name")
+        .select("id, status, full_name, vehicle_type, is_available")
         .eq("id", riderId)
         .maybeSingle();
 
@@ -669,6 +635,28 @@ export async function PATCH(request: NextRequest) {
           {
             success: false,
             message: "Only approved riders can be assigned.",
+          },
+          { status: 400 }
+        );
+      }
+
+      const requiredVehicle =
+        cleanText(delivery.recommended_vehicle) ||
+        cleanText(body?.recommended_vehicle) ||
+        null;
+      const forceAssign =
+        actor === "admin" && Boolean(body?.force_assign);
+
+      if (
+        !forceAssign &&
+        !isEligibleDeliveryPartner(rider, requiredVehicle)
+      ) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: requiredVehicle
+              ? `Partner must be online and using a vehicle that can cover ${requiredVehicle.replaceAll("_", " ")} capacity (or higher).`
+              : "Partner must be approved and online before assignment.",
           },
           { status: 400 }
         );
@@ -687,13 +675,33 @@ export async function PATCH(request: NextRequest) {
     }
 
     if (nextStatus === "DELIVERED") {
-      if (!delivery.order_code || suppliedCode !== String(delivery.order_code)) {
+      const adminOverride =
+        actor === "admin" &&
+        Boolean(body?.admin_override) &&
+        Boolean(cleanText(body?.override_reason) || note);
+
+      if (
+        !adminOverride &&
+        (!delivery.order_code ||
+          suppliedCode !== String(delivery.order_code))
+      ) {
         return NextResponse.json(
           {
             success: false,
-            message: "Enter the customer's delivery code before completing the drop-off.",
+            message:
+              "Enter the customer's delivery code before completing the drop-off.",
           },
           { status: 400 }
+        );
+      }
+
+      if (adminOverride) {
+        history.push(
+          buildStatusHistoryEntry(
+            "DELIVERED",
+            actor,
+            `Admin override: ${cleanText(body?.override_reason) || note}`
+          )
         );
       }
     }
@@ -717,24 +725,8 @@ export async function PATCH(request: NextRequest) {
         }
       }
 
-      if (nextStatus === "PICKED_UP") {
-        history.push(
-          buildStatusHistoryEntry(
-            "PICKED_UP",
-            actor,
-            note || "Order picked up"
-          )
-        );
-        history.push(
-          buildStatusHistoryEntry(
-            "ON_THE_WAY",
-            "system",
-            "Started delivery after pickup"
-          )
-        );
-        updateData.status = "ON_THE_WAY";
-      } else {
-        updateData.status = nextStatus;
+      updateData.status = nextStatus;
+      if (!(nextStatus === "DELIVERED" && Boolean(body?.admin_override))) {
         history.push(
           buildStatusHistoryEntry(nextStatus, actor, note || undefined)
         );
@@ -749,6 +741,62 @@ export async function PATCH(request: NextRequest) {
     if (body?.external_rider_phone !== undefined) {
       updateData.external_rider_phone =
         cleanText(body.external_rider_phone) || null;
+    }
+
+    if (body?.external_rider_company !== undefined) {
+      updateData.external_rider_company =
+        cleanText(body.external_rider_company) || null;
+    }
+
+    if (body?.external_rider_plate !== undefined) {
+      updateData.external_rider_plate =
+        cleanText(body.external_rider_plate) || null;
+    }
+
+    if (body?.confirm_collection === true && actor === "admin") {
+      const suppliedPickup = cleanText(body?.pickup_code);
+      const { data: orderRow } = await supabaseAdmin
+        .from("orders")
+        .select("pickup_code")
+        .eq("id", delivery.order_id)
+        .maybeSingle();
+
+      const expected =
+        cleanText(orderRow?.pickup_code) ||
+        cleanText(delivery.order_code);
+
+      if (!expected || suppliedPickup !== expected) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: "Pickup code does not match. Food cannot be released.",
+          },
+          { status: 400 }
+        );
+      }
+
+      updateData.collected_at = new Date().toISOString();
+      updateData.collected_by_staff =
+        cleanText(body?.collected_by_staff) || user.email || "kitchen";
+      updateData.collector_name =
+        cleanText(body?.collector_name) ||
+        cleanText(delivery.external_rider_name) ||
+        null;
+
+      if (
+        delivery.mode === "CUSTOMER_DISPATCH" &&
+        !nextStatus &&
+        delivery.status !== "DELIVERED"
+      ) {
+        updateData.status = "PICKED_UP";
+        history.push(
+          buildStatusHistoryEntry(
+            "PICKED_UP",
+            actor,
+            note || "Own rider collection verified with pickup code"
+          )
+        );
+      }
     }
 
     updateData.status_history = history;
@@ -800,9 +848,15 @@ export async function PATCH(request: NextRequest) {
     if (
       newStatus &&
       newStatus !== previousStatus &&
-      ["ASSIGNED", "PICKED_UP", "ON_THE_WAY", "DELIVERED"].includes(
-        newStatus
-      )
+      [
+        "ASSIGNED",
+        "HEADING_TO_RESTAURANT",
+        "ARRIVED_AT_RESTAURANT",
+        "PICKED_UP",
+        "ON_THE_WAY",
+        "ARRIVED_AT_CUSTOMER",
+        "DELIVERED",
+      ].includes(newStatus)
     ) {
       try {
         const { notifyDeliveryStatusChange } = await import(

@@ -56,9 +56,12 @@ type DeliveryRow = {
 };
 
 const NEXT_STATUS: Partial<Record<DeliveryStatus, DeliveryStatus>> = {
-  ASSIGNED: "PICKED_UP",
+  ASSIGNED: "HEADING_TO_RESTAURANT",
+  HEADING_TO_RESTAURANT: "ARRIVED_AT_RESTAURANT",
+  ARRIVED_AT_RESTAURANT: "PICKED_UP",
   PICKED_UP: "ON_THE_WAY",
-  ON_THE_WAY: "DELIVERED",
+  ON_THE_WAY: "ARRIVED_AT_CUSTOMER",
+  ARRIVED_AT_CUSTOMER: "DELIVERED",
 };
 
 export default function RiderPortalPage() {
@@ -82,9 +85,12 @@ export default function RiderPortalPage() {
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const profileLoaded = useRef(false);
   const deliveriesRef = useRef(deliveries);
-  deliveriesRef.current = deliveries;
   const [locationNote, setLocationNote] = useState("");
   const [commissionPercent, setCommissionPercent] = useState(5);
+
+  useEffect(() => {
+    deliveriesRef.current = deliveries;
+  }, [deliveries]);
 
   async function getToken() {
     const {
@@ -167,7 +173,7 @@ export default function RiderPortalPage() {
   }, [router]);
 
   const sharingLocation = deliveries.some((delivery) =>
-    ["ASSIGNED", "PICKED_UP", "ON_THE_WAY"].includes(delivery.status)
+    ["ASSIGNED", "HEADING_TO_RESTAURANT", "ARRIVED_AT_RESTAURANT", "PICKED_UP", "ON_THE_WAY", "ARRIVED_AT_CUSTOMER"].includes(delivery.status)
   );
 
   useEffect(() => {
@@ -203,7 +209,7 @@ export default function RiderPortalPage() {
       if (!token || stopped) return;
 
       const activeDeliveries = deliveriesRef.current.filter((delivery) =>
-        ["ASSIGNED", "PICKED_UP", "ON_THE_WAY"].includes(delivery.status)
+        ["ASSIGNED", "HEADING_TO_RESTAURANT", "ARRIVED_AT_RESTAURANT", "PICKED_UP", "ON_THE_WAY", "ARRIVED_AT_CUSTOMER"].includes(delivery.status)
       );
 
       const results = await Promise.all(

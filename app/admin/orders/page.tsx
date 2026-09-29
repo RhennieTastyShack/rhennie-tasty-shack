@@ -56,6 +56,10 @@ interface Order {
   delivery_type?: string | null;
   delivery_address?: string | null;
   notes?: string | null;
+  fulfilment_method?: string | null;
+  recommended_vehicle?: string | null;
+  pickup_code?: string | null;
+  pickup_status?: string | null;
 
   payment_status?: string | null;
   payment_reference?: string | null;
@@ -127,8 +131,15 @@ export default function OrdersPage() {
     mode: string;
     status: string;
     tracking_token: string;
+    order_code?: string | null;
+    recommended_vehicle?: string | null;
     external_rider_name: string | null;
     external_rider_phone: string | null;
+    external_rider_company?: string | null;
+    external_rider_plate?: string | null;
+    collected_at?: string | null;
+    collected_by_staff?: string | null;
+    collector_name?: string | null;
     rider_id: string | null;
     riders?: {
       id: string;
@@ -158,6 +169,12 @@ export default function OrdersPage() {
   const [editExternalPhone, setEditExternalPhone] = useState("");
   const [deliveryStatusDraft, setDeliveryStatusDraft] =
     useState("");
+  const [deliveryCodeDraft, setDeliveryCodeDraft] = useState("");
+  const [adminOverrideDeliver, setAdminOverrideDeliver] = useState(false);
+  const [overrideReason, setOverrideReason] = useState("");
+  const [pickupCodeDraft, setPickupCodeDraft] = useState("");
+  const [collectorNameDraft, setCollectorNameDraft] = useState("");
+  const [pickupBusy, setPickupBusy] = useState(false);
 
   // ============================================================
   // LOAD ORDERS
@@ -517,18 +534,25 @@ export default function OrdersPage() {
     setEditExternalName("");
     setEditExternalPhone("");
     setDeliveryStatusDraft("");
+    setDeliveryCodeDraft("");
+    setAdminOverrideDeliver(false);
+    setOverrideReason("");
 
     try {
       const headers = await authHeaders();
+      const vehicle = encodeURIComponent(order.recommended_vehicle || "");
       const [deliveryRes, ridersRes] = await Promise.all([
         fetch(
           `/api/deliveries?order_id=${encodeURIComponent(order.id)}`,
           { cache: "no-store", headers }
         ),
-        fetch("/api/riders?scope=available", {
-          cache: "no-store",
-          headers,
-        }),
+        fetch(
+          `/api/riders?scope=available${vehicle ? `&vehicle=${vehicle}` : ""}`,
+          {
+            cache: "no-store",
+            headers,
+          }
+        ),
       ]);
 
       const deliveryJson = await deliveryRes.json();
@@ -608,6 +632,90 @@ export default function OrdersPage() {
       );
     } finally {
       setDeliveryBusy(false);
+    }
+  }
+
+  async function confirmPickupRelease() {
+    if (!selectedOrder) return;
+
+    setPickupBusy(true);
+    setError("");
+
+    try {
+      const response = await fetch("/api/orders/status", {
+        method: "PATCH",
+        headers: await authHeaders({
+          "Content-Type": "application/json",
+        }),
+        body: JSON.stringify({
+          orderId: selectedOrder.id,
+          confirm_pickup: true,
+          pickup_code: pickupCodeDraft,
+          collector_name: collectorNameDraft,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !result?.success) {
+        throw new Error(
+          result?.error || result?.message || "Unable to verify pickup code."
+        );
+      }
+
+      const updated = result.order as Order;
+      setSelectedOrder(updated);
+      setOrders((prev) =>
+        prev.map((order) => (order.id === updated.id ? { ...order, ...updated } : order))
+      );
+      setPickupCodeDraft("");
+      await loadDeliveryForOrder(updated);
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Unable to verify pickup code."
+      );
+    } finally {
+      setPickupBusy(false);
+    }
+  }
+
+  async function setPickupReadyStatus(next: string) {
+    if (!selectedOrder) return;
+
+    setPickupBusy(true);
+    setError("");
+
+    try {
+      const response = await fetch("/api/orders/status", {
+        method: "PATCH",
+        headers: await authHeaders({
+          "Content-Type": "application/json",
+        }),
+        body: JSON.stringify({
+          orderId: selectedOrder.id,
+          pickup_status: next,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !result?.success) {
+        throw new Error(
+          result?.error || result?.message || "Unable to update pickup status."
+        );
+      }
+
+      const updated = result.order as Order;
+      setSelectedOrder((prev) => (prev ? { ...prev, ...updated } : updated));
+      setOrders((prev) =>
+        prev.map((order) => (order.id === updated.id ? { ...order, ...updated } : order))
+      );
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Unable to update pickup status."
+      );
+    } finally {
+      setPickupBusy(false);
     }
   }
 
@@ -2320,10 +2428,46 @@ export default function OrdersPage() {
                     />
 
                     <Info
+                      label="Fulfilment Method"
+                      value={
+                        selectedOrder.fulfilment_method
+                          ? String(selectedOrder.fulfilment_method)
+                              .replaceAll("_", " ")
+                          : selectedOrder.delivery_type === "pickup"
+                            ? "pickup"
+                            : "—"
+                      }
+                    />
+
+                    <Info
+                      label="Recommended Vehicle"
+                      value={
+                        selectedOrder.recommended_vehicle
+                          ? String(selectedOrder.recommended_vehicle)
+                              .replaceAll("_", " ")
+                          : "—"
+                      }
+                    />
+
+                    <Info
                       label="Order Date"
                       value={formatDate(
                         selectedOrder.order_date
                       )}
+                    />
+
+                    <Info
+                      label="Pickup / Release Status"
+                      value={selectedOrder.pickup_status || "—"}
+                    />
+
+                    <Info
+                      label="Secure Pickup Code"
+                      value={
+                        selectedOrder.pickup_code
+                          ? String(selectedOrder.pickup_code)
+                          : "—"
+                      }
                     />
 
                     <div className="sm:col-span-2">
@@ -2349,6 +2493,89 @@ export default function OrdersPage() {
                       />
 
                     </div>
+
+                    {(selectedOrder.fulfilment_method === "pickup" ||
+                      selectedOrder.fulfilment_method === "own_rider" ||
+                      selectedOrder.delivery_type === "pickup" ||
+                      Boolean(selectedOrder.pickup_code)) && (
+                      <div className="sm:col-span-2 space-y-4 rounded-xl border border-[#D4AF37]/25 bg-[#D4AF37]/5 p-4">
+                        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#D4AF37]">
+                          Verify before release
+                        </p>
+                        <p className="text-sm text-white/60">
+                          Ask the customer or their courier for the pickup
+                          code. Food must not leave the kitchen until this
+                          code matches.
+                        </p>
+
+                        {selectedOrder.fulfilment_method === "pickup" ||
+                        selectedOrder.delivery_type === "pickup" ? (
+                          <div className="flex flex-wrap gap-2">
+                            <button
+                              type="button"
+                              disabled={
+                                pickupBusy ||
+                                selectedOrder.pickup_status === "Collected"
+                              }
+                              onClick={() =>
+                                setPickupReadyStatus("Ready for Pickup")
+                              }
+                              className="rounded-xl border border-white/15 px-4 py-2 text-xs font-bold uppercase tracking-wider text-white/80 disabled:opacity-50"
+                            >
+                              Mark ready for pickup
+                            </button>
+                          </div>
+                        ) : null}
+
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          <div>
+                            <label className="mb-2 block text-xs text-white/50">
+                              Enter pickup code
+                            </label>
+                            <input
+                              value={pickupCodeDraft}
+                              onChange={(e) =>
+                                setPickupCodeDraft(e.target.value)
+                              }
+                              inputMode="numeric"
+                              autoComplete="one-time-code"
+                              className="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-3 text-sm text-white"
+                              placeholder="4-digit code"
+                            />
+                          </div>
+                          <div>
+                            <label className="mb-2 block text-xs text-white/50">
+                              Person collecting (optional)
+                            </label>
+                            <input
+                              value={collectorNameDraft}
+                              onChange={(e) =>
+                                setCollectorNameDraft(e.target.value)
+                              }
+                              className="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-3 text-sm text-white"
+                              placeholder="Customer or courier name"
+                            />
+                          </div>
+                        </div>
+
+                        <button
+                          type="button"
+                          disabled={
+                            pickupBusy ||
+                            !pickupCodeDraft.trim() ||
+                            selectedOrder.pickup_status === "Collected"
+                          }
+                          onClick={() => void confirmPickupRelease()}
+                          className="rounded-xl bg-[#D4AF37] px-4 py-3 text-xs font-bold uppercase tracking-wider text-black disabled:opacity-50"
+                        >
+                          {selectedOrder.pickup_status === "Collected"
+                            ? "Already collected"
+                            : pickupBusy
+                              ? "Verifying..."
+                              : "Verify code & release"}
+                        </button>
+                      </div>
+                    )}
 
                   </div>
 
@@ -2398,6 +2625,22 @@ export default function OrdersPage() {
                               "_",
                               " "
                             )}
+                          />
+                          <Info
+                            label="Recommended Vehicle"
+                            value={
+                              orderDelivery.recommended_vehicle ||
+                              selectedOrder.recommended_vehicle
+                                ? String(
+                                    orderDelivery.recommended_vehicle ||
+                                      selectedOrder.recommended_vehicle
+                                  ).replaceAll("_", " ")
+                                : "—"
+                            }
+                          />
+                          <Info
+                            label="Delivery OTP"
+                            value={orderDelivery.order_code || "—"}
                           />
                           <Info
                             label="Assigned Rider"
@@ -2452,11 +2695,14 @@ export default function OrdersPage() {
                               className="rounded-xl border border-white/10 bg-black/40 px-3 py-3 text-sm text-white"
                             >
                               <option value="">
-                                Select available rider
+                                Select eligible online partner
                               </option>
                               {availableRiders.map((rider) => (
                                 <option key={rider.id} value={rider.id}>
                                   {rider.full_name} · {rider.phone}
+                                  {rider.vehicle_type
+                                    ? ` · ${rider.vehicle_type}`
+                                    : ""}
                                 </option>
                               ))}
                             </select>
@@ -2520,19 +2766,22 @@ export default function OrdersPage() {
                           Save dispatch contact
                         </button>
 
-                        <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
+                        <div className="space-y-3">
                           <select
                             value={deliveryStatusDraft}
                             onChange={(e) =>
                               setDeliveryStatusDraft(e.target.value)
                             }
-                            className="rounded-xl border border-white/10 bg-black/40 px-3 py-3 text-sm text-white"
+                            className="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-3 text-sm text-white"
                           >
                             {[
                               "UNASSIGNED",
                               "ASSIGNED",
+                              "HEADING_TO_RESTAURANT",
+                              "ARRIVED_AT_RESTAURANT",
                               "PICKED_UP",
                               "ON_THE_WAY",
+                              "ARRIVED_AT_CUSTOMER",
                               "DELIVERED",
                               "CANCELLED",
                             ].map((status) => (
@@ -2541,12 +2790,67 @@ export default function OrdersPage() {
                               </option>
                             ))}
                           </select>
+
+                          {deliveryStatusDraft === "DELIVERED" && (
+                            <div className="grid gap-3 sm:grid-cols-2">
+                              <div>
+                                <label className="mb-2 block text-xs text-white/50">
+                                  Customer delivery code
+                                </label>
+                                <input
+                                  value={deliveryCodeDraft}
+                                  onChange={(e) =>
+                                    setDeliveryCodeDraft(e.target.value)
+                                  }
+                                  disabled={adminOverrideDeliver}
+                                  inputMode="numeric"
+                                  className="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-3 text-sm text-white disabled:opacity-40"
+                                  placeholder="Required unless override"
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <label className="flex items-center gap-2 text-xs text-white/60">
+                                  <input
+                                    type="checkbox"
+                                    checked={adminOverrideDeliver}
+                                    onChange={(e) =>
+                                      setAdminOverrideDeliver(e.target.checked)
+                                    }
+                                  />
+                                  Admin exception (no code)
+                                </label>
+                                {adminOverrideDeliver ? (
+                                  <input
+                                    value={overrideReason}
+                                    onChange={(e) =>
+                                      setOverrideReason(e.target.value)
+                                    }
+                                    className="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-3 text-sm text-white"
+                                    placeholder="Override reason required"
+                                  />
+                                ) : null}
+                              </div>
+                            </div>
+                          )}
+
                           <button
                             type="button"
-                            disabled={deliveryBusy || !deliveryStatusDraft}
+                            disabled={
+                              deliveryBusy ||
+                              !deliveryStatusDraft ||
+                              (deliveryStatusDraft === "DELIVERED" &&
+                                !adminOverrideDeliver &&
+                                !deliveryCodeDraft.trim()) ||
+                              (deliveryStatusDraft === "DELIVERED" &&
+                                adminOverrideDeliver &&
+                                !overrideReason.trim())
+                            }
                             onClick={() =>
                               patchDelivery({
                                 status: deliveryStatusDraft,
+                                order_code: deliveryCodeDraft,
+                                admin_override: adminOverrideDeliver,
+                                override_reason: overrideReason,
                                 note: `Status set to ${deliveryStatusDraft} by admin`,
                               })
                             }
