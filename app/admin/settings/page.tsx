@@ -32,6 +32,19 @@ export default function SettingsPage() {
   const [commissionPercent, setCommissionPercent] = useState(5);
   const [commissionSaving, setCommissionSaving] = useState(false);
   const [commissionMessage, setCommissionMessage] = useState("");
+  const [vehiclePricing, setVehiclePricing] = useState<
+    {
+      category: string;
+      label: string;
+      baseFeeNgn: number;
+      perKmNgn: number;
+      minimumFeeNgn: number;
+      largeOrderAdjustmentNgn: number;
+      maxDistanceKm: number;
+    }[]
+  >([]);
+  const [vehicleSaving, setVehicleSaving] = useState<string | null>(null);
+  const [vehicleMessage, setVehicleMessage] = useState("");
 
   async function loadSettings() {
     setLoading(true);
@@ -80,6 +93,29 @@ export default function SettingsPage() {
       if (response.ok && Number.isFinite(Number(result?.ride_platform_commission))) {
         setCommissionPercent(Number(result.ride_platform_commission));
       }
+      if (response.ok && Array.isArray(result?.vehicle_pricing)) {
+        setVehiclePricing(
+          result.vehicle_pricing.map(
+            (row: {
+              category: string;
+              label: string;
+              baseFeeNgn: number;
+              perKmNgn: number;
+              minimumFeeNgn: number;
+              largeOrderAdjustmentNgn: number;
+              maxDistanceKm: number;
+            }) => ({
+              category: row.category,
+              label: row.label,
+              baseFeeNgn: row.baseFeeNgn,
+              perKmNgn: row.perKmNgn,
+              minimumFeeNgn: row.minimumFeeNgn,
+              largeOrderAdjustmentNgn: row.largeOrderAdjustmentNgn,
+              maxDistanceKm: row.maxDistanceKm,
+            })
+          )
+        );
+      }
     } catch {
       // Keep default 5%
     }
@@ -120,6 +156,45 @@ export default function SettingsPage() {
       );
     } finally {
       setCommissionSaving(false);
+    }
+  }
+
+  async function saveVehicleRow(category: string) {
+    const row = vehiclePricing.find((item) => item.category === category);
+    if (!row) return;
+
+    setVehicleSaving(category);
+    setVehicleMessage("");
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        setVehicleMessage("Sign in as Rhennie Studio to save.");
+        return;
+      }
+
+      const response = await fetch("/api/admin/ride-settings", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          vehicle_pricing: row,
+        }),
+      });
+      const result = await response.json();
+      if (!response.ok || !result?.success) {
+        throw new Error(result?.message || "Unable to save vehicle pricing.");
+      }
+      setVehicleMessage(result.message || `${row.label} pricing saved.`);
+    } catch (err) {
+      setVehicleMessage(
+        err instanceof Error ? err.message : "Unable to save vehicle pricing."
+      );
+    } finally {
+      setVehicleSaving(null);
     }
   }
 
@@ -537,6 +612,78 @@ export default function SettingsPage() {
 
         {commissionMessage ? (
           <p className="mt-4 text-sm text-black/60">{commissionMessage}</p>
+        ) : null}
+      </section>
+
+      <section className="mt-8 rounded-2xl border border-black/5 bg-white p-6 shadow-[0_10px_40px_rgba(0,0,0,0.04)] md:p-8">
+        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#C89B3C]">
+          Ride with 701
+        </p>
+        <h2 className="mt-1 text-xl font-semibold text-[#171717]">
+          Vehicle delivery rates
+        </h2>
+        <p className="mt-2 max-w-2xl text-sm leading-6 text-black/50">
+          Each transportation type has its own base fee and per-kilometre rate.
+          Motorcycle starts at ₦500 + ₦200/km. Customers still see one Ride with
+          701 Delivery line only.
+        </p>
+
+        <div className="mt-6 space-y-4">
+          {vehiclePricing.map((row) => (
+            <div
+              key={row.category}
+              className="rounded-2xl border border-black/8 bg-[#F8F6F2] p-4"
+            >
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <p className="text-sm font-bold text-[#171717]">{row.label}</p>
+                <button
+                  type="button"
+                  onClick={() => saveVehicleRow(row.category)}
+                  disabled={vehicleSaving === row.category}
+                  className="rounded-full bg-[#0B0B0B] px-4 py-2 text-[10px] font-bold uppercase tracking-[0.14em] text-[#D4AF37] disabled:opacity-60"
+                >
+                  {vehicleSaving === row.category ? "Saving..." : "Save"}
+                </button>
+              </div>
+              <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+                {(
+                  [
+                    ["baseFeeNgn", "Base ₦"],
+                    ["perKmNgn", "Per km ₦"],
+                    ["minimumFeeNgn", "Minimum ₦"],
+                    ["largeOrderAdjustmentNgn", "Large order ₦"],
+                    ["maxDistanceKm", "Max km"],
+                  ] as const
+                ).map(([key, label]) => (
+                  <label key={key} className="block text-[11px] font-semibold text-black/55">
+                    {label}
+                    <input
+                      type="number"
+                      min={0}
+                      value={row[key]}
+                      onChange={(event) =>
+                        setVehiclePricing((current) =>
+                          current.map((item) =>
+                            item.category === row.category
+                              ? {
+                                  ...item,
+                                  [key]: Number(event.target.value) || 0,
+                                }
+                              : item
+                          )
+                        )
+                      }
+                      className="mt-1 w-full rounded-xl border border-black/10 bg-white px-3 py-2 text-sm outline-none focus:border-[#C89B3C]"
+                    />
+                  </label>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {vehicleMessage ? (
+          <p className="mt-4 text-sm text-black/60">{vehicleMessage}</p>
         ) : null}
       </section>
     </main>

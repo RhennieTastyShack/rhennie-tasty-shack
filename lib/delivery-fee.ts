@@ -2,6 +2,7 @@ import {
   getVehiclePricing,
   quoteRideDeliveryFee,
   type VehicleCategory,
+  type VehiclePricingProfile,
 } from "@/lib/ride-with-701";
 
 export const DELIVERY_FEE_MIN_NGN = 900;
@@ -137,6 +138,10 @@ export function getCheckoutDeliveryFee(
     fulfilment?: FulfilmentMethod;
     vehicleType?: string | null;
     itemCount?: number;
+    bagCount?: number;
+    estimatedWeightKg?: number;
+    estimatedVolumeLitres?: number;
+    catalog?: Record<VehicleCategory, VehiclePricingProfile>;
   }
 ) {
   const fulfilment =
@@ -159,6 +164,10 @@ export function getCheckoutDeliveryFee(
     distanceKm: estimateLagosDistanceKm(address),
     vehicleType: options?.vehicleType || "motorcycle",
     itemCount: options?.itemCount,
+    bagCount: options?.bagCount,
+    estimatedWeightKg: options?.estimatedWeightKg,
+    estimatedVolumeLitres: options?.estimatedVolumeLitres,
+    catalog: options?.catalog,
   });
 
   return Math.min(DELIVERY_FEE_MAX_NGN, quote.feeNgn);

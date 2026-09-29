@@ -173,9 +173,10 @@ export function normalizeVehicleCategory(
 }
 
 export function getVehiclePricing(
-  vehicleType: string | null | undefined
+  vehicleType: string | null | undefined,
+  catalog: Record<VehicleCategory, VehiclePricingProfile> = VEHICLE_PRICING
 ): VehiclePricingProfile {
-  return VEHICLE_PRICING[normalizeVehicleCategory(vehicleType)];
+  return catalog[normalizeVehicleCategory(vehicleType)];
 }
 
 export type DeliveryQuoteInput = {
@@ -183,12 +184,24 @@ export type DeliveryQuoteInput = {
   vehicleType?: string | null;
   itemCount?: number;
   bagCount?: number;
+  estimatedWeightKg?: number;
+  estimatedVolumeLitres?: number;
   waitingBlocks?: number;
   applySurge?: boolean;
+  /** Optional override catalog (e.g. rows loaded from delivery_vehicle_pricing). */
+  catalog?: Record<VehicleCategory, VehiclePricingProfile>;
 };
+
+/** Rough bag estimate when the customer does not enter a bag count. */
+export function estimateBagCount(itemCount: number) {
+  const items = Math.max(0, Math.round(Number(itemCount) || 0));
+  if (items <= 0) return 0;
+  return Math.max(1, Math.ceil(items / 3));
+}
 
 /**
  * Quote a customer-facing Ride with 701 delivery fee for one vehicle profile.
+ * Factors road distance, vehicle profile, order size, bags, weight, and volume.
  * Customer sees ONE delivery amount — never a separate RTS commission line.
  */
 export function quoteRideDeliveryFee(input: DeliveryQuoteInput): {
@@ -199,27 +212,41 @@ export function quoteRideDeliveryFee(input: DeliveryQuoteInput): {
     base: number;
     distance: number;
     largeOrder: number;
+    bulk: number;
     waiting: number;
     beforeSurge: number;
   };
 } {
-  const vehicle = getVehiclePricing(input.vehicleType);
+  const vehicle = getVehiclePricing(input.vehicleType, input.catalog);
   const distanceKm = Math.max(0, Number(input.distanceKm) || 0);
   const cappedKm = Math.min(distanceKm, vehicle.maxDistanceKm);
 
   const base = vehicle.baseFeeNgn;
   const distance = Math.round(cappedKm * vehicle.perKmNgn);
-  const bags = Math.max(0, Number(input.bagCount) || 0);
   const items = Math.max(0, Number(input.itemCount) || 0);
+  const bags =
+    Math.max(0, Number(input.bagCount) || 0) || estimateBagCount(items);
+  const weightKg = Math.max(0, Number(input.estimatedWeightKg) || 0);
+  const volumeL = Math.max(0, Number(input.estimatedVolumeLitres) || 0);
+
   const largeOrder =
     bags >= 4 || items >= 8 ? vehicle.largeOrderAdjustmentNgn : 0;
+
+  // Extra bulk when weight/volume exceeds light food-bag norms.
+  let bulk = 0;
+  if (weightKg >= 25 || volumeL >= 40) {
+    bulk += Math.round(vehicle.largeOrderAdjustmentNgn * 1.5);
+  } else if (weightKg >= 12 || volumeL >= 20) {
+    bulk += vehicle.largeOrderAdjustmentNgn;
+  }
+
   const waiting =
     Math.max(0, Number(input.waitingBlocks) || 0) *
     vehicle.waitingFeePer15MinNgn;
 
-  const beforeSurge = base + distance + largeOrder + waiting;
+  const beforeSurge = base + distance + largeOrder + bulk + waiting;
   const surged = input.applySurge
-    ? Math.round(beforeSurge * vehicle.surgeMultiplier)
+    ? Math.round(beforeSurge * Number(vehicle.surgeMultiplier || 1))
     : beforeSurge;
   const feeNgn = Math.max(vehicle.minimumFeeNgn, surged);
 
@@ -231,6 +258,7 @@ export function quoteRideDeliveryFee(input: DeliveryQuoteInput): {
       base,
       distance,
       largeOrder,
+      bulk,
       waiting,
       beforeSurge,
     },

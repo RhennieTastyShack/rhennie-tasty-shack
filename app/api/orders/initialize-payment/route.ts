@@ -9,6 +9,7 @@ import {
   DeliveryStatus,
 } from "@/lib/delivery";
 import { getCheckoutDeliveryFee } from "@/lib/delivery-fee";
+import { getVehiclePricingCatalog } from "@/lib/platform-settings";
 import { APPETIZER_MINIMUM, isAppetizerDish } from "@/lib/party-menu";
 import {
   isPaymentCurrency,
@@ -392,6 +393,7 @@ export async function POST(request: Request) {
         Number(item.quantity);
     }
 
+    const vehicleCatalog = await getVehiclePricingCatalog();
     const deliveryFee = getCheckoutDeliveryFee(
       deliveryType,
       deliveryAddress || "",
@@ -401,6 +403,7 @@ export async function POST(request: Request) {
           (sum, item) => sum + Math.max(0, Number(item.quantity) || 0),
           0
         ),
+        catalog: vehicleCatalog,
       }
     );
 
