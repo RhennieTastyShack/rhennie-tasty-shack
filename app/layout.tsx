@@ -5,6 +5,7 @@ import "./globals.css";
 import Navbar from "@/app/components/Navbar";
 import CartDrawer from "@/app/components/cart/CartDrawer";
 import WhatsAppButton from "@/app/components/WhatsAppButton";
+import RideWith701Button from "@/app/components/RideWith701Button";
 import { CartProvider } from "@/app/context/CartContext";
 
 export const metadata: Metadata = {
@@ -35,6 +36,7 @@ export default function RootLayout({
           {children}
 
           <CartDrawer />
+          <RideWith701Button />
           <WhatsAppButton />
         </CartProvider>
       </body>

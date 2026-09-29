@@ -35,6 +35,28 @@
   --rts-radius-xl: 32px;
 }
 
+@keyframes ride-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+.animate-ride-float {
+  animation: ride-float 2.8s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-ride-float,
+  .motion-safe\:animate-ride-float,
+  .motion-safe\:animate-bounce {
+    animation: none !important;
+  }
+}
+
 /* =========================================================
    BASE
 ========================================================= */

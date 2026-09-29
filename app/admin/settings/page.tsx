@@ -29,6 +29,10 @@ export default function SettingsPage() {
   const [success, setSuccess] = useState("");
   const [error, setError] = useState("");
 
+  const [commissionPercent, setCommissionPercent] = useState(5);
+  const [commissionSaving, setCommissionSaving] = useState(false);
+  const [commissionMessage, setCommissionMessage] = useState("");
+
   async function loadSettings() {
     setLoading(true);
     setError("");
@@ -58,7 +62,66 @@ export default function SettingsPage() {
 
   useEffect(() => {
     loadSettings();
+    loadCommission();
   }, []);
+
+  async function loadCommission() {
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session?.access_token) return;
+
+      const response = await fetch("/api/admin/ride-settings", {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+        cache: "no-store",
+      });
+      const result = await response.json();
+      if (response.ok && Number.isFinite(Number(result?.ride_platform_commission))) {
+        setCommissionPercent(Number(result.ride_platform_commission));
+      }
+    } catch {
+      // Keep default 5%
+    }
+  }
+
+  async function saveCommission() {
+    setCommissionSaving(true);
+    setCommissionMessage("");
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        setCommissionMessage("Sign in as Rhennie Studio to save.");
+        return;
+      }
+
+      const response = await fetch("/api/admin/ride-settings", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          ride_platform_commission: commissionPercent,
+        }),
+      });
+      const result = await response.json();
+      if (!response.ok || !result?.success) {
+        throw new Error(result?.message || "Unable to save commission.");
+      }
+      setCommissionMessage(
+        `Ride with 701 platform commission saved at ${commissionPercent}%.`
+      );
+    } catch (err) {
+      setCommissionMessage(
+        err instanceof Error ? err.message : "Unable to save commission."
+      );
+    } finally {
+      setCommissionSaving(false);
+    }
+  }
 
   function updateField(
     field: keyof SiteSettings,
@@ -431,6 +494,51 @@ export default function SettingsPage() {
           </div>
         </section>
       </form>
+
+      <section className="mt-8 rounded-2xl border border-black/5 bg-white p-6 shadow-[0_10px_40px_rgba(0,0,0,0.04)] md:p-8">
+        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#C89B3C]">
+          Ride with 701
+        </p>
+        <h2 className="mt-1 text-xl font-semibold text-[#171717]">
+          Platform commission
+        </h2>
+        <p className="mt-2 max-w-2xl text-sm leading-6 text-black/50">
+          Rhennie Tasty Shack keeps this percent of each delivery partner&apos;s
+          gross Ride with 701 delivery fee. Customers only see one delivery
+          amount — never a separate RTS commission line.
+        </p>
+
+        <div className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-end">
+          <div className="w-full max-w-xs">
+            <label className="mb-2 block text-sm font-semibold text-[#171717]">
+              Commission percent
+            </label>
+            <input
+              type="number"
+              min={0}
+              max={100}
+              step={1}
+              value={commissionPercent}
+              onChange={(event) =>
+                setCommissionPercent(Number(event.target.value) || 0)
+              }
+              className="w-full rounded-xl border border-black/10 bg-white px-4 py-3 text-sm outline-none transition focus:border-[#C89B3C] focus:ring-2 focus:ring-[#C89B3C]/10"
+            />
+          </div>
+          <button
+            type="button"
+            onClick={saveCommission}
+            disabled={commissionSaving}
+            className="rounded-xl bg-[#0B0B0B] px-7 py-3 text-sm font-bold text-[#D4AF37] transition hover:bg-[#171717] disabled:opacity-60"
+          >
+            {commissionSaving ? "Saving..." : "Save commission"}
+          </button>
+        </div>
+
+        {commissionMessage ? (
+          <p className="mt-4 text-sm text-black/60">{commissionMessage}</p>
+        ) : null}
+      </section>
     </main>
   );
 }

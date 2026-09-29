@@ -1,95 +1,99 @@
-export const DELIVERY_FEE_MIN_NGN = 2500;
+import {
+  getVehiclePricing,
+  quoteRideDeliveryFee,
+  type VehicleCategory,
+} from "@/lib/ride-with-701";
+
+export const DELIVERY_FEE_MIN_NGN = 900;
 export const DELIVERY_FEE_MAX_NGN = 9900;
 
 /**
  * Kitchen is on the Lagos mainland.
- * Mainland stays ₦2,500–₦4,500.
- * Mainland to island runs ₦4,500–₦9,900 by how far the island drop is.
+ * Areas map to estimated road kilometres so vehicle profiles (base + ₦/km) can price fairly.
+ * Motorcycle reference: fee ≈ ₦500 + ₦200/km (published Ride with 701 bike rates).
  */
-const AREA_FEES: { phrase: string; fee: number }[] = [
-  { phrase: "isolo", fee: 2500 },
-  { phrase: "ajao estate", fee: 2500 },
-  { phrase: "mafoluku", fee: 2500 },
-  { phrase: "shogunle", fee: 2500 },
-  { phrase: "oshodi", fee: 2500 },
-  { phrase: "ikeja", fee: 2500 },
-  { phrase: "allen avenue", fee: 2500 },
-  { phrase: "ogba", fee: 2500 },
-  { phrase: "maryland", fee: 2500 },
-  { phrase: "ilupeju", fee: 2500 },
-  { phrase: "anthony", fee: 2500 },
-  { phrase: "gbagada", fee: 2500 },
-  { phrase: "mushin", fee: 2500 },
-  { phrase: "ilasamaja", fee: 2500 },
-  { phrase: "okota", fee: 2500 },
-  { phrase: "surulere", fee: 2500 },
-  { phrase: "ojuelegba", fee: 2500 },
-  { phrase: "yaba", fee: 2500 },
-  { phrase: "ebute metta", fee: 2500 },
-  { phrase: "itire", fee: 2500 },
-  { phrase: "lawanson", fee: 2500 },
+const AREA_KM: { phrase: string; km: number }[] = [
+  { phrase: "isolo", km: 10 },
+  { phrase: "ajao estate", km: 10 },
+  { phrase: "mafoluku", km: 10 },
+  { phrase: "shogunle", km: 10 },
+  { phrase: "oshodi", km: 10 },
+  { phrase: "ikeja", km: 10 },
+  { phrase: "allen avenue", km: 10 },
+  { phrase: "ogba", km: 10 },
+  { phrase: "maryland", km: 10 },
+  { phrase: "ilupeju", km: 10 },
+  { phrase: "anthony", km: 10 },
+  { phrase: "gbagada", km: 10 },
+  { phrase: "mushin", km: 10 },
+  { phrase: "ilasamaja", km: 10 },
+  { phrase: "okota", km: 10 },
+  { phrase: "surulere", km: 10 },
+  { phrase: "ojuelegba", km: 10 },
+  { phrase: "yaba", km: 10 },
+  { phrase: "ebute metta", km: 10 },
+  { phrase: "itire", km: 10 },
+  { phrase: "lawanson", km: 10 },
 
-  { phrase: "ejigbo", fee: 3500 },
-  { phrase: "ikotun", fee: 3500 },
-  { phrase: "festac", fee: 3500 },
-  { phrase: "amuwo", fee: 3500 },
-  { phrase: "mile 2", fee: 3500 },
-  { phrase: "apapa", fee: 3500 },
-  { phrase: "ojodu", fee: 3500 },
-  { phrase: "ogudu", fee: 3500 },
-  { phrase: "ojota", fee: 3500 },
-  { phrase: "ketu", fee: 3500 },
-  { phrase: "magodo", fee: 3500 },
-  { phrase: "omole", fee: 3500 },
-  { phrase: "berger", fee: 3500 },
-  { phrase: "agege", fee: 3500 },
-  { phrase: "dopemu", fee: 3500 },
-  { phrase: "egbeda", fee: 3500 },
-  { phrase: "palmgrove", fee: 3500 },
-  { phrase: "somolu", fee: 3500 },
-  { phrase: "shomolu", fee: 3500 },
-  { phrase: "bariga", fee: 3500 },
+  { phrase: "ejigbo", km: 15 },
+  { phrase: "ikotun", km: 15 },
+  { phrase: "festac", km: 15 },
+  { phrase: "amuwo", km: 15 },
+  { phrase: "mile 2", km: 15 },
+  { phrase: "apapa", km: 15 },
+  { phrase: "ojodu", km: 15 },
+  { phrase: "ogudu", km: 15 },
+  { phrase: "ojota", km: 15 },
+  { phrase: "ketu", km: 15 },
+  { phrase: "magodo", km: 15 },
+  { phrase: "omole", km: 15 },
+  { phrase: "berger", km: 15 },
+  { phrase: "agege", km: 15 },
+  { phrase: "dopemu", km: 15 },
+  { phrase: "egbeda", km: 15 },
+  { phrase: "palmgrove", km: 15 },
+  { phrase: "somolu", km: 15 },
+  { phrase: "shomolu", km: 15 },
+  { phrase: "bariga", km: 15 },
 
-  { phrase: "abule egba", fee: 4500 },
-  { phrase: "iyana ipaja", fee: 4500 },
-  { phrase: "igando", fee: 4500 },
-  { phrase: "idimu", fee: 4500 },
-  { phrase: "ipaja", fee: 4500 },
-  { phrase: "alimosho", fee: 4500 },
-  { phrase: "mile 12", fee: 4500 },
-  { phrase: "ikorodu", fee: 4500 },
-  { phrase: "badagry", fee: 4500 },
-  { phrase: "agbara", fee: 4500 },
-  { phrase: "ojo", fee: 4500 },
-  { phrase: "agbado", fee: 4500 },
-  { phrase: "alagbado", fee: 4500 },
+  { phrase: "abule egba", km: 20 },
+  { phrase: "iyana ipaja", km: 20 },
+  { phrase: "igando", km: 20 },
+  { phrase: "idimu", km: 20 },
+  { phrase: "ipaja", km: 20 },
+  { phrase: "alimosho", km: 20 },
+  { phrase: "mile 12", km: 20 },
+  { phrase: "ikorodu", km: 20 },
+  { phrase: "badagry", km: 20 },
+  { phrase: "agbara", km: 20 },
+  { phrase: "ojo", km: 20 },
+  { phrase: "agbado", km: 20 },
+  { phrase: "alagbado", km: 20 },
 
-  { phrase: "ikoyi", fee: 4500 },
-  { phrase: "victoria island", fee: 5500 },
-  { phrase: "lagos island", fee: 4500 },
-  { phrase: "oniru", fee: 5500 },
-  { phrase: "lekki phase 1", fee: 6500 },
-  { phrase: "admiralty", fee: 6500 },
+  { phrase: "ikoyi", km: 20 },
+  { phrase: "victoria island", km: 25 },
+  { phrase: "lagos island", km: 20 },
+  { phrase: "oniru", km: 25 },
+  { phrase: "lekki phase 1", km: 30 },
+  { phrase: "admiralty", km: 30 },
 
-  { phrase: "ikota", fee: 7500 },
-  { phrase: "chevron", fee: 7500 },
-  { phrase: "lekki", fee: 7500 },
-  { phrase: "ajah", fee: 8500 },
+  { phrase: "ikota", km: 35 },
+  { phrase: "chevron", km: 35 },
+  { phrase: "lekki", km: 35 },
+  { phrase: "ajah", km: 40 },
 
-  { phrase: "abraham adesanya", fee: 9900 },
-  { phrase: "sangotedo", fee: 9900 },
-  { phrase: "awoyaya", fee: 9900 },
-  { phrase: "lakowe", fee: 9900 },
-  { phrase: "bogije", fee: 9900 },
-  { phrase: "ibeju", fee: 9900 },
-  { phrase: "epe", fee: 9900 },
+  { phrase: "abraham adesanya", km: 47 },
+  { phrase: "sangotedo", km: 47 },
+  { phrase: "awoyaya", km: 47 },
+  { phrase: "lakowe", km: 47 },
+  { phrase: "bogije", km: 47 },
+  { phrase: "ibeju", km: 47 },
+  { phrase: "epe", km: 47 },
 ];
 
-const RULES = [...AREA_FEES].sort(
-  (a, b) => b.phrase.length - a.phrase.length
-);
+const RULES = [...AREA_KM].sort((a, b) => b.phrase.length - a.phrase.length);
 
-export function getLagosDeliveryFee(address: string) {
+export function estimateLagosDistanceKm(address: string): number {
   const normalized = address.toLowerCase().replace(/\s+/g, " ").trim();
 
   if (!normalized) {
@@ -103,20 +107,75 @@ export function getLagosDeliveryFee(address: string) {
     );
   });
 
-  if (match) {
-    return match.fee;
-  }
-
-  return DELIVERY_FEE_MIN_NGN;
+  return match?.km ?? 10;
 }
 
-export function getCheckoutDeliveryFee(
-  deliveryType: "delivery" | "pickup",
-  address = ""
-) {
-  if (deliveryType !== "delivery") {
+/** Legacy helper: motorcycle Ride with 701 fee for an address. */
+export function getLagosDeliveryFee(address: string) {
+  if (!address.trim()) {
     return 0;
   }
 
-  return getLagosDeliveryFee(address);
+  const quote = quoteRideDeliveryFee({
+    distanceKm: estimateLagosDistanceKm(address),
+    vehicleType: "motorcycle",
+  });
+
+  return Math.min(DELIVERY_FEE_MAX_NGN, quote.feeNgn);
+}
+
+export type FulfilmentMethod =
+  | "ride_with_701"
+  | "own_rider"
+  | "pickup";
+
+export function getCheckoutDeliveryFee(
+  deliveryType: "delivery" | "pickup",
+  address = "",
+  options?: {
+    dispatchMode?: "PLATFORM" | "CUSTOMER_DISPATCH";
+    fulfilment?: FulfilmentMethod;
+    vehicleType?: string | null;
+    itemCount?: number;
+  }
+) {
+  const fulfilment =
+    options?.fulfilment ||
+    (deliveryType === "pickup"
+      ? "pickup"
+      : options?.dispatchMode === "CUSTOMER_DISPATCH"
+        ? "own_rider"
+        : "ride_with_701");
+
+  if (fulfilment !== "ride_with_701") {
+    return 0;
+  }
+
+  if (!address.trim()) {
+    return 0;
+  }
+
+  const quote = quoteRideDeliveryFee({
+    distanceKm: estimateLagosDistanceKm(address),
+    vehicleType: options?.vehicleType || "motorcycle",
+    itemCount: options?.itemCount,
+  });
+
+  return Math.min(DELIVERY_FEE_MAX_NGN, quote.feeNgn);
+}
+
+export function describeVehicleFeeRange(
+  vehicleType: string | null | undefined = "motorcycle"
+) {
+  const profile = getVehiclePricing(vehicleType);
+  const low = quoteRideDeliveryFee({
+    distanceKm: 2,
+    vehicleType: profile.category,
+  }).feeNgn;
+  const high = quoteRideDeliveryFee({
+    distanceKm: Math.min(20, profile.maxDistanceKm),
+    vehicleType: profile.category,
+  }).feeNgn;
+
+  return { low, high, category: profile.category as VehicleCategory };
 }

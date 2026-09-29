@@ -6,6 +6,11 @@ import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 
 import { supabase } from "@/lib/supabase";
+import {
+  DEFAULT_PLATFORM_COMMISSION_PERCENT,
+  RIDE_BRAND,
+  VEHICLE_OPTIONS,
+} from "@/lib/ride-with-701";
 
 type RiderProfile = {
   id: string;
@@ -27,6 +32,32 @@ const ID_TYPES = [
   { value: "VOTERS_CARD", label: "Voter's card" },
   { value: "PASSPORT", label: "International passport" },
 ];
+
+const JOIN_VEHICLES = VEHICLE_OPTIONS.filter(
+  (option, index, list) =>
+    list.findIndex((item) => item.category === option.category) === index
+);
+
+function BikeHeroIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <circle cx="5.5" cy="17.5" r="3" />
+      <circle cx="18.5" cy="17.5" r="3" />
+      <path d="M5.5 17.5 9 9h3l2 4h3.5" />
+      <path d="M12 9V6.5h2.5" />
+      <path d="m9 9 3 4" />
+    </svg>
+  );
+}
 
 export default function RiderJoinPage() {
   const router = useRouter();
@@ -53,6 +84,9 @@ export default function RiderJoinPage() {
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [acceptedFee, setAcceptedFee] = useState(false);
+  const [commissionPercent, setCommissionPercent] = useState(
+    DEFAULT_PLATFORM_COMMISSION_PERCENT
+  );
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
 
@@ -101,6 +135,20 @@ export default function RiderJoinPage() {
       if (result?.rider) {
         setExisting(result.rider);
         fillForm(result.rider, accountEmail);
+      }
+
+      const settingsRes = await fetch("/api/admin/ride-settings", {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        cache: "no-store",
+      });
+      const settingsJson = await settingsRes.json().catch(() => ({}));
+      if (
+        settingsRes.ok &&
+        Number.isFinite(Number(settingsJson?.ride_platform_commission))
+      ) {
+        setCommissionPercent(Number(settingsJson.ride_platform_commission));
       }
 
       setChecking(false);
@@ -172,7 +220,7 @@ export default function RiderJoinPage() {
 
       if (!acceptedFee) {
         throw new Error(
-          "Accept the rider terms, including the 15% platform fee, before submitting your application."
+          `Accept the ${RIDE_BRAND.partnerLabel.toLowerCase()} terms, including the ${commissionPercent}% platform commission, before submitting.`
         );
       }
 
@@ -180,8 +228,12 @@ export default function RiderJoinPage() {
         throw new Error("Upload a photo of yourself.");
       }
 
-      if (vehicleType !== "walk" && !plateNumber.trim()) {
-        throw new Error("Enter the plate number.");
+      if (
+        vehicleType !== "bicycle" &&
+        vehicleType !== "electric_bicycle" &&
+        !plateNumber.trim()
+      ) {
+        throw new Error("Enter the plate number for motorised vehicles.");
       }
 
       const payload = {
@@ -199,7 +251,7 @@ export default function RiderJoinPage() {
         id_number: idNumber.trim(),
         id_document_path: idPath,
         platform_fee_accepted: true,
-        platform_fee_percent: 15,
+        platform_fee_percent: commissionPercent,
       };
 
       const response = await fetch("/api/riders", {
@@ -253,33 +305,58 @@ export default function RiderJoinPage() {
     <main className="min-h-screen bg-[radial-gradient(circle_at_top,_#2A160C,_#0B0B0B_50%)] px-4 py-12 text-white sm:px-6">
       <div className="mx-auto max-w-xl">
         <div className="rounded-[32px] border border-white/10 bg-[#141414] p-7 shadow-2xl sm:p-10">
-          <p className="text-[9px] font-bold uppercase tracking-[0.35em] text-[#F26A21]">
-            Become a rider
-          </p>
-          <h1 className="mt-3 font-serif text-3xl font-bold">
-            Deliver with Rhennie
-          </h1>
-          <p className="mt-3 text-sm leading-6 text-white/55">
-            Apply with your contact details, home address, and a photo of your
-            identity card. Admin reviews the application before you can deliver.
-          </p>
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="text-[9px] font-bold uppercase tracking-[0.35em] text-[#D4AF37]">
+                {RIDE_BRAND.name}
+              </p>
+              <h1 className="mt-3 font-serif text-3xl font-bold sm:text-4xl">
+                {RIDE_BRAND.tagline}
+              </h1>
+              <p className="mt-3 text-sm leading-6 text-white/55">
+                {RIDE_BRAND.supportCopy}
+              </p>
+            </div>
+            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full border border-[#D4AF37]/40 bg-[#0B0B0B] text-[#D4AF37] motion-safe:animate-ride-float">
+              <BikeHeroIcon className="h-8 w-8" />
+            </div>
+          </div>
+
+          <div className="mt-6 flex flex-wrap gap-3">
+            <Link
+              href="/login?next=/riders/join"
+              className="inline-flex min-h-[44px] items-center justify-center rounded-full border border-white/20 px-5 text-xs font-bold uppercase tracking-[0.16em] text-white"
+            >
+              Login
+            </Link>
+            <a
+              href="#partner-register"
+              className="inline-flex min-h-[44px] items-center justify-center rounded-full bg-[#D4AF37] px-5 text-xs font-bold uppercase tracking-[0.16em] text-black"
+            >
+              Register
+            </a>
+          </div>
 
           {existing && (
-            <div className="mt-6 rounded-2xl border border-[#F26A21]/30 bg-[#F26A21]/10 p-4">
-              <p className="text-sm font-semibold text-[#F26A21]">
+            <div className="mt-6 rounded-2xl border border-[#D4AF37]/30 bg-[#D4AF37]/10 p-4">
+              <p className="text-sm font-semibold text-[#D4AF37]">
                 Application status: {existing.status}
               </p>
               <p className="mt-1 text-sm text-white/60">
                 {existing.status === "APPROVED"
-                  ? "You are approved. Open the rider portal to manage deliveries."
+                  ? "You are approved. Open the delivery partner portal to manage deliveries."
                   : existing.status === "PENDING"
                     ? "Pending review. You can still add or correct your address and ID."
-                    : "Your rider account is suspended. Contact Rhennie Studio."}
+                    : "Your delivery partner account is suspended. Contact Rhennie Studio."}
               </p>
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+          <form
+            id="partner-register"
+            onSubmit={handleSubmit}
+            className="mt-6 space-y-4"
+          >
             <Field label="Full name">
               <input
                 value={fullName}
@@ -338,17 +415,18 @@ export default function RiderJoinPage() {
               />
             </Field>
 
-            <Field label="Vehicle">
+            <Field label="Transportation">
               <select
                 value={vehicleType}
                 onChange={(e) => setVehicleType(e.target.value)}
                 disabled={locked}
                 className={inputClass}
               >
-                <option value="bike">Bike</option>
-                <option value="car">Car</option>
-                <option value="van">Van</option>
-                <option value="walk">On foot</option>
+                {JOIN_VEHICLES.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
               </select>
             </Field>
 
@@ -401,13 +479,13 @@ export default function RiderJoinPage() {
               />
             </Field>
 
-            <Field label="Bike or vehicle model">
+            <Field label="Vehicle model">
               <input
                 value={vehicleModel}
                 onChange={(e) => setVehicleModel(e.target.value)}
                 disabled={locked}
                 className={inputClass}
-                placeholder="Honda Ace"
+                placeholder="Bajaj Boxer, Corolla, etc."
               />
             </Field>
 
@@ -464,23 +542,25 @@ export default function RiderJoinPage() {
 
             <section className="rounded-2xl border border-white/10 bg-black/30 p-4 text-sm leading-6 text-white/70">
               <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-[#D4AF37]">
-                Rider terms
+                {RIDE_BRAND.partnerLabel} terms
               </h2>
               <ul className="mt-3 list-disc space-y-2 pl-5">
                 <li>
-                  Rhennie Tasty Shack keeps 15% of every delivery fee as its
-                  commission for this platform.
+                  Rhennie Tasty Shack keeps {commissionPercent}% of every Ride
+                  with 701 delivery fee as platform commission.
                 </li>
                 <li>
-                  The 15% is deducted after the delivery is completed with the
-                  customer’s delivery code.
+                  The {commissionPercent}% is deducted after the delivery is
+                  completed with the customer&apos;s delivery code. Customers do
+                  not pay this as a separate charge.
                 </li>
                 <li>
-                  You receive the remaining 85% of the delivery fee. The
-                  customer’s tip is yours in full and is not part of the 15%.
+                  You receive the remaining {100 - commissionPercent}% of the
+                  delivery fee. The customer tip is yours in full.
                 </li>
                 <li>
-                  Payouts go to the bank account you save in the rider portal.
+                  Payouts go to the bank account you save in the delivery partner
+                  portal.
                 </li>
               </ul>
             </section>
@@ -495,7 +575,8 @@ export default function RiderJoinPage() {
                 className="mt-1"
               />
               <span>
-                I have read and accept the rider terms, including Rhennie’s 15%
+                I have read and accept the {RIDE_BRAND.partnerLabel.toLowerCase()}{" "}
+                terms, including Rhennie&apos;s {commissionPercent}% platform
                 commission on each delivery fee.
               </span>
             </label>
@@ -514,7 +595,7 @@ export default function RiderJoinPage() {
                 ) : existing ? (
                   "Update application"
                 ) : (
-                  "Submit rider application"
+                  "Submit delivery partner application"
                 )}
               </button>
             )}
@@ -522,8 +603,8 @@ export default function RiderJoinPage() {
 
           <div className="mt-8 flex flex-wrap gap-4 text-sm">
             {existing?.status === "APPROVED" && (
-              <Link href="/riders/portal" className="text-[#F26A21]">
-                Rider portal
+              <Link href="/riders/portal" className="text-[#D4AF37]">
+                Delivery partner portal
               </Link>
             )}
             <Link href="/forgot-password" className="text-[#F26A21]">

@@ -1,4 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getRidePlatformCommissionPercent } from "@/lib/platform-settings";
+import {
+  DEFAULT_PLATFORM_COMMISSION_PERCENT,
+  RIDE_BRAND,
+} from "@/lib/ride-with-701";
 import {
   cleanText,
   getAuthUser,
@@ -159,11 +164,13 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
 
     if (body?.platform_fee_accepted !== true) {
+      const commission = await getRidePlatformCommissionPercent().catch(
+        () => DEFAULT_PLATFORM_COMMISSION_PERCENT
+      );
       return NextResponse.json(
         {
           success: false,
-          message:
-            "Accept the rider terms, including the 15% platform fee, before submitting your application.",
+          message: `Accept the ${RIDE_BRAND.partnerLabel.toLowerCase()} terms, including the ${commission}% Rhennie Tasty Shack platform commission, before submitting.`,
         },
         { status: 400 }
       );
@@ -254,6 +261,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const commissionPercent = await getRidePlatformCommissionPercent().catch(
+      () => DEFAULT_PLATFORM_COMMISSION_PERCENT
+    );
+
     const payload: Record<string, unknown> = {
       auth_user_id: user.id,
       full_name: fullName,
@@ -270,7 +281,7 @@ export async function POST(request: NextRequest) {
       vehicle_model: vehicleModel || null,
       vehicle_type: vehicleType,
       platform_fee_accepted: body?.platform_fee_accepted === true,
-      platform_fee_percent: 15,
+      platform_fee_percent: commissionPercent,
       status: "PENDING",
       is_available: false,
       updated_at: new Date().toISOString(),
@@ -418,11 +429,13 @@ export async function PATCH(request: NextRequest) {
 
     if (body?.full_name) {
       if (body?.platform_fee_accepted !== true) {
+        const commission = await getRidePlatformCommissionPercent().catch(
+          () => DEFAULT_PLATFORM_COMMISSION_PERCENT
+        );
         return NextResponse.json(
           {
             success: false,
-            message:
-              "Accept the rider terms, including the 15% platform fee, before submitting your application.",
+            message: `Accept the ${RIDE_BRAND.partnerLabel.toLowerCase()} terms, including the ${commission}% platform commission, before submitting.`,
           },
           { status: 400 }
         );
@@ -430,7 +443,10 @@ export async function PATCH(request: NextRequest) {
 
       updateData.full_name = cleanText(body.full_name);
       updateData.platform_fee_accepted = true;
-      updateData.platform_fee_percent = 15;
+      updateData.platform_fee_percent =
+        await getRidePlatformCommissionPercent().catch(
+          () => DEFAULT_PLATFORM_COMMISSION_PERCENT
+        );
     }
 
     if (body?.phone) {

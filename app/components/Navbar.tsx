@@ -26,7 +26,7 @@ const moreLinks = [
   { label: "Event Concierge", href: "/client-portal/event-concierge" },
   { label: "Reviews", href: "/#reviews" },
   { label: "Meal Plans", href: "/subscription" },
-  { label: "Become a Rider", href: "/riders/join" },
+  { label: "Ride with 701", href: "/riders/join" },
 ];
 
 export default function Navbar() {
