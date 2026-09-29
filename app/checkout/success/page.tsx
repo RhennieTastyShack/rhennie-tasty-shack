@@ -320,13 +320,15 @@ function CheckoutSuccessContent() {
             {deliveryCode && (
               <div className="mx-auto mt-5 max-w-md rounded-2xl border border-[#F26A21]/25 bg-[#FFF7F2] px-5 py-4">
                 <p className="text-[9px] font-bold uppercase tracking-[0.25em] text-[#F26A21]">
-                  Delivery code
+                  {resolvedTracking ? "Delivery code" : "Pickup code"}
                 </p>
                 <p className="mt-2 text-3xl font-bold tracking-[0.25em] text-[#1A120B]">
                   {deliveryCode}
                 </p>
                 <p className="mt-2 text-xs leading-5 text-black/50">
-                  Give this code to the rider when your order arrives.
+                  {resolvedTracking
+                    ? "Give this code to the Ride with 701 partner when your order arrives."
+                    : "Give this code to your rider or bring it yourself. Kitchen staff must verify it before releasing your food."}
                 </p>
               </div>
             )}

@@ -91,6 +91,23 @@ function rowToProfile(row: Record<string, unknown>): VehiclePricingProfile | nul
     maxCapacityNote: String(
       row.max_capacity_note || VEHICLE_PRICING[category].maxCapacityNote
     ),
+    maxBags: Math.max(
+      1,
+      Math.round(Number(row.max_bags) || VEHICLE_PRICING[category].maxBags)
+    ),
+    maxItems: Math.max(
+      1,
+      Math.round(Number(row.max_items) || VEHICLE_PRICING[category].maxItems)
+    ),
+    maxWeightKg: Math.max(
+      1,
+      Number(row.max_weight_kg) || VEHICLE_PRICING[category].maxWeightKg
+    ),
+    maxVolumeLitres: Math.max(
+      1,
+      Number(row.max_volume_litres) ||
+        VEHICLE_PRICING[category].maxVolumeLitres
+    ),
     largeOrderAdjustmentNgn: Math.max(
       0,
       Math.round(Number(row.large_order_adjustment_ngn) || 0)
@@ -151,6 +168,10 @@ export async function upsertVehiclePricingProfile(
         minimum_partner_earning_ngn: profile.minimumPartnerEarningNgn,
         max_distance_km: profile.maxDistanceKm,
         max_capacity_note: profile.maxCapacityNote,
+        max_bags: profile.maxBags,
+        max_items: profile.maxItems,
+        max_weight_kg: profile.maxWeightKg,
+        max_volume_litres: profile.maxVolumeLitres,
         large_order_adjustment_ngn: profile.largeOrderAdjustmentNgn,
         waiting_fee_per_15_min_ngn: profile.waitingFeePer15MinNgn,
         surge_multiplier: profile.surgeMultiplier,

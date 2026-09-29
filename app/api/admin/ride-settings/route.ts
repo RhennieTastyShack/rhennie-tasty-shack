@@ -101,6 +101,22 @@ export async function PATCH(request: NextRequest) {
         maxCapacityNote: String(
           raw.maxCapacityNote || current.maxCapacityNote
         ),
+        maxBags: Math.max(
+          1,
+          Math.round(Number(raw.maxBags ?? current.maxBags) || 1)
+        ),
+        maxItems: Math.max(
+          1,
+          Math.round(Number(raw.maxItems ?? current.maxItems) || 1)
+        ),
+        maxWeightKg: Math.max(
+          1,
+          Number(raw.maxWeightKg ?? current.maxWeightKg) || 1
+        ),
+        maxVolumeLitres: Math.max(
+          1,
+          Number(raw.maxVolumeLitres ?? current.maxVolumeLitres) || 1
+        ),
         largeOrderAdjustmentNgn: Math.max(
           0,
           Math.round(

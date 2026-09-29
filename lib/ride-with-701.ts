@@ -35,6 +35,11 @@ export type VehiclePricingProfile = {
   minimumPartnerEarningNgn: number;
   maxDistanceKm: number;
   maxCapacityNote: string;
+  /** Soft capacity limits used to upgrade vehicle instead of inflating motorcycle price. */
+  maxBags: number;
+  maxItems: number;
+  maxWeightKg: number;
+  maxVolumeLitres: number;
   largeOrderAdjustmentNgn: number;
   waitingFeePer15MinNgn: number;
   surgeMultiplier: number;
@@ -51,6 +56,10 @@ export const VEHICLE_PRICING: Record<VehicleCategory, VehiclePricingProfile> = {
     minimumPartnerEarningNgn: 600,
     maxDistanceKm: 8,
     maxCapacityNote: "Light parcels only",
+    maxBags: 1,
+    maxItems: 3,
+    maxWeightKg: 5,
+    maxVolumeLitres: 8,
     largeOrderAdjustmentNgn: 0,
     waitingFeePer15MinNgn: 100,
     surgeMultiplier: 1,
@@ -64,6 +73,10 @@ export const VEHICLE_PRICING: Record<VehicleCategory, VehiclePricingProfile> = {
     minimumPartnerEarningNgn: 700,
     maxDistanceKm: 12,
     maxCapacityNote: "Light to medium parcels",
+    maxBags: 2,
+    maxItems: 5,
+    maxWeightKg: 8,
+    maxVolumeLitres: 12,
     largeOrderAdjustmentNgn: 200,
     waitingFeePer15MinNgn: 100,
     surgeMultiplier: 1,
@@ -77,6 +90,10 @@ export const VEHICLE_PRICING: Record<VehicleCategory, VehiclePricingProfile> = {
     minimumPartnerEarningNgn: 800,
     maxDistanceKm: 40,
     maxCapacityNote: "Standard food bags",
+    maxBags: 4,
+    maxItems: 10,
+    maxWeightKg: 15,
+    maxVolumeLitres: 25,
     largeOrderAdjustmentNgn: 300,
     waitingFeePer15MinNgn: 150,
     surgeMultiplier: 1,
@@ -90,6 +107,10 @@ export const VEHICLE_PRICING: Record<VehicleCategory, VehiclePricingProfile> = {
     minimumPartnerEarningNgn: 1200,
     maxDistanceKm: 35,
     maxCapacityNote: "Bulk bags and trays",
+    maxBags: 8,
+    maxItems: 20,
+    maxWeightKg: 40,
+    maxVolumeLitres: 60,
     largeOrderAdjustmentNgn: 500,
     waitingFeePer15MinNgn: 200,
     surgeMultiplier: 1,
@@ -103,6 +124,10 @@ export const VEHICLE_PRICING: Record<VehicleCategory, VehiclePricingProfile> = {
     minimumPartnerEarningNgn: 2200,
     maxDistanceKm: 50,
     maxCapacityNote: "Large orders and catering trays",
+    maxBags: 12,
+    maxItems: 30,
+    maxWeightKg: 60,
+    maxVolumeLitres: 100,
     largeOrderAdjustmentNgn: 800,
     waitingFeePer15MinNgn: 250,
     surgeMultiplier: 1,
@@ -116,6 +141,10 @@ export const VEHICLE_PRICING: Record<VehicleCategory, VehiclePricingProfile> = {
     minimumPartnerEarningNgn: 3500,
     maxDistanceKm: 60,
     maxCapacityNote: "Event and multi-bag loads",
+    maxBags: 20,
+    maxItems: 50,
+    maxWeightKg: 120,
+    maxVolumeLitres: 220,
     largeOrderAdjustmentNgn: 1200,
     waitingFeePer15MinNgn: 300,
     surgeMultiplier: 1,
@@ -129,6 +158,10 @@ export const VEHICLE_PRICING: Record<VehicleCategory, VehiclePricingProfile> = {
     minimumPartnerEarningNgn: 4800,
     maxDistanceKm: 80,
     maxCapacityNote: "Full catering and bulk logistics",
+    maxBags: 40,
+    maxItems: 100,
+    maxWeightKg: 250,
+    maxVolumeLitres: 500,
     largeOrderAdjustmentNgn: 2000,
     waitingFeePer15MinNgn: 400,
     surgeMultiplier: 1,
@@ -142,11 +175,24 @@ export const VEHICLE_PRICING: Record<VehicleCategory, VehiclePricingProfile> = {
     minimumPartnerEarningNgn: 800,
     maxDistanceKm: 40,
     maxCapacityNote: "As approved by Rhennie Studio",
+    maxBags: 4,
+    maxItems: 10,
+    maxWeightKg: 15,
+    maxVolumeLitres: 25,
     largeOrderAdjustmentNgn: 300,
     waitingFeePer15MinNgn: 150,
     surgeMultiplier: 1,
   },
 };
+
+/** Food delivery upgrade ladder — do not inflate motorcycle rates past capacity. */
+export const FOOD_VEHICLE_LADDER: VehicleCategory[] = [
+  "motorcycle",
+  "tricycle",
+  "car",
+  "mini_van",
+  "van",
+];
 
 /** Join-form options. Values persist on riders.vehicle_type. */
 export const VEHICLE_OPTIONS: { value: string; label: string; category: VehicleCategory }[] = [
@@ -197,6 +243,87 @@ export function estimateBagCount(itemCount: number) {
   const items = Math.max(0, Math.round(Number(itemCount) || 0));
   if (items <= 0) return 0;
   return Math.max(1, Math.ceil(items / 3));
+}
+
+export type OrderLoad = {
+  bags: number;
+  items: number;
+  weightKg: number;
+  volumeLitres: number;
+};
+
+export function estimateOrderLoad(input: {
+  itemCount?: number;
+  bagCount?: number;
+  estimatedWeightKg?: number;
+  estimatedVolumeLitres?: number;
+}): OrderLoad {
+  const items = Math.max(0, Math.round(Number(input.itemCount) || 0));
+  const bags =
+    Math.max(0, Math.round(Number(input.bagCount) || 0)) ||
+    estimateBagCount(items);
+  return {
+    bags,
+    items,
+    weightKg: Math.max(0, Number(input.estimatedWeightKg) || 0),
+    volumeLitres: Math.max(0, Number(input.estimatedVolumeLitres) || 0),
+  };
+}
+
+export function vehicleFitsLoad(
+  vehicle: VehiclePricingProfile,
+  load: OrderLoad
+) {
+  return (
+    load.bags <= vehicle.maxBags &&
+    load.items <= vehicle.maxItems &&
+    load.weightKg <= vehicle.maxWeightKg &&
+    load.volumeLitres <= vehicle.maxVolumeLitres
+  );
+}
+
+/**
+ * Pick the smallest vehicle on the food ladder that can carry the order.
+ * Never inflate motorcycle price past capacity — upgrade the vehicle instead.
+ */
+export function recommendFoodVehicle(
+  loadInput: {
+    itemCount?: number;
+    bagCount?: number;
+    estimatedWeightKg?: number;
+    estimatedVolumeLitres?: number;
+  },
+  catalog: Record<VehicleCategory, VehiclePricingProfile> = VEHICLE_PRICING
+): {
+  vehicle: VehiclePricingProfile;
+  upgraded: boolean;
+  load: OrderLoad;
+  partnersSuggested: number;
+} {
+  const load = estimateOrderLoad(loadInput);
+  let chosen = catalog.motorcycle;
+
+  for (const category of FOOD_VEHICLE_LADDER) {
+    const candidate = catalog[category];
+    if (vehicleFitsLoad(candidate, load)) {
+      chosen = candidate;
+      break;
+    }
+    chosen = candidate;
+  }
+
+  const upgraded = chosen.category !== "motorcycle";
+  const partnersSuggested =
+    !vehicleFitsLoad(catalog.van, load)
+      ? Math.max(2, Math.ceil(load.bags / catalog.motorcycle.maxBags))
+      : 1;
+
+  return {
+    vehicle: chosen,
+    upgraded,
+    load,
+    partnersSuggested,
+  };
 }
 
 /**

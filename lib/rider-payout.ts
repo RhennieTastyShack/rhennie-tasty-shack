@@ -47,6 +47,18 @@ export async function payRiderForDelivery(deliveryId: string) {
   const amount = riderFee + tip;
   const commissionNote = `Rhennie Tasty Shack keeps ${percent}% of the Ride with 701 delivery fee (₦${platformShare.toLocaleString("en-NG")}) as platform commission. The delivery partner receives ₦${riderFee.toLocaleString("en-NG")} plus the full tip of ₦${tip.toLocaleString("en-NG")}.`;
 
+  await supabase
+    .from("deliveries")
+    .update({
+      customer_delivery_charge: deliveryFee,
+      gross_delivery_earning: deliveryFee,
+      platform_commission_percent: percent,
+      platform_commission_amount: platformShare,
+      partner_net_earning: riderFee,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", deliveryId);
+
   let status = "pending";
   let providerReference: string | null = null;
   let note = `${commissionNote} Waiting to send it to the partner bank account.`;

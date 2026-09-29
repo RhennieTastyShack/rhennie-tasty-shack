@@ -36,6 +36,12 @@ type DeliveryRow = {
   mode: string;
   updated_at: string;
   order_code?: string | null;
+  customer_delivery_charge?: number | null;
+  gross_delivery_earning?: number | null;
+  platform_commission_percent?: number | null;
+  platform_commission_amount?: number | null;
+  partner_net_earning?: number | null;
+  tip_amount?: number | null;
   orders?: {
     id: string;
     order_no?: string | null;
@@ -45,6 +51,7 @@ type DeliveryRow = {
     delivery_address?: string | null;
     total?: number | null;
     amount?: number | null;
+    delivery_fee?: number | null;
   } | null;
 };
 
@@ -639,6 +646,59 @@ export default function RiderPortalPage() {
                         <p className="mt-1 text-sm text-white/50">
                           {order?.delivery_address || "Address on order"}
                         </p>
+                        {(() => {
+                          const gross = Number(
+                            delivery.gross_delivery_earning ??
+                              delivery.customer_delivery_charge ??
+                              order?.delivery_fee ??
+                              0
+                          );
+                          const percent = Number(
+                            delivery.platform_commission_percent ??
+                              commissionPercent
+                          );
+                          const platformShare = Number(
+                            delivery.platform_commission_amount ??
+                              Math.round((gross * percent) / 100)
+                          );
+                          const net = Number(
+                            delivery.partner_net_earning ??
+                              Math.max(0, gross - platformShare)
+                          );
+                          if (gross <= 0) return null;
+                          return (
+                            <div className="mt-3 rounded-2xl border border-white/10 bg-black/40 px-3 py-3 text-xs leading-5 text-white/70">
+                              <p className="font-bold text-white">
+                                Delivery earnings
+                              </p>
+                              <p className="mt-1 flex justify-between gap-3">
+                                <span>Gross delivery earning</span>
+                                <span>
+                                  ₦{gross.toLocaleString("en-NG")}
+                                </span>
+                              </p>
+                              <p className="mt-1 flex justify-between gap-3">
+                                <span>
+                                  RTS platform fee ({percent}%)
+                                </span>
+                                <span>
+                                  -₦{platformShare.toLocaleString("en-NG")}
+                                </span>
+                              </p>
+                              <p className="mt-1 flex justify-between gap-3 font-semibold text-[#D4AF37]">
+                                <span>Your net earning</span>
+                                <span>
+                                  ₦{net.toLocaleString("en-NG")}
+                                </span>
+                              </p>
+                              {Number(delivery.tip_amount || 0) > 0 ? (
+                                <p className="mt-1 text-white/45">
+                                  Tip is paid in full on top of net earning.
+                                </p>
+                              ) : null}
+                            </div>
+                          );
+                        })()}
                         {order?.customer_phone && (
                           <a
                             href={`tel:${order.customer_phone}`}

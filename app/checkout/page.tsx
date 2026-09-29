@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 
 import { useCart } from "@/app/context/CartContext";
-import { getCheckoutDeliveryFee } from "@/lib/delivery-fee";
+import { getCheckoutDeliveryQuote } from "@/lib/delivery-fee";
 import { selectionLabel } from "@/lib/menu-choices";
 import { ngnToUsd, PaymentCurrency } from "@/lib/payment-currency";
 
@@ -65,6 +65,12 @@ export default function CheckoutPage() {
   const [externalRiderPhone, setExternalRiderPhone] =
     useState("");
 
+  const [externalRiderCompany, setExternalRiderCompany] =
+    useState("");
+
+  const [externalRiderPlate, setExternalRiderPlate] =
+    useState("");
+
   const [notes, setNotes] = useState("");
   const [tipAmount, setTipAmount] = useState(0);
   const [promoCode, setPromoCode] = useState("");
@@ -77,14 +83,16 @@ export default function CheckoutPage() {
   const [error, setError] = useState("");
   const [mounted, setMounted] = useState(false);
 
-  const deliveryFee = getCheckoutDeliveryFee(
-    deliveryType,
-    deliveryAddress,
-    {
-      dispatchMode,
-      itemCount: totalItems,
-    }
+  const deliveryQuote = useMemo(
+    () =>
+      getCheckoutDeliveryQuote(deliveryType, deliveryAddress, {
+        dispatchMode,
+        itemCount: totalItems,
+      }),
+    [deliveryType, deliveryAddress, dispatchMode, totalItems]
   );
+
+  const deliveryFee = deliveryQuote.feeNgn;
 
   const discount = useMemo(() => {
     if (promoPercent <= 0) return 0;
@@ -246,6 +254,14 @@ export default function CheckoutPage() {
                   externalRiderPhone:
                     dispatchMode === "CUSTOMER_DISPATCH"
                       ? externalRiderPhone.trim()
+                      : undefined,
+                  externalRiderCompany:
+                    dispatchMode === "CUSTOMER_DISPATCH"
+                      ? externalRiderCompany.trim() || undefined
+                      : undefined,
+                  externalRiderPlate:
+                    dispatchMode === "CUSTOMER_DISPATCH"
+                      ? externalRiderPlate.trim() || undefined
                       : undefined,
                 }
               : {}),
@@ -759,10 +775,70 @@ export default function CheckoutPage() {
                             className="w-full rounded-2xl border border-black/10 bg-[#F8F6F2] px-4 py-3 text-sm outline-none transition-all placeholder:text-black/30 focus:border-[#F26A21] focus:bg-white focus:ring-4 focus:ring-[#F26A21]/10"
                           />
                         </div>
+
+                        <div>
+                          <label
+                            htmlFor="externalRiderCompany"
+                            className="mb-2 block text-xs font-bold text-black/65"
+                          >
+                            Delivery company (optional)
+                          </label>
+                          <input
+                            id="externalRiderCompany"
+                            type="text"
+                            value={externalRiderCompany}
+                            onChange={(event) =>
+                              setExternalRiderCompany(event.target.value)
+                            }
+                            placeholder="Courier company"
+                            className="w-full rounded-2xl border border-black/10 bg-[#F8F6F2] px-4 py-3 text-sm outline-none transition-all placeholder:text-black/30 focus:border-[#F26A21] focus:bg-white focus:ring-4 focus:ring-[#F26A21]/10"
+                          />
+                        </div>
+
+                        <div>
+                          <label
+                            htmlFor="externalRiderPlate"
+                            className="mb-2 block text-xs font-bold text-black/65"
+                          >
+                            Vehicle / plate (optional)
+                          </label>
+                          <input
+                            id="externalRiderPlate"
+                            type="text"
+                            value={externalRiderPlate}
+                            onChange={(event) =>
+                              setExternalRiderPlate(event.target.value)
+                            }
+                            placeholder="ABC-123DE"
+                            className="w-full rounded-2xl border border-black/10 bg-[#F8F6F2] px-4 py-3 text-sm outline-none transition-all placeholder:text-black/30 focus:border-[#F26A21] focus:bg-white focus:ring-4 focus:ring-[#F26A21]/10"
+                          />
+                        </div>
                       </div>
                     )}
+
+                    {dispatchMode === "CUSTOMER_DISPATCH" ? (
+                      <p className="mt-4 rounded-2xl border border-[#D4AF37]/25 bg-[#FFF8E8] px-4 py-3 text-xs leading-5 text-black/65">
+                        After payment you will get a secure pickup code. Give it
+                        to your rider — kitchen staff must verify it before
+                        releasing your food.
+                      </p>
+                    ) : null}
                   </>
                 )}
+
+                {deliveryType === "pickup" ? (
+                  <div className="mt-5 rounded-2xl border border-black/10 bg-[#F8F6F2] px-4 py-4 text-sm leading-6 text-black/65">
+                    <p className="font-bold text-[#171717]">Pickup details</p>
+                    <p className="mt-2">
+                      Pickup location: Rhennie Tasty Shack kitchen, Lagos
+                      (exact address is confirmed on your order receipt).
+                    </p>
+                    <p className="mt-2">
+                      You will receive a secure pickup code after payment.
+                      Bring it when you collect.
+                    </p>
+                  </div>
+                ) : null}
 
                 {/* NOTES */}
 
@@ -931,6 +1007,36 @@ export default function CheckoutPage() {
                     </span>
 
                   </div>
+
+                  {deliveryType === "delivery" &&
+                  dispatchMode === "PLATFORM" &&
+                  deliveryQuote.recommendedVehicle &&
+                  deliveryAddress.trim() ? (
+                    <div className="mt-3 rounded-2xl border border-[#D4AF37]/20 bg-[#FFF8E8] px-3 py-3 text-xs leading-5 text-black/65">
+                      <p className="font-bold text-[#171717]">
+                        Ride with 701
+                      </p>
+                      <p className="mt-1">
+                        Recommended vehicle:{" "}
+                        {deliveryQuote.recommendedVehicle.label}
+                      </p>
+                      <p className="mt-1 font-semibold text-[#171717]">
+                        Delivery: {formatPrice(deliveryFee)}
+                      </p>
+                      {deliveryQuote.capacityNote ? (
+                        <p className="mt-2 text-black/55">
+                          {deliveryQuote.capacityNote}
+                        </p>
+                      ) : null}
+                      {deliveryQuote.partnersSuggested > 1 ? (
+                        <p className="mt-2 text-black/55">
+                          Large load may need{" "}
+                          {deliveryQuote.partnersSuggested} partners or a
+                          higher-capacity vehicle.
+                        </p>
+                      ) : null}
+                    </div>
+                  ) : null}
 
                   {deliveryType === "delivery" && (
                     <div className="mt-3 flex items-center justify-between text-sm">

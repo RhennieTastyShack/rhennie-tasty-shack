@@ -41,6 +41,11 @@ const menuItems = [
     icon: Bike,
   },
   {
+    title: "Ride Finance",
+    href: "/admin/ride-finance",
+    icon: Bike,
+  },
+  {
     title: "Customers",
     href: "/admin/customers",
     icon: Users,

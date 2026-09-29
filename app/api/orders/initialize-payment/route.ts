@@ -8,8 +8,11 @@ import {
   DeliveryMode,
   DeliveryStatus,
 } from "@/lib/delivery";
-import { getCheckoutDeliveryFee } from "@/lib/delivery-fee";
-import { getVehiclePricingCatalog } from "@/lib/platform-settings";
+import { getCheckoutDeliveryQuote } from "@/lib/delivery-fee";
+import {
+  getRidePlatformCommissionPercent,
+  getVehiclePricingCatalog,
+} from "@/lib/platform-settings";
 import { APPETIZER_MINIMUM, isAppetizerDish } from "@/lib/party-menu";
 import {
   isPaymentCurrency,
@@ -63,6 +66,8 @@ type CheckoutBody = {
   dispatchMode?: "CUSTOMER_DISPATCH" | "PLATFORM";
   externalRiderName?: string;
   externalRiderPhone?: string;
+  externalRiderCompany?: string;
+  externalRiderPlate?: string;
   paymentCurrency?: PaymentCurrency;
   promoCode?: string;
   tipAmount?: number;
@@ -95,6 +100,8 @@ export async function POST(request: Request) {
       dispatchMode,
       externalRiderName,
       externalRiderPhone,
+      externalRiderCompany,
+      externalRiderPlate,
       paymentCurrency: rawPaymentCurrency,
     } = body;
 
@@ -394,18 +401,28 @@ export async function POST(request: Request) {
     }
 
     const vehicleCatalog = await getVehiclePricingCatalog();
-    const deliveryFee = getCheckoutDeliveryFee(
+    const commissionPercent = await getRidePlatformCommissionPercent();
+    const itemCount = items.reduce(
+      (sum, item) => sum + Math.max(0, Number(item.quantity) || 0),
+      0
+    );
+    const deliveryQuote = getCheckoutDeliveryQuote(
       deliveryType,
       deliveryAddress || "",
       {
         dispatchMode: resolvedDispatchMode,
-        itemCount: items.reduce(
-          (sum, item) => sum + Math.max(0, Number(item.quantity) || 0),
-          0
-        ),
+        itemCount,
         catalog: vehicleCatalog,
       }
     );
+    const deliveryFee = deliveryQuote.feeNgn;
+    const recommendedVehicle =
+      deliveryQuote.recommendedVehicle?.category || null;
+    const pickupCode =
+      deliveryType === "pickup" ||
+      resolvedDispatchMode === "CUSTOMER_DISPATCH"
+        ? createOrderCode()
+        : null;
 
     const tipAmount = Math.min(
       20000,
@@ -520,6 +537,20 @@ export async function POST(request: Request) {
 
           tip_amount: tipAmount,
 
+          fulfilment_method:
+            deliveryType === "pickup"
+              ? "pickup"
+              : resolvedDispatchMode === "CUSTOMER_DISPATCH"
+                ? "own_rider"
+                : "ride_with_701",
+
+          recommended_vehicle: recommendedVehicle,
+
+          pickup_code: pickupCode,
+
+          pickup_status:
+            deliveryType === "pickup" ? "Preparing" : null,
+
           total,
 
           status: "In Review",
@@ -558,9 +589,36 @@ export async function POST(request: Request) {
 
     if (
       orderError &&
-      /tip_amount/i.test(String(orderError.message || ""))
+      /Could not find the '([^']+)' column of 'orders'/i.test(
+        String(orderError.message || "")
+      )
+    ) {
+      const missing = String(orderError.message || "").match(
+        /Could not find the '([^']+)' column of 'orders'/i
+      );
+      if (missing?.[1] && missing[1] in orderPayload) {
+        delete orderPayload[missing[1]];
+        const retry = await supabaseAdmin
+          .from("orders")
+          .insert(orderPayload)
+          .select("id")
+          .single();
+        order = retry.data;
+        orderError = retry.error;
+      }
+    }
+
+    if (
+      orderError &&
+      /tip_amount|fulfilment_method|recommended_vehicle|pickup_code|pickup_status/i.test(
+        String(orderError.message || "")
+      )
     ) {
       delete orderPayload.tip_amount;
+      delete orderPayload.fulfilment_method;
+      delete orderPayload.recommended_vehicle;
+      delete orderPayload.pickup_code;
+      delete orderPayload.pickup_status;
       const retry = await supabaseAdmin
         .from("orders")
         .insert(orderPayload)
@@ -661,7 +719,7 @@ export async function POST(request: Request) {
     ====================================================== */
 
     let trackingToken: string | null = null;
-    let orderCode: string | null = null;
+    let orderCode: string | null = pickupCode;
 
     if (deliveryType === "delivery") {
       const initialStatus: DeliveryStatus =
@@ -670,7 +728,10 @@ export async function POST(request: Request) {
           : "UNASSIGNED";
 
       trackingToken = createTrackingToken();
-      orderCode = createOrderCode();
+      orderCode =
+        resolvedDispatchMode === "CUSTOMER_DISPATCH"
+          ? pickupCode
+          : createOrderCode();
 
       const deliveryRow: Record<string, unknown> = {
         order_id: order.id,
@@ -684,6 +745,28 @@ export async function POST(request: Request) {
           resolvedDispatchMode === "CUSTOMER_DISPATCH"
             ? externalRiderPhone?.trim() || null
             : null,
+        external_rider_company:
+          resolvedDispatchMode === "CUSTOMER_DISPATCH"
+            ? externalRiderCompany?.trim() || null
+            : null,
+        external_rider_plate:
+          resolvedDispatchMode === "CUSTOMER_DISPATCH"
+            ? externalRiderPlate?.trim() || null
+            : null,
+        recommended_vehicle: recommendedVehicle,
+        customer_delivery_charge: deliveryFee,
+        gross_delivery_earning: deliveryFee,
+        platform_commission_percent:
+          resolvedDispatchMode === "PLATFORM" ? commissionPercent : 0,
+        platform_commission_amount:
+          resolvedDispatchMode === "PLATFORM"
+            ? Math.round((deliveryFee * commissionPercent) / 100)
+            : 0,
+        partner_net_earning:
+          resolvedDispatchMode === "PLATFORM"
+            ? deliveryFee -
+              Math.round((deliveryFee * commissionPercent) / 100)
+            : 0,
         status: initialStatus,
         tracking_token: trackingToken,
         order_code: orderCode,

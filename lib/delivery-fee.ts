@@ -1,6 +1,7 @@
 import {
   getVehiclePricing,
   quoteRideDeliveryFee,
+  recommendFoodVehicle,
   type VehicleCategory,
   type VehiclePricingProfile,
 } from "@/lib/ride-with-701";
@@ -130,6 +131,100 @@ export type FulfilmentMethod =
   | "own_rider"
   | "pickup";
 
+export type CheckoutDeliveryQuote = {
+  feeNgn: number;
+  recommendedVehicle: VehiclePricingProfile | null;
+  upgraded: boolean;
+  partnersSuggested: number;
+  capacityNote: string | null;
+};
+
+export function getCheckoutDeliveryQuote(
+  deliveryType: "delivery" | "pickup",
+  address = "",
+  options?: {
+    dispatchMode?: "PLATFORM" | "CUSTOMER_DISPATCH";
+    fulfilment?: FulfilmentMethod;
+    vehicleType?: string | null;
+    itemCount?: number;
+    bagCount?: number;
+    estimatedWeightKg?: number;
+    estimatedVolumeLitres?: number;
+    catalog?: Record<VehicleCategory, VehiclePricingProfile>;
+  }
+): CheckoutDeliveryQuote {
+  const fulfilment =
+    options?.fulfilment ||
+    (deliveryType === "pickup"
+      ? "pickup"
+      : options?.dispatchMode === "CUSTOMER_DISPATCH"
+        ? "own_rider"
+        : "ride_with_701");
+
+  if (fulfilment !== "ride_with_701") {
+    return {
+      feeNgn: 0,
+      recommendedVehicle: null,
+      upgraded: false,
+      partnersSuggested: 0,
+      capacityNote: null,
+    };
+  }
+
+  if (!address.trim()) {
+    return {
+      feeNgn: 0,
+      recommendedVehicle: null,
+      upgraded: false,
+      partnersSuggested: 0,
+      capacityNote: null,
+    };
+  }
+
+  const catalog = options?.catalog;
+  const recommendation = recommendFoodVehicle(
+    {
+      itemCount: options?.itemCount,
+      bagCount: options?.bagCount,
+      estimatedWeightKg: options?.estimatedWeightKg,
+      estimatedVolumeLitres: options?.estimatedVolumeLitres,
+    },
+    catalog
+  );
+
+  const forced = options?.vehicleType
+    ? getVehiclePricing(options.vehicleType, catalog)
+    : null;
+  const vehicle = forced || recommendation.vehicle;
+
+  const quote = quoteRideDeliveryFee({
+    distanceKm: estimateLagosDistanceKm(address),
+    vehicleType: vehicle.category,
+    itemCount: options?.itemCount,
+    bagCount: options?.bagCount,
+    estimatedWeightKg: options?.estimatedWeightKg,
+    estimatedVolumeLitres: options?.estimatedVolumeLitres,
+    catalog,
+  });
+
+  const upgraded =
+    !forced && recommendation.upgraded
+      ? true
+      : forced
+        ? forced.category !== "motorcycle"
+        : false;
+
+  return {
+    feeNgn: Math.min(DELIVERY_FEE_MAX_NGN, quote.feeNgn),
+    recommendedVehicle: vehicle,
+    upgraded,
+    partnersSuggested: recommendation.partnersSuggested,
+    capacityNote: upgraded
+      ? "Delivery adjusted based on order size and required vehicle capacity."
+      : null,
+  };
+}
+
 export function getCheckoutDeliveryFee(
   deliveryType: "delivery" | "pickup",
   address = "",
@@ -144,33 +239,7 @@ export function getCheckoutDeliveryFee(
     catalog?: Record<VehicleCategory, VehiclePricingProfile>;
   }
 ) {
-  const fulfilment =
-    options?.fulfilment ||
-    (deliveryType === "pickup"
-      ? "pickup"
-      : options?.dispatchMode === "CUSTOMER_DISPATCH"
-        ? "own_rider"
-        : "ride_with_701");
-
-  if (fulfilment !== "ride_with_701") {
-    return 0;
-  }
-
-  if (!address.trim()) {
-    return 0;
-  }
-
-  const quote = quoteRideDeliveryFee({
-    distanceKm: estimateLagosDistanceKm(address),
-    vehicleType: options?.vehicleType || "motorcycle",
-    itemCount: options?.itemCount,
-    bagCount: options?.bagCount,
-    estimatedWeightKg: options?.estimatedWeightKg,
-    estimatedVolumeLitres: options?.estimatedVolumeLitres,
-    catalog: options?.catalog,
-  });
-
-  return Math.min(DELIVERY_FEE_MAX_NGN, quote.feeNgn);
+  return getCheckoutDeliveryQuote(deliveryType, address, options).feeNgn;
 }
 
 export function describeVehicleFeeRange(
