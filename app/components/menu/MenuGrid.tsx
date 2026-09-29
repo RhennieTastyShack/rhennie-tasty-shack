@@ -10,6 +10,7 @@ import { PARTY_DISHES, RETIRED_PARTY_DISHES } from "@/lib/party-menu";
 import MenuFilters from "./MenuFilters";
 import MealCard from "./MealCard";
 import FoodByLitreCard from "./FoodByLitreCard";
+import CollectionCard from "./CollectionCard";
 
 type MenuItem = {
   id: string;
@@ -695,9 +696,9 @@ export default function MenuGrid() {
       <div className="pointer-events-none absolute -right-40 bottom-40 h-80 w-80 rounded-full bg-[#F26A21]/5 blur-[100px]" />
 
       <div className="relative mx-auto max-w-7xl">
-        {/* FILTERS */}
+        {!category && !search ? <CollectionCard /> : null}
 
-        <MenuFilters />
+        <MenuFilters showCollectionChips={Boolean(category || search)} />
 
         {/* RESULT HEADER */}
 

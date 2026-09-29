@@ -9,7 +9,8 @@ import {
   hashOtpCode,
   normalizeNgPhone,
 } from "@/lib/notify";
-import { sendTermiiSms } from "@/lib/notify/termii";
+import { sendResendEmail } from "@/lib/notify/resend";
+import { buildOtpTemplate } from "@/lib/notify/templates";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -71,29 +72,40 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    if (!phone) {
-      const { data: profile } = await supabase
-        .from("client_profiles")
-        .select("phone")
-        .eq("auth_user_id", authUserId)
-        .maybeSingle();
+    const { data: profile } = await supabase
+      .from("client_profiles")
+      .select("phone, email")
+      .eq("auth_user_id", authUserId)
+      .maybeSingle();
 
+    if (!phone) {
       phone = cleanText(profile?.phone);
     }
 
     const normalized = normalizeNgPhone(phone);
+    const authEmail = cleanText(authData.user.email).toLowerCase();
+    const profileEmail = cleanText(profile?.email).toLowerCase();
+    // The login address is the primary mailbox. Never use an address from the request.
+    const email = authEmail.includes("@")
+      ? authEmail
+      : profileEmail;
 
-    if (!normalized) {
+    if (!email || !email.includes("@")) {
       return NextResponse.json(
         {
           success: false,
-          message: "A valid Nigerian phone number is required.",
+          message: "This account has no primary email for the verification code.",
         },
         { status: 400 }
       );
     }
 
-    // Rate limit: one active challenge per phone within cooldown.
+    const [local, domain] = email.split("@");
+    const emailHint = domain
+      ? `${local.slice(0, 1)}***@${domain}`
+      : "your primary email";
+
+    // Rate limit: one active challenge per account within cooldown.
     const cooldownIso = new Date(
       Date.now() - COOLDOWN_SECONDS * 1000
     ).toISOString();
@@ -101,7 +113,7 @@ export async function POST(request: NextRequest) {
     const { data: recent } = await supabase
       .from("otp_challenges")
       .select("id, created_at")
-      .eq("phone", normalized)
+      .eq("auth_user_id", authUserId)
       .eq("purpose", purpose)
       .is("consumed_at", null)
       .gte("created_at", cooldownIso)
@@ -109,11 +121,20 @@ export async function POST(request: NextRequest) {
       .limit(1)
       .maybeSingle();
 
-    if (recent) {
+    if (recent?.created_at) {
+      const elapsedMs = Date.now() - new Date(recent.created_at).getTime();
+      const retryAfter = Math.max(
+        1,
+        Math.ceil((COOLDOWN_SECONDS * 1000 - elapsedMs) / 1000)
+      );
+
       return NextResponse.json(
         {
           success: false,
-          message: `Please wait ${COOLDOWN_SECONDS} seconds before requesting another code.`,
+          message: `A code was just sent to your primary email. You can resend it in ${retryAfter} seconds.`,
+          retry_after_seconds: retryAfter,
+          email_hint: emailHint,
+          email: user ? email : undefined,
         },
         { status: 429 }
       );
@@ -124,28 +145,38 @@ export async function POST(request: NextRequest) {
       Date.now() + OTP_TTL_MINUTES * 60 * 1000
     ).toISOString();
 
-    const sms = await sendTermiiSms({
-      to: normalized,
-      message: `Rhennie Tasty Shack: Your verification code is ${code}. It expires in 10 minutes.`,
+    const template = buildOtpTemplate(code);
+    const emailResult = await sendResendEmail({
+      to: email,
+      subject: template.emailSubject,
+      html: template.emailHtml,
+      text: template.emailText,
     });
 
-    if (!sms.ok || sms.skipped) {
+    if (!emailResult.ok || emailResult.skipped) {
       return NextResponse.json(
         {
           success: false,
-          message: sms.skipped
-            ? "Text messages are not connected yet, so the code cannot be sent to your phone."
-            : sms.error || "Unable to text your phone.",
+          message: emailResult.skipped
+            ? "Email is turned off, so the verification code cannot be sent."
+            : emailResult.error || "Unable to email your verification code.",
         },
         { status: 503 }
       );
     }
 
+    await supabase
+      .from("otp_challenges")
+      .update({ consumed_at: new Date().toISOString() })
+      .eq("auth_user_id", authUserId)
+      .eq("purpose", purpose)
+      .is("consumed_at", null);
+
     const { error: insertError } = await supabase
       .from("otp_challenges")
       .insert({
         auth_user_id: authUserId,
-        phone: normalized,
+        phone: normalized || `email:${email}`,
         purpose,
         code_hash: hashOtpCode(code),
         expires_at: expiresAt,
@@ -160,19 +191,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    await supabase
-      .from("client_profiles")
-      .update({
-        phone: normalized,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("auth_user_id", authUserId);
+    if (normalized) {
+      await supabase
+        .from("client_profiles")
+        .update({
+          phone: normalized,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("auth_user_id", authUserId);
+    }
 
     return NextResponse.json({
       success: true,
-      message: "Verification code sent by text to your phone.",
+      message: `Verification code sent to your primary email ${emailHint}.`,
       expires_at: expiresAt,
-      phone_hint: `***${normalized.slice(-4)}`,
+      email_hint: emailHint,
+      email: user ? email : undefined,
+      retry_after_seconds: COOLDOWN_SECONDS,
     });
   } catch (error) {
     console.error("OTP send error:", error);

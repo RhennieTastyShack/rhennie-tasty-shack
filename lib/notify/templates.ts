@@ -53,11 +53,11 @@ export function buildOtpTemplate(code: string): NotifyTemplate {
   const title = "Your verification code";
   const sms = `Rhennie Tasty Shack: Your verification code is ${code}. It expires in 10 minutes.`;
   const whatsapp = sms;
-  const emailSubject = "Your Rhennie verification code";
-  const emailText = `Your Rhennie Tasty Shack verification code is ${code}. It expires in 10 minutes.`;
+  const emailSubject = "Your Rhennie Tasty Shack sign-in code";
+  const emailText = `Your Rhennie Tasty Shack verification code is ${code}. It expires in 10 minutes. Enter this code on the website to finish signing in.`;
   const emailHtml = brandShell(
     title,
-    `<p>Use this code to verify your phone number:</p>
+    `<p>Use this code to finish signing in to your Rhennie Tasty Shack account:</p>
      <p style="font-size:32px;letter-spacing:0.2em;font-weight:700;color:#F26A21;margin:20px 0;">${code}</p>
      <p>This code expires in 10 minutes. If you did not request it, you can ignore this email.</p>`
   );

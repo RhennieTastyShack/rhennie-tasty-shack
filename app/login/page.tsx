@@ -145,15 +145,6 @@ function LoginForm() {
             />
           </div>
 
-          <div className="flex items-center justify-end">
-            <Link
-              href={`/forgot-password?next=${encodeURIComponent(nextPath)}`}
-              className="text-sm font-semibold text-[#D4AF37] underline"
-            >
-              Forgot password?
-            </Link>
-          </div>
-
           {error && (
             <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-400">
               {error}
@@ -167,6 +158,15 @@ function LoginForm() {
           >
             {loading ? "Signing In..." : "Sign In"}
           </button>
+
+          <div className="text-center">
+            <Link
+              href={`/forgot-password?next=${encodeURIComponent(nextPath)}`}
+              className="text-sm font-semibold text-[#D4AF37] underline"
+            >
+              Forgot password?
+            </Link>
+          </div>
         </form>
 
         <div className="mt-8 text-center text-[#B8B8B8]">

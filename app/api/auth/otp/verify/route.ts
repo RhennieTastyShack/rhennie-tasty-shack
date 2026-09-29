@@ -102,15 +102,19 @@ export async function POST(request: NextRequest) {
       .update({ consumed_at: now })
       .eq("id", challenge.id);
 
-    const phone = normalizeNgPhone(challenge.phone) || challenge.phone;
+    const phone = normalizeNgPhone(challenge.phone);
+    const profileUpdate: Record<string, string> = {
+      phone_verified_at: now,
+      updated_at: now,
+    };
+
+    if (phone) {
+      profileUpdate.phone = phone;
+    }
 
     const { data: profile } = await supabase
       .from("client_profiles")
-      .update({
-        phone,
-        phone_verified_at: now,
-        updated_at: now,
-      })
+      .update(profileUpdate)
       .eq("auth_user_id", authUserId)
       .select("*")
       .maybeSingle();
@@ -133,7 +137,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: "Phone verified successfully.",
+      message: "Email verified successfully.",
       phone_verified: true,
       email_confirmed: emailConfirmed,
       fully_verified: emailConfirmed,

@@ -142,8 +142,8 @@ function SignupForm() {
       if (!data.session?.access_token) {
         setSuccess(
           customerCode
-            ? `Account created. Your Client ID is ${customerCode}. Confirm the email we sent, then sign in to verify your phone.`
-            : "Account created. Confirm the email we sent, then sign in to verify your phone."
+            ? `Account created. Your Client ID is ${customerCode}. We emailed your verification code.`
+            : "Account created. We emailed your verification code."
         );
 
         setTimeout(() => {
@@ -313,13 +313,6 @@ function SignupForm() {
             className="font-semibold text-[#D4AF37] hover:underline"
           >
             Sign In
-          </Link>
-          {" · "}
-          <Link
-            href="/forgot-password"
-            className="font-semibold text-[#D4AF37] hover:underline"
-          >
-            Forgot password
           </Link>
         </div>
       </div>
