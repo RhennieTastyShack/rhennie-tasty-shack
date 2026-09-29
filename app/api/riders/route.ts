@@ -323,6 +323,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    try {
+      const { notifyPartnerRegistered } = await import("@/lib/notify/hooks");
+      const riderRow = data as {
+        id: string;
+        auth_user_id?: string | null;
+        email?: string | null;
+        phone?: string | null;
+        full_name?: string | null;
+      };
+      void notifyPartnerRegistered(riderRow);
+    } catch (notifyError) {
+      console.error("Partner registration notify error:", notifyError);
+    }
+
     return NextResponse.json({
       success: true,
       rider: data,
@@ -398,6 +412,25 @@ export async function PATCH(request: NextRequest) {
           { success: false, message: error.message },
           { status: 500 }
         );
+      }
+
+      if (body?.status) {
+        try {
+          const { notifyPartnerStatusChange } = await import(
+            "@/lib/notify/hooks"
+          );
+          void notifyPartnerStatusChange({
+            id: data.id,
+            auth_user_id: data.auth_user_id,
+            email: data.email,
+            phone: data.phone,
+            full_name: data.full_name,
+            status: data.status,
+            notes: data.notes,
+          });
+        } catch (notifyError) {
+          console.error("Partner status notify error:", notifyError);
+        }
       }
 
       return NextResponse.json({ success: true, rider: data });

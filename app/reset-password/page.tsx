@@ -46,6 +46,22 @@ export default function ResetPasswordPage() {
       return;
     }
 
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (session?.access_token) {
+        void fetch("/api/auth/password-changed", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+          },
+        });
+      }
+    } catch {
+      /* notification is best-effort */
+    }
+
     setMessage("Password updated. You can sign in now.");
     setTimeout(() => router.push("/login"), 1200);
   }

@@ -227,6 +227,15 @@ export async function PATCH(request: Request) {
         return NextResponse.json({ error: error.message }, { status: 500 });
       }
 
+      if (nextPickup === "Ready for Pickup") {
+        try {
+          const { notifyPickupReady } = await import("@/lib/notify/hooks");
+          void notifyPickupReady(orderId);
+        } catch (notifyError) {
+          console.error("Pickup ready notify error:", notifyError);
+        }
+      }
+
       return NextResponse.json({ success: true, order: data });
     }
 

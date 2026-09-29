@@ -45,6 +45,8 @@ export default function SettingsPage() {
   >([]);
   const [vehicleSaving, setVehicleSaving] = useState<string | null>(null);
   const [vehicleMessage, setVehicleMessage] = useState("");
+  const [emailTestBusy, setEmailTestBusy] = useState(false);
+  const [emailTestMessage, setEmailTestMessage] = useState("");
 
   async function loadSettings() {
     setLoading(true);
@@ -156,6 +158,40 @@ export default function SettingsPage() {
       );
     } finally {
       setCommissionSaving(false);
+    }
+  }
+
+  async function sendTestEmail() {
+    setEmailTestBusy(true);
+    setEmailTestMessage("");
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        setEmailTestMessage("Sign in as Rhennie Studio to send a test.");
+        return;
+      }
+
+      const response = await fetch("/api/admin/email-test", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
+      const result = await response.json();
+      if (!response.ok || !result?.success) {
+        throw new Error(result?.message || "Unable to send test email.");
+      }
+      setEmailTestMessage(
+        `${result.message}${result.messageId ? ` · ID ${result.messageId}` : ""}`
+      );
+    } catch (err) {
+      setEmailTestMessage(
+        err instanceof Error ? err.message : "Unable to send test email."
+      );
+    } finally {
+      setEmailTestBusy(false);
     }
   }
 
@@ -684,6 +720,31 @@ export default function SettingsPage() {
 
         {vehicleMessage ? (
           <p className="mt-4 text-sm text-black/60">{vehicleMessage}</p>
+        ) : null}
+      </section>
+
+      <section className="mt-8 rounded-2xl border border-black/5 bg-white p-6 shadow-[0_10px_40px_rgba(0,0,0,0.04)] md:p-8">
+        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#C89B3C]">
+          Transactional email
+        </p>
+        <h2 className="mt-1 text-xl font-semibold text-[#171717]">
+          Resend connectivity test
+        </h2>
+        <p className="mt-2 max-w-2xl text-sm leading-6 text-black/50">
+          Sends one test message to your signed-in Studio email from
+          Rhennie Tasty Shack &lt;noreply@rhennietastyshack.com&gt;. No
+          arbitrary recipients. Reply-To is not set until a real inbox exists.
+        </p>
+        <button
+          type="button"
+          onClick={() => void sendTestEmail()}
+          disabled={emailTestBusy}
+          className="mt-5 rounded-xl bg-[#0B0B0B] px-7 py-3 text-sm font-bold text-[#D4AF37] transition hover:bg-[#171717] disabled:opacity-60"
+        >
+          {emailTestBusy ? "Sending..." : "Send test email to me"}
+        </button>
+        {emailTestMessage ? (
+          <p className="mt-4 text-sm text-black/60">{emailTestMessage}</p>
         ) : null}
       </section>
     </main>

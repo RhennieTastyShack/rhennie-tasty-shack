@@ -9,10 +9,17 @@ import {
 import {
   NotifyEvent,
   NotifyTemplate,
+  OrderEmailItem,
   buildDeliveryStatusTemplate,
   buildOrderPaidTemplate,
   buildOrderStatusTemplate,
+  buildOwnRiderTemplate,
   buildOtpTemplate,
+  buildPartnerRegisteredTemplate,
+  buildPartnerStatusTemplate,
+  buildPasswordChangedTemplate,
+  buildPasswordResetTemplate,
+  buildPickupReadyTemplate,
   buildWelcomeTemplate,
 } from "@/lib/notify/templates";
 
@@ -25,15 +32,29 @@ export type NotifyCustomerInput = {
   email?: string | null;
   phone?: string | null;
   name?: string | null;
+  /** Prevents duplicate transactional emails for the same business event. */
+  dedupeKey?: string | null;
   data?: {
     code?: string;
+    resetUrl?: string;
     orderNo?: string | null;
     total?: number | null;
+    subtotal?: number | null;
+    deliveryFee?: number | null;
+    tipAmount?: number | null;
+    fulfilmentMethod?: string | null;
+    deliveryType?: string | null;
+    paymentStatus?: string | null;
+    paymentReference?: string | null;
+    pickupCode?: string | null;
+    pickupLocation?: string | null;
+    instructions?: string | null;
+    items?: OrderEmailItem[];
     status?: string;
     trackingUrl?: string | null;
     riderName?: string | null;
+    note?: string | null;
   };
-  /** Channels to skip (e.g. OTP may skip email if desired — default sends all) */
   skipChannels?: Array<"email" | "sms" | "whatsapp" | "inbox">;
 };
 
@@ -44,10 +65,26 @@ function resolveTemplate(input: NotifyCustomerInput): NotifyTemplate | null {
       return buildOtpTemplate(input.data.code);
     case "WELCOME":
       return buildWelcomeTemplate(input.name || undefined);
+    case "PASSWORD_RESET":
+      if (!input.data?.resetUrl) return null;
+      return buildPasswordResetTemplate(input.data.resetUrl);
+    case "PASSWORD_CHANGED":
+      return buildPasswordChangedTemplate();
     case "ORDER_PAID":
       return buildOrderPaidTemplate({
         orderNo: input.data?.orderNo,
+        customerName: input.name,
         total: input.data?.total,
+        subtotal: input.data?.subtotal,
+        deliveryFee: input.data?.deliveryFee,
+        tipAmount: input.data?.tipAmount,
+        fulfilmentMethod: input.data?.fulfilmentMethod,
+        deliveryType: input.data?.deliveryType,
+        paymentStatus: input.data?.paymentStatus,
+        paymentReference: input.data?.paymentReference,
+        pickupCode: input.data?.pickupCode,
+        pickupLocation: input.data?.pickupLocation,
+        items: input.data?.items,
         trackingUrl: input.data?.trackingUrl,
       });
     case "ORDER_STATUS":
@@ -55,6 +92,19 @@ function resolveTemplate(input: NotifyCustomerInput): NotifyTemplate | null {
       return buildOrderStatusTemplate({
         orderNo: input.data?.orderNo,
         status: input.data.status,
+      });
+    case "PICKUP_READY":
+      return buildPickupReadyTemplate({
+        orderNo: input.data?.orderNo,
+        pickupCode: input.data?.pickupCode,
+        pickupLocation: input.data?.pickupLocation,
+        instructions: input.data?.instructions,
+      });
+    case "OWN_RIDER_CODE":
+      return buildOwnRiderTemplate({
+        orderNo: input.data?.orderNo,
+        pickupCode: input.data?.pickupCode,
+        pickupLocation: input.data?.pickupLocation,
       });
     case "DELIVERY_STATUS":
       if (!input.data?.status) return null;
@@ -64,8 +114,36 @@ function resolveTemplate(input: NotifyCustomerInput): NotifyTemplate | null {
         trackingUrl: input.data?.trackingUrl,
         riderName: input.data?.riderName,
       });
+    case "PARTNER_REGISTERED":
+      return buildPartnerRegisteredTemplate({ name: input.name });
+    case "PARTNER_STATUS":
+      if (!input.data?.status) return null;
+      return buildPartnerStatusTemplate({
+        name: input.name,
+        status: input.data.status,
+        note: input.data.note,
+      });
     default:
       return null;
+  }
+}
+
+async function alreadySentDedupe(event: string, dedupeKey: string) {
+  try {
+    const supabase = getSupabaseAdmin();
+    const { data } = await supabase
+      .from("notification_log")
+      .select("id")
+      .eq("event", event)
+      .eq("channel", "email")
+      .eq("status", "sent")
+      .contains("payload", { dedupeKey })
+      .limit(1)
+      .maybeSingle();
+
+    return Boolean(data?.id);
+  } catch {
+    return false;
   }
 }
 
@@ -120,8 +198,8 @@ async function writeInbox(params: {
 }
 
 /**
- * Fan-out customer notification. Never throws to callers —
- * failures are logged and swallowed so payments/orders stay resilient.
+ * Fan-out customer/partner notification. Never throws to callers —
+ * failures are logged so payments/orders stay resilient.
  */
 export async function notifyCustomer(input: NotifyCustomerInput) {
   try {
@@ -130,6 +208,11 @@ export async function notifyCustomer(input: NotifyCustomerInput) {
     if (!template) {
       console.error("notifyCustomer: missing template data", input.event);
       return { ok: false, error: "Missing template data." };
+    }
+
+    const dedupeKey = cleanDedupe(input.dedupeKey);
+    if (dedupeKey && (await alreadySentDedupe(input.event, dedupeKey))) {
+      return { ok: true, skipped: true, reason: "duplicate" as const };
     }
 
     const skip = new Set(input.skipChannels || []);
@@ -146,11 +229,18 @@ export async function notifyCustomer(input: NotifyCustomerInput) {
     }
 
     if (!skip.has("email") && email) {
+      const safePayload: Record<string, unknown> = {
+        to: email,
+        subject: template.emailSubject,
+        ...(dedupeKey ? { dedupeKey } : {}),
+      };
+
       const result = await sendResendEmail({
         to: email,
         subject: template.emailSubject,
         html: template.emailHtml,
         text: template.emailText,
+        idempotencyKey: dedupeKey || undefined,
       });
 
       await logSend({
@@ -158,7 +248,7 @@ export async function notifyCustomer(input: NotifyCustomerInput) {
         clientProfileId: input.clientProfileId,
         channel: "email",
         event: input.event,
-        payload: { to: email, subject: template.emailSubject },
+        payload: safePayload,
         status: result.skipped ? "skipped" : result.ok ? "sent" : "failed",
         providerId: result.id,
         error: result.error,
@@ -176,7 +266,7 @@ export async function notifyCustomer(input: NotifyCustomerInput) {
         clientProfileId: input.clientProfileId,
         channel: "sms",
         event: input.event,
-        payload: { to: phone },
+        payload: { to: phone, ...(dedupeKey ? { dedupeKey } : {}) },
         status: result.skipped ? "skipped" : result.ok ? "sent" : "failed",
         providerId: result.id,
         error: result.error,
@@ -194,7 +284,7 @@ export async function notifyCustomer(input: NotifyCustomerInput) {
         clientProfileId: input.clientProfileId,
         channel: "whatsapp",
         event: input.event,
-        payload: { to: phone },
+        payload: { to: phone, ...(dedupeKey ? { dedupeKey } : {}) },
         status: result.skipped ? "skipped" : result.ok ? "sent" : "failed",
         providerId: result.id,
         error: result.error,
@@ -209,6 +299,11 @@ export async function notifyCustomer(input: NotifyCustomerInput) {
       error: error instanceof Error ? error.message : "Notify failed.",
     };
   }
+}
+
+function cleanDedupe(value?: string | null) {
+  const key = String(value || "").trim();
+  return key ? key.slice(0, 200) : "";
 }
 
 export function generateOtpCode() {
