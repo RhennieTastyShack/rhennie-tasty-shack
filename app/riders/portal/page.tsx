@@ -77,6 +77,7 @@ export default function RiderPortalPage() {
   const deliveriesRef = useRef(deliveries);
   deliveriesRef.current = deliveries;
   const [locationNote, setLocationNote] = useState("");
+  const [commissionPercent, setCommissionPercent] = useState(5);
 
   async function getToken() {
     const {
@@ -114,6 +115,18 @@ export default function RiderPortalPage() {
       if (profile.plate_number) setPlateNumber(profile.plate_number);
       if (profile.vehicle_color) setVehicleColor(profile.vehicle_color);
       if (profile.vehicle_model) setVehicleModel(profile.vehicle_model);
+    }
+
+    const settingsRes = await fetch("/api/admin/ride-settings", {
+      headers: { Authorization: `Bearer ${token}` },
+      cache: "no-store",
+    });
+    const settingsJson = await settingsRes.json().catch(() => ({}));
+    if (
+      settingsRes.ok &&
+      Number.isFinite(Number(settingsJson?.ride_platform_commission))
+    ) {
+      setCommissionPercent(Number(settingsJson.ride_platform_commission));
     }
 
     if (profileJson.rider.status !== "APPROVED") {
@@ -348,14 +361,14 @@ export default function RiderPortalPage() {
       <div className="mx-auto max-w-3xl">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <p className="text-[9px] font-bold uppercase tracking-[0.35em] text-[#F26A21]">
-              Rider portal
+            <p className="text-[9px] font-bold uppercase tracking-[0.35em] text-[#D4AF37]">
+              Ride with 701
             </p>
             <h1 className="mt-2 font-serif text-3xl font-bold">
               {rider.full_name}
             </h1>
             <p className="mt-2 text-sm text-white/50">
-              {rider.phone}
+              Delivery partner · {rider.phone}
               {rider.vehicle_type ? ` · ${rider.vehicle_type}` : ""}
             </p>
           </div>
@@ -519,7 +532,11 @@ export default function RiderPortalPage() {
         <section className="mt-8 rounded-[24px] border border-white/10 bg-[#141414] p-5">
           <h2 className="font-serif text-xl font-bold">Payout account</h2>
           <p className="mt-2 text-sm text-white/50">
-            Rhennie keeps 15% of each delivery fee. The remaining fee and the full tip are sent here after the delivery is completed with the customer’s code.
+            Rhennie Tasty Shack keeps {commissionPercent}% of each Ride with 701
+            delivery fee as platform commission. You receive the remaining{" "}
+            {100 - commissionPercent}% plus the full tip after the delivery is
+            completed with the customer&apos;s code. Customers never pay a
+            separate commission line.
           </p>
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
             <select

@@ -79,7 +79,11 @@ export default function CheckoutPage() {
 
   const deliveryFee = getCheckoutDeliveryFee(
     deliveryType,
-    deliveryAddress
+    deliveryAddress,
+    {
+      dispatchMode,
+      itemCount: totalItems,
+    }
   );
 
   const discount = useMemo(() => {
@@ -578,93 +582,103 @@ export default function CheckoutPage() {
                   </p>
 
                   <h2 className="mt-1 font-serif text-2xl font-bold">
-                    Delivery Details
+                    How would you like to receive your order?
                   </h2>
 
                   <p className="mt-2 text-xs leading-6 text-black/45">
-                    Choose how you would like to
-                    receive your order.
+                    Food is from Rhennie Tasty Shack. Logistics can be Ride with 701, your own rider, or pickup — you are never forced to use Ride with 701.
                   </p>
                 </div>
 
-                <div className="grid gap-4 sm:grid-cols-2">
-
-                  {/* DELIVERY */}
+                <div className="grid gap-4">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDeliveryType("delivery");
+                      setDispatchMode("PLATFORM");
+                    }}
+                    className={`rounded-[22px] border p-5 text-left transition-all ${
+                      deliveryType === "delivery" &&
+                      dispatchMode === "PLATFORM"
+                        ? "border-[#D4AF37] bg-[#FFFBF0] shadow-[0_10px_30px_rgba(212,175,55,0.12)]"
+                        : "border-black/10 bg-white hover:border-[#D4AF37]/50"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[#0B0B0B] text-[#D4AF37]">
+                        <MapPin size={20} />
+                      </div>
+                      {deliveryType === "delivery" &&
+                        dispatchMode === "PLATFORM" && (
+                          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#D4AF37] text-black">
+                            <Check size={14} />
+                          </span>
+                        )}
+                    </div>
+                    <h3 className="mt-4 text-sm font-bold">
+                      Ride with 701
+                    </h3>
+                    <p className="mt-1 text-xs leading-5 text-black/45">
+                      Have your order delivered through Ride with 701.
+                    </p>
+                  </button>
 
                   <button
                     type="button"
-                    onClick={() =>
-                      setDeliveryType("delivery")
-                    }
+                    onClick={() => {
+                      setDeliveryType("delivery");
+                      setDispatchMode("CUSTOMER_DISPATCH");
+                    }}
                     className={`rounded-[22px] border p-5 text-left transition-all ${
-                      deliveryType === "delivery"
+                      deliveryType === "delivery" &&
+                      dispatchMode === "CUSTOMER_DISPATCH"
                         ? "border-[#F26A21] bg-[#FFF7F2] shadow-[0_10px_30px_rgba(242,106,33,0.08)]"
                         : "border-black/10 bg-white hover:border-[#F26A21]/40"
                     }`}
                   >
-                    <div className="flex items-center justify-between">
-
+                    <div className="flex items-center justify-between gap-3">
                       <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[#FFF1E9] text-[#F26A21]">
                         <MapPin size={20} />
                       </div>
-
-                      {deliveryType ===
-                        "delivery" && (
-                        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#F26A21] text-white">
-                          <Check size={14} />
-                        </span>
-                      )}
-
+                      {deliveryType === "delivery" &&
+                        dispatchMode === "CUSTOMER_DISPATCH" && (
+                          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#F26A21] text-white">
+                            <Check size={14} />
+                          </span>
+                        )}
                     </div>
-
                     <h3 className="mt-4 text-sm font-bold">
-                      Home Delivery
+                      Send my own rider
                     </h3>
-
                     <p className="mt-1 text-xs leading-5 text-black/45">
-                      Have your order delivered
-                      to your location.
+                      I&apos;ll arrange my own rider or courier to collect my order.
                     </p>
                   </button>
 
-                  {/* PICKUP */}
-
                   <button
                     type="button"
-                    onClick={() =>
-                      setDeliveryType("pickup")
-                    }
+                    onClick={() => setDeliveryType("pickup")}
                     className={`rounded-[22px] border p-5 text-left transition-all ${
                       deliveryType === "pickup"
                         ? "border-[#F26A21] bg-[#FFF7F2] shadow-[0_10px_30px_rgba(242,106,33,0.08)]"
                         : "border-black/10 bg-white hover:border-[#F26A21]/40"
                     }`}
                   >
-                    <div className="flex items-center justify-between">
-
+                    <div className="flex items-center justify-between gap-3">
                       <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[#FFF1E9] text-[#F26A21]">
                         <ShoppingBag size={20} />
                       </div>
-
-                      {deliveryType ===
-                        "pickup" && (
+                      {deliveryType === "pickup" && (
                         <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#F26A21] text-white">
                           <Check size={14} />
                         </span>
                       )}
-
                     </div>
-
-                    <h3 className="mt-4 text-sm font-bold">
-                      Pickup
-                    </h3>
-
+                    <h3 className="mt-4 text-sm font-bold">Pickup</h3>
                     <p className="mt-1 text-xs leading-5 text-black/45">
-                      Pick up your order from
-                      Rhennie Tasty Shack.
+                      I&apos;ll collect my order myself.
                     </p>
                   </button>
-
                 </div>
 
                 {/* ADDRESS */}
@@ -695,72 +709,21 @@ export default function CheckoutPage() {
                         className="w-full resize-none rounded-2xl border border-black/10 bg-[#F8F6F2] px-4 py-3 text-sm outline-none transition-all placeholder:text-black/30 focus:border-[#F26A21] focus:bg-white focus:ring-4 focus:ring-[#F26A21]/10"
                       />
                       <p className="mt-2 text-xs leading-5 text-black/45">
-                        We deliver anywhere in Lagos. Mainland to island is ₦2,500 to ₦9,900 based on the area. Include the area name so the price is right.
+                        Lagos areas map to kilometres for Ride with 701 motorcycle
+                        rates (from about ₦900). Include the area name so the quote
+                        is right. Own rider and pickup stay ₦0 for logistics.
                       </p>
-                    </div>
-
-                    <div className="mt-5">
-                      <p className="mb-2 text-xs font-bold text-black/65">
-                        Who will deliver?
-                      </p>
-
-                      <p className="mb-3 text-xs leading-5 text-black/45">
-                        Send your own dispatch rider, or request a Rhennie platform rider.
-                      </p>
-
-                      <div className="grid gap-3 sm:grid-cols-2">
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setDispatchMode("PLATFORM")
-                          }
-                          className={`rounded-2xl border p-4 text-left transition-all ${
-                            dispatchMode === "PLATFORM"
-                              ? "border-[#F26A21] bg-[#FFF7F2]"
-                              : "border-black/10 bg-white hover:border-[#F26A21]/40"
-                          }`}
-                        >
-                          <h3 className="text-sm font-bold">
-                            Request platform rider
-                          </h3>
-                          <p className="mt-1 text-xs leading-5 text-black/45">
-                            We will assign an approved Rhennie rider.
-                          </p>
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setDispatchMode(
-                              "CUSTOMER_DISPATCH"
-                            )
-                          }
-                          className={`rounded-2xl border p-4 text-left transition-all ${
-                            dispatchMode ===
-                            "CUSTOMER_DISPATCH"
-                              ? "border-[#F26A21] bg-[#FFF7F2]"
-                              : "border-black/10 bg-white hover:border-[#F26A21]/40"
-                          }`}
-                        >
-                          <h3 className="text-sm font-bold">
-                            Send my own dispatch
-                          </h3>
-                          <p className="mt-1 text-xs leading-5 text-black/45">
-                            Enter your rider&apos;s name and phone.
-                          </p>
-                        </button>
-                      </div>
                     </div>
 
                     {dispatchMode ===
                       "CUSTOMER_DISPATCH" && (
-                      <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                      <div className="mt-5 grid gap-4 sm:grid-cols-2">
                         <div>
                           <label
                             htmlFor="externalRiderName"
                             className="mb-2 block text-xs font-bold text-black/65"
                           >
-                            Dispatch rider name
+                            Your rider&apos;s name
                           </label>
                           <input
                             id="externalRiderName"
@@ -781,7 +744,7 @@ export default function CheckoutPage() {
                             htmlFor="externalRiderPhone"
                             className="mb-2 block text-xs font-bold text-black/65"
                           >
-                            Dispatch rider phone
+                            Your rider&apos;s phone
                           </label>
                           <input
                             id="externalRiderPhone"
@@ -951,14 +914,19 @@ export default function CheckoutPage() {
                   <div className="mt-3 flex items-center justify-between text-sm">
 
                     <span className="text-black/45">
-                      Delivery Fee
+                      {deliveryType === "pickup"
+                        ? "Pickup"
+                        : dispatchMode === "CUSTOMER_DISPATCH"
+                          ? "Your own rider"
+                          : "Ride with 701 Delivery"}
                     </span>
 
                     <span className="font-bold">
-                      {deliveryType === "pickup"
-                        ? "Pickup"
+                      {deliveryType === "pickup" ||
+                      dispatchMode === "CUSTOMER_DISPATCH"
+                        ? "₦0"
                         : !deliveryAddress.trim()
-                          ? "₦2,500 – ₦9,900"
+                          ? "Enter address for quote"
                           : formatPrice(deliveryFee)}
                     </span>
 
@@ -1023,7 +991,10 @@ export default function CheckoutPage() {
                   {deliveryType === "delivery" && (
                     <div className="mb-4">
                       <p className="mb-2 text-xs font-bold text-black/65">
-                        Tip your rider
+                      {deliveryType === "delivery" &&
+                      dispatchMode === "PLATFORM"
+                        ? "Tip your Ride with 701 partner"
+                        : "Tip (optional)"}
                       </p>
                       <div className="grid grid-cols-4 gap-2">
                         {[0, 200, 500, 1000].map((amount) => (

@@ -394,7 +394,14 @@ export async function POST(request: Request) {
 
     const deliveryFee = getCheckoutDeliveryFee(
       deliveryType,
-      deliveryAddress || ""
+      deliveryAddress || "",
+      {
+        dispatchMode: resolvedDispatchMode,
+        itemCount: items.reduce(
+          (sum, item) => sum + Math.max(0, Number(item.quantity) || 0),
+          0
+        ),
+      }
     );
 
     const tipAmount = Math.min(
@@ -478,10 +485,7 @@ export async function POST(request: Request) {
        CREATE ORDER
     ====================================================== */
 
-    const { data: order, error: orderError } =
-      await supabaseAdmin
-        .from("orders")
-        .insert({
+    const orderPayload: Record<string, unknown> = {
           order_no: orderNumber,
 
           order_number: orderNumber,
@@ -511,6 +515,8 @@ export async function POST(request: Request) {
           delivery_fee:
             deliveryFee,
 
+          tip_amount: tipAmount,
+
           total,
 
           status: "In Review",
@@ -538,9 +544,28 @@ export async function POST(request: Request) {
 
           notes:
             orderNotes || null,
-        })
+        };
+
+    let { data: order, error: orderError } =
+      await supabaseAdmin
+        .from("orders")
+        .insert(orderPayload)
         .select("id")
         .single();
+
+    if (
+      orderError &&
+      /tip_amount/i.test(String(orderError.message || ""))
+    ) {
+      delete orderPayload.tip_amount;
+      const retry = await supabaseAdmin
+        .from("orders")
+        .insert(orderPayload)
+        .select("id")
+        .single();
+      order = retry.data;
+      orderError = retry.error;
+    }
 
     if (orderError || !order) {
       console.error(
