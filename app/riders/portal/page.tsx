@@ -32,9 +32,10 @@ type Rider = {
 type DeliveryRow = {
   id: string;
   status: DeliveryStatus;
-  tracking_token: string;
+  tracking_token?: string;
   mode: string;
   updated_at: string;
+  recommended_vehicle?: string | null;
   order_code?: string | null;
   customer_delivery_charge?: number | null;
   gross_delivery_earning?: number | null;
@@ -70,6 +71,7 @@ export default function RiderPortalPage() {
   const [checking, setChecking] = useState(true);
   const [rider, setRider] = useState<Rider | null>(null);
   const [deliveries, setDeliveries] = useState<DeliveryRow[]>([]);
+  const [openJobs, setOpenJobs] = useState<DeliveryRow[]>([]);
   const [error, setError] = useState("");
   const [busyId, setBusyId] = useState<string | null>(null);
   const [toggling, setToggling] = useState(false);
@@ -145,14 +147,22 @@ export default function RiderPortalPage() {
     if (profileJson.rider.status !== "APPROVED") {
       setChecking(false);
       setDeliveries([]);
+      setOpenJobs([]);
       return;
     }
 
-    const deliveriesRes = await fetch("/api/deliveries?scope=mine", {
-      headers: { Authorization: `Bearer ${token}` },
-      cache: "no-store",
-    });
+    const [deliveriesRes, openRes] = await Promise.all([
+      fetch("/api/deliveries?scope=mine", {
+        headers: { Authorization: `Bearer ${token}` },
+        cache: "no-store",
+      }),
+      fetch("/api/deliveries?scope=open", {
+        headers: { Authorization: `Bearer ${token}` },
+        cache: "no-store",
+      }),
+    ]);
     const deliveriesJson = await deliveriesRes.json();
+    const openJson = await openRes.json();
 
     if (!deliveriesRes.ok || !deliveriesJson?.success) {
       setError(deliveriesJson?.message || "Unable to load deliveries.");
@@ -160,6 +170,12 @@ export default function RiderPortalPage() {
     } else {
       setError("");
       setDeliveries(deliveriesJson.deliveries || []);
+    }
+
+    if (openRes.ok && openJson?.success) {
+      setOpenJobs(openJson.deliveries || []);
+    } else {
+      setOpenJobs([]);
     }
 
     setChecking(false);
@@ -290,6 +306,39 @@ export default function RiderPortalPage() {
       );
     } finally {
       setToggling(false);
+    }
+  }
+
+  async function claimJob(deliveryId: string) {
+    setBusyId(deliveryId);
+    setError("");
+    try {
+      const token = await getToken();
+      if (!token) return;
+
+      const response = await fetch("/api/deliveries", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          delivery_id: deliveryId,
+          claim: true,
+          note: "Partner claimed open Ride with 701 job",
+        }),
+      });
+      const result = await response.json();
+      if (!response.ok || !result?.success) {
+        throw new Error(result?.message || "Unable to claim this delivery.");
+      }
+      await loadPortal();
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Unable to claim this delivery."
+      );
+    } finally {
+      setBusyId(null);
     }
   }
 
@@ -615,13 +664,90 @@ export default function RiderPortalPage() {
         </section>
 
         <section className="mt-10">
+          <h2 className="font-serif text-xl font-bold">Available deliveries</h2>
+          <p className="mt-2 text-sm text-white/50">
+            Only Ride with 701 jobs that fit your vehicle appear here. Go online
+            to receive offers.
+          </p>
+
+          {!rider.is_available ? (
+            <p className="mt-4 text-sm text-white/45">
+              You are offline. Tap Available above to see open jobs.
+            </p>
+          ) : openJobs.length === 0 ? (
+            <p className="mt-4 text-sm text-white/45">
+              No matching open jobs right now.
+            </p>
+          ) : (
+            <div className="mt-5 space-y-4">
+              {openJobs.map((job) => {
+                const order = Array.isArray(job.orders)
+                  ? job.orders[0]
+                  : job.orders;
+                const gross = Number(
+                  job.gross_delivery_earning ??
+                    job.customer_delivery_charge ??
+                    order?.delivery_fee ??
+                    0
+                );
+                const percent = Number(
+                  job.platform_commission_percent ?? commissionPercent
+                );
+                const net = Math.max(
+                  0,
+                  Number(
+                    job.partner_net_earning ??
+                      Math.round(gross - (gross * percent) / 100)
+                  )
+                );
+
+                return (
+                  <div
+                    key={job.id}
+                    className="rounded-[24px] border border-[#D4AF37]/25 bg-[#141414] p-5"
+                  >
+                    <p className="text-xs uppercase tracking-[0.2em] text-[#D4AF37]">
+                      {order?.order_no || order?.order_number || "Order"}
+                    </p>
+                    <h3 className="mt-2 text-lg font-semibold">
+                      {order?.delivery_address || "Delivery address on order"}
+                    </h3>
+                    <p className="mt-2 text-sm text-white/55">
+                      Required vehicle:{" "}
+                      {String(job.recommended_vehicle || "motorcycle").replaceAll(
+                        "_",
+                        " "
+                      )}
+                    </p>
+                    {gross > 0 ? (
+                      <p className="mt-2 text-sm text-white/70">
+                        Est. net earning ₦{net.toLocaleString("en-NG")} after{" "}
+                        {percent}% RTS fee
+                      </p>
+                    ) : null}
+                    <button
+                      type="button"
+                      disabled={busyId === job.id}
+                      onClick={() => void claimJob(job.id)}
+                      className="mt-4 inline-flex min-h-[48px] items-center justify-center rounded-full bg-[#D4AF37] px-6 text-sm font-bold text-black disabled:opacity-60"
+                    >
+                      {busyId === job.id ? "Claiming..." : "Accept delivery"}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </section>
+
+        <section className="mt-10">
           <h2 className="font-serif text-xl font-bold">
-            Assigned deliveries
+            Current & past deliveries
           </h2>
 
           {deliveries.length === 0 ? (
             <p className="mt-4 text-sm text-white/45">
-              No active deliveries assigned to you yet.
+              No deliveries assigned to you yet.
             </p>
           ) : (
             <div className="mt-5 space-y-4">
@@ -751,7 +877,7 @@ export default function RiderPortalPage() {
                       <div className="flex flex-wrap gap-2">
                       <Link
                         href={`/track/${encodeURIComponent(
-                          delivery.tracking_token
+                          delivery.tracking_token || ""
                         )}`}
                         className="inline-flex min-h-[42px] items-center justify-center rounded-full border border-white/15 px-4 text-xs font-bold uppercase tracking-wider text-white/70"
                       >

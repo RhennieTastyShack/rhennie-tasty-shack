@@ -7,7 +7,10 @@ import {
   DeliveryStatus,
   foodStatusForDelivery,
 } from "@/lib/delivery";
-import { isEligibleDeliveryPartner } from "@/lib/rider-match";
+import {
+  isEligibleDeliveryPartner,
+  partnerMeetsVehicleRequirement,
+} from "@/lib/rider-match";
 import {
   cleanText,
   getAuthUser,
@@ -246,6 +249,91 @@ export async function GET(request: NextRequest) {
           delete delivery.order_code;
           return delivery;
         }),
+      });
+    }
+
+    if (scope === "open") {
+      const user = await getAuthUser(request);
+
+      if (!user) {
+        return NextResponse.json(
+          { success: false, message: "Please sign in." },
+          { status: 401 }
+        );
+      }
+
+      const { data: rider } = await supabaseAdmin
+        .from("riders")
+        .select("id, status, is_available, vehicle_type")
+        .eq("auth_user_id", user.id)
+        .maybeSingle();
+
+      if (!rider || rider.status !== "APPROVED") {
+        return NextResponse.json(
+          {
+            success: false,
+            message: "Approved partner profile required.",
+          },
+          { status: 403 }
+        );
+      }
+
+      if (!rider.is_available) {
+        return NextResponse.json({
+          success: true,
+          deliveries: [],
+          message: "Go online to see available Ride with 701 jobs.",
+        });
+      }
+
+      const { data, error } = await supabaseAdmin
+        .from("deliveries")
+        .select(
+          `
+          id,
+          status,
+          mode,
+          recommended_vehicle,
+          customer_delivery_charge,
+          gross_delivery_earning,
+          partner_net_earning,
+          platform_commission_percent,
+          tip_amount,
+          updated_at,
+          created_at,
+          orders (
+            id,
+            order_no,
+            order_number,
+            delivery_address,
+            delivery_fee,
+            fulfilment_method
+          )
+        `
+        )
+        .eq("status", "UNASSIGNED")
+        .eq("mode", "PLATFORM")
+        .is("rider_id", null)
+        .order("updated_at", { ascending: true })
+        .limit(40);
+
+      if (error) {
+        return NextResponse.json(
+          { success: false, message: error.message },
+          { status: 500 }
+        );
+      }
+
+      const open = (data || []).filter((row) =>
+        partnerMeetsVehicleRequirement(
+          rider.vehicle_type,
+          row.recommended_vehicle
+        )
+      );
+
+      return NextResponse.json({
+        success: true,
+        deliveries: open,
       });
     }
 
@@ -579,19 +667,36 @@ export async function PATCH(request: NextRequest) {
 
     const kitchen = await requireAdmin(request);
     let actor = "admin";
+    let claimingRider: {
+      id: string;
+      status: string;
+      full_name: string;
+      vehicle_type: string | null;
+      is_available: boolean;
+    } | null = null;
 
     if (!kitchen) {
       const { data: rider } = await supabaseAdmin
         .from("riders")
-        .select("id, status")
+        .select("id, status, full_name, vehicle_type, is_available")
         .eq("auth_user_id", user.id)
         .maybeSingle();
 
-      if (
-        !rider ||
-        rider.status !== "APPROVED" ||
-        rider.id !== delivery.rider_id
-      ) {
+      if (!rider || rider.status !== "APPROVED") {
+        return NextResponse.json(
+          {
+            success: false,
+            message: "Only the kitchen or an approved partner can update this delivery.",
+          },
+          { status: 403 }
+        );
+      }
+
+      const claim = Boolean(body?.claim);
+
+      if (claim) {
+        claimingRider = rider;
+      } else if (rider.id !== delivery.rider_id) {
         return NextResponse.json(
           {
             success: false,
@@ -601,7 +706,7 @@ export async function PATCH(request: NextRequest) {
         );
       }
 
-      if (riderId) {
+      if (riderId && !claim) {
         return NextResponse.json(
           {
             success: false,
@@ -622,7 +727,131 @@ export async function PATCH(request: NextRequest) {
       ? [...delivery.status_history]
       : [];
 
-    // Assign platform rider
+    // Partner self-claim of an open PLATFORM job
+    if (claimingRider) {
+      if (String(delivery.status) !== "UNASSIGNED" || delivery.rider_id) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: "This delivery is no longer available.",
+          },
+          { status: 409 }
+        );
+      }
+
+      if (String(delivery.mode || "").toUpperCase() !== "PLATFORM") {
+        return NextResponse.json(
+          {
+            success: false,
+            message: "Only Ride with 701 platform jobs can be claimed.",
+          },
+          { status: 400 }
+        );
+      }
+
+      if (
+        !isEligibleDeliveryPartner(
+          claimingRider,
+          cleanText(delivery.recommended_vehicle) || null
+        )
+      ) {
+        return NextResponse.json(
+          {
+            success: false,
+            message:
+              "Go online with a suitable vehicle before claiming this delivery.",
+          },
+          { status: 400 }
+        );
+      }
+
+      const { count: activeCount } = await supabaseAdmin
+        .from("deliveries")
+        .select("id", { count: "exact", head: true })
+        .eq("rider_id", claimingRider.id)
+        .in("status", [
+          "ASSIGNED",
+          "HEADING_TO_RESTAURANT",
+          "ARRIVED_AT_RESTAURANT",
+          "PICKED_UP",
+          "ON_THE_WAY",
+          "ARRIVED_AT_CUSTOMER",
+        ]);
+
+      if ((activeCount || 0) > 0) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: "Finish your current delivery before claiming another.",
+          },
+          { status: 400 }
+        );
+      }
+
+      updateData.rider_id = claimingRider.id;
+      updateData.mode = "PLATFORM";
+      updateData.status = "ASSIGNED";
+      history.push(
+        buildStatusHistoryEntry(
+          "ASSIGNED",
+          actor,
+          note || `${claimingRider.full_name} claimed this Ride with 701 job`
+        )
+      );
+      updateData.status_history = history;
+
+      const { data, error } = await supabaseAdmin
+        .from("deliveries")
+        .update(updateData)
+        .eq("id", deliveryId)
+        .eq("status", "UNASSIGNED")
+        .is("rider_id", null)
+        .select(
+          `
+          *,
+          riders (
+            id,
+            full_name,
+            phone,
+            vehicle_type
+          )
+        `
+        )
+        .maybeSingle();
+
+      if (error) {
+        return NextResponse.json(
+          { success: false, message: error.message },
+          { status: 500 }
+        );
+      }
+
+      if (!data) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: "Another partner claimed this delivery first.",
+          },
+          { status: 409 }
+        );
+      }
+
+      try {
+        const { notifyDeliveryStatusChange } = await import(
+          "@/lib/notify/hooks"
+        );
+        void notifyDeliveryStatusChange(data.id);
+      } catch (notifyError) {
+        console.error("Delivery claim notify error:", notifyError);
+      }
+
+      return NextResponse.json({
+        success: true,
+        delivery: data,
+      });
+    }
+
+    // Assign platform rider (kitchen)
     if (riderId) {
       const { data: rider, error: riderError } = await supabaseAdmin
         .from("riders")
