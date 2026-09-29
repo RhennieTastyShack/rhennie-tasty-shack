@@ -197,6 +197,12 @@ export async function POST(request: NextRequest) {
     const plateNumber = cleanText(body?.plate_number).toUpperCase();
     const vehicleColor = cleanText(body?.vehicle_color);
     const vehicleModel = cleanText(body?.vehicle_model);
+    const vehicleMake = cleanText(body?.vehicle_make);
+    const vehicleYear = cleanText(body?.vehicle_year);
+    const dateOfBirth = cleanText(body?.date_of_birth);
+    const state = cleanText(body?.state);
+    const emergencyContactName = cleanText(body?.emergency_contact_name);
+    const emergencyContactPhone = cleanText(body?.emergency_contact_phone);
 
     const allowedIds = new Set([
       "NIN",
@@ -204,6 +210,18 @@ export async function POST(request: NextRequest) {
       "VOTERS_CARD",
       "PASSPORT",
     ]);
+
+    const category = vehicleType.toLowerCase();
+    const motorised =
+      category !== "bicycle" && category !== "electric_bicycle";
+    const needsLicence = [
+      "bike",
+      "motorcycle",
+      "tricycle",
+      "car",
+      "mini_van",
+      "van",
+    ].includes(category);
 
     if (!fullName) {
       return NextResponse.json(
@@ -238,6 +256,38 @@ export async function POST(request: NextRequest) {
         {
           success: false,
           message: "Upload a valid identity card and enter the ID number.",
+        },
+        { status: 400 }
+      );
+    }
+
+    if (needsLicence && idType !== "DRIVERS_LICENSE") {
+      return NextResponse.json(
+        {
+          success: false,
+          message:
+            "Motorised Ride with 701 partners must submit a driver's licence.",
+        },
+        { status: 400 }
+      );
+    }
+
+    if (motorised && !plateNumber) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Plate / registration number is required for this vehicle.",
+        },
+        { status: 400 }
+      );
+    }
+
+    if (!dateOfBirth || !state || !emergencyContactName || !emergencyContactPhone) {
+      return NextResponse.json(
+        {
+          success: false,
+          message:
+            "Date of birth, state, and emergency contact details are required.",
         },
         { status: 400 }
       );
@@ -280,6 +330,10 @@ export async function POST(request: NextRequest) {
       email,
       address,
       city,
+      state,
+      date_of_birth: dateOfBirth,
+      emergency_contact_name: emergencyContactName,
+      emergency_contact_phone: emergencyContactPhone,
       id_type: idType,
       id_number: idNumber,
       id_document_path: idDocumentPath,
@@ -287,6 +341,8 @@ export async function POST(request: NextRequest) {
       plate_number: plateNumber || null,
       vehicle_color: vehicleColor || null,
       vehicle_model: vehicleModel || null,
+      vehicle_make: vehicleMake || null,
+      vehicle_year: vehicleYear || null,
       vehicle_type: vehicleType,
       platform_fee_accepted: body?.platform_fee_accepted === true,
       platform_fee_percent: commissionPercent,
@@ -508,6 +564,32 @@ export async function PATCH(request: NextRequest) {
 
     if (body?.city) {
       updateData.city = cleanText(body.city);
+    }
+
+    if (body?.state !== undefined) {
+      updateData.state = cleanText(body.state) || null;
+    }
+
+    if (body?.date_of_birth !== undefined) {
+      updateData.date_of_birth = cleanText(body.date_of_birth) || null;
+    }
+
+    if (body?.emergency_contact_name !== undefined) {
+      updateData.emergency_contact_name =
+        cleanText(body.emergency_contact_name) || null;
+    }
+
+    if (body?.emergency_contact_phone !== undefined) {
+      updateData.emergency_contact_phone =
+        cleanText(body.emergency_contact_phone) || null;
+    }
+
+    if (body?.vehicle_make !== undefined) {
+      updateData.vehicle_make = cleanText(body.vehicle_make) || null;
+    }
+
+    if (body?.vehicle_year !== undefined) {
+      updateData.vehicle_year = cleanText(body.vehicle_year) || null;
     }
 
     if (body?.id_type) {
