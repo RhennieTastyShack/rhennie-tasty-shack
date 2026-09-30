@@ -3,29 +3,32 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
-import {
-  Menu,
-  X,
-  ShoppingBag,
-} from "lucide-react";
+import { Menu, X, ShoppingBag } from "lucide-react";
 
 import { useCart } from "@/app/context/CartContext";
 import LogoutButton from "@/app/components/LogoutButton";
 
+/** Top bar stays lean — everything else opens in the orange Menu panel. */
 const primaryLinks = [
   { label: "Home", href: "/" },
   { label: "Our Menu", href: "/menu" },
   { label: "Contact", href: "/#footer" },
 ];
 
+const menuLinks = [
+  { label: "Full Menu", href: "/menu" },
+  { label: "Food Boxes", href: "/#foodboxes" },
+  { label: "Meal Plans", href: "/subscription" },
+];
+
+const eventLinks = [
+  { label: "Event Concierge", href: "/client-portal/event-concierge" },
+  { label: "Catering", href: "/menu?category=catering" },
+];
+
 const moreLinks = [
   { label: "Promos", href: "/promos" },
   { label: "RTS Wallet", href: "/client-portal/wallet" },
-  { label: "Food Boxes", href: "/#foodboxes" },
-  { label: "Catering", href: "/menu?category=catering" },
-  { label: "Event Concierge", href: "/client-portal/event-concierge" },
-  { label: "Reviews", href: "/#reviews" },
-  { label: "Meal Plans", href: "/subscription" },
   { label: "Ride with 701", href: "/riders/join" },
 ];
 
@@ -65,8 +68,8 @@ export default function Navbar() {
             <h1 className="truncate text-base font-bold leading-tight text-white md:text-lg">
               Rhennie Tasty Shack
             </h1>
-            <p className="mt-1 text-[8px] font-bold uppercase tracking-[0.28em] text-[#F26A21] md:text-[9px]">
-              Premium Catering
+            <p className="mt-1 text-[8px] font-bold uppercase tracking-[0.18em] text-[#F26A21] md:text-[9px]">
+              Luxury Dining At Your Doorstep
             </p>
           </div>
         </Link>
@@ -94,7 +97,7 @@ export default function Navbar() {
                   }`
                 : "Open cart"
             }
-            className="relative flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-white/5 text-white transition-all duration-300 hover:border-[#F26A21] hover:bg-[#F26A21]"
+            className="relative flex h-11 w-11 touch-manipulation items-center justify-center rounded-full border border-white/15 bg-white/5 text-white transition-all duration-300 hover:border-[#F26A21] hover:bg-[#F26A21]"
           >
             <ShoppingBag size={19} strokeWidth={2} />
             {totalItems > 0 && (
@@ -115,12 +118,17 @@ export default function Navbar() {
             Order Now
           </a>
 
+          {/* Orange menu control — opens the More panel on all screen sizes */}
           <button
             type="button"
             aria-label={open ? "Close navigation menu" : "Open navigation menu"}
             aria-expanded={open}
             onClick={() => setOpen((previous) => !previous)}
-            className="relative z-[10000] flex h-11 items-center justify-center gap-2 rounded-full border border-white/20 bg-white/5 px-3.5 text-white backdrop-blur-md transition-all duration-300 hover:border-[#F26A21] hover:bg-[#F26A21]"
+            className={`relative z-[10000] flex h-11 min-w-[44px] touch-manipulation items-center justify-center gap-2 rounded-full px-3.5 text-sm font-bold transition-all duration-300 ${
+              open
+                ? "bg-white text-[#171717]"
+                : "border border-[#F26A21]/60 bg-[#F26A21] text-white shadow-[0_8px_24px_rgba(242,106,33,0.35)] hover:bg-[#D95512]"
+            }`}
           >
             {open ? (
               <X size={22} strokeWidth={2} />
@@ -135,7 +143,7 @@ export default function Navbar() {
       </div>
 
       <div
-        className={`absolute left-0 right-0 top-full z-[9998] border-b border-[#F26A21]/20 bg-[#080808]/98 shadow-[0_20px_60px_rgba(0,0,0,0.55)] backdrop-blur-2xl transition-all duration-300 ${
+        className={`absolute left-0 right-0 top-full z-[9998] max-h-[min(80vh,720px)] overflow-y-auto border-b border-[#F26A21]/20 bg-[#080808]/98 shadow-[0_20px_60px_rgba(0,0,0,0.55)] backdrop-blur-2xl transition-all duration-300 ${
           open
             ? "visible translate-y-0 opacity-100"
             : "invisible pointer-events-none -translate-y-3 opacity-0"
@@ -147,17 +155,10 @@ export default function Navbar() {
             className="mb-4 flex min-h-[54px] w-full items-center justify-center rounded-full border border-white/30 bg-white text-[15px] font-bold text-[#171717] lg:hidden"
           />
 
-          <div className="mb-5 flex items-center gap-3">
-            <span className="h-px w-8 bg-[#F26A21]" />
-            <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-[#F26A21]">
-              More from Rhennie
-            </span>
-          </div>
-
           <button
             type="button"
             onClick={handleCartClick}
-            className="mb-4 flex min-h-[58px] w-full items-center justify-between rounded-2xl border border-white/10 bg-white/[0.04] px-5 text-left transition-all duration-300 hover:border-[#F26A21]/50 hover:bg-[#F26A21]/10 lg:hidden"
+            className="mb-5 flex min-h-[58px] w-full items-center justify-between rounded-2xl border border-white/10 bg-white/[0.04] px-5 text-left transition-all duration-300 hover:border-[#F26A21]/50 hover:bg-[#F26A21]/10 lg:hidden"
           >
             <div className="flex items-center gap-4">
               <div className="relative flex h-10 w-10 items-center justify-center rounded-full bg-[#F26A21]/15 text-[#F26A21]">
@@ -182,33 +183,13 @@ export default function Navbar() {
             <span className="text-lg text-[#F26A21]">→</span>
           </button>
 
-          <div className="mb-2 grid gap-1 sm:grid-cols-2">
-            {primaryLinks.map((link) => (
-              <Link
-                key={`primary-${link.label}`}
-                href={link.href}
-                onClick={closeMenu}
-                className="flex min-h-[52px] items-center justify-between border-b border-white/[0.08] text-[15px] font-semibold text-white transition-colors duration-300 hover:text-[#F26A21] sm:border-0 sm:rounded-xl sm:px-4 sm:hover:bg-white/[0.04]"
-              >
-                <span>{link.label}</span>
-                <span className="text-lg text-[#F26A21]">→</span>
-              </Link>
-            ))}
-          </div>
-
-          <div className="mt-4 flex flex-col border-t border-white/[0.08] pt-2 sm:mt-5 sm:grid sm:grid-cols-2 sm:border-0 sm:pt-0">
-            {moreLinks.map((link) => (
-              <Link
-                key={link.label}
-                href={link.href}
-                onClick={closeMenu}
-                className="flex min-h-[52px] items-center justify-between border-b border-white/[0.08] text-[15px] font-medium text-white/85 transition-colors duration-300 hover:text-[#F26A21] sm:border-0 sm:rounded-xl sm:px-4 sm:hover:bg-white/[0.04]"
-              >
-                <span>{link.label}</span>
-                <span className="text-lg text-[#F26A21]">→</span>
-              </Link>
-            ))}
-          </div>
+          <LinkGroup title="Menu" links={menuLinks} onNavigate={closeMenu} />
+          <LinkGroup
+            title="Event Concierge"
+            links={eventLinks}
+            onNavigate={closeMenu}
+          />
+          <LinkGroup title="More" links={moreLinks} onNavigate={closeMenu} />
 
           <a
             href="https://wa.me/2348121577759"
@@ -223,5 +204,39 @@ export default function Navbar() {
         </nav>
       </div>
     </header>
+  );
+}
+
+function LinkGroup({
+  title,
+  links,
+  onNavigate,
+}: {
+  title: string;
+  links: { label: string; href: string }[];
+  onNavigate: () => void;
+}) {
+  return (
+    <div className="mb-5">
+      <div className="mb-2 flex items-center gap-3">
+        <span className="h-px w-8 bg-[#F26A21]" />
+        <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-[#F26A21]">
+          {title}
+        </span>
+      </div>
+      <div className="grid gap-1 sm:grid-cols-2">
+        {links.map((link) => (
+          <Link
+            key={`${title}-${link.label}`}
+            href={link.href}
+            onClick={onNavigate}
+            className="flex min-h-[52px] items-center justify-between rounded-xl border-b border-white/[0.08] text-[15px] font-medium text-white/90 transition-colors duration-300 hover:text-[#F26A21] sm:border-0 sm:px-4 sm:hover:bg-white/[0.04]"
+          >
+            <span>{link.label}</span>
+            <span className="text-lg text-[#F26A21]">→</span>
+          </Link>
+        ))}
+      </div>
+    </div>
   );
 }
