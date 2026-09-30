@@ -6,7 +6,7 @@ export default function WhatsAppButton() {
       href="https://wa.me/2348121577759"
       target="_blank"
       rel="noopener noreferrer"
-      className="fixed right-6 bottom-[calc(1.5rem+env(safe-area-inset-bottom,0px))] z-50 flex h-16 w-16 items-center justify-center rounded-full bg-green-500 text-white shadow-2xl transition-all duration-300 hover:scale-110 hover:bg-green-600 motion-safe:animate-bounce focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-400"
+      className="fixed right-4 bottom-[calc(1rem+env(safe-area-inset-bottom,0px))] z-50 flex h-14 w-14 touch-manipulation items-center justify-center rounded-full bg-green-500 text-white shadow-2xl transition-transform duration-300 hover:scale-105 hover:bg-green-600 sm:right-6 sm:bottom-[calc(1.5rem+env(safe-area-inset-bottom,0px))] sm:h-16 sm:w-16 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-400"
       aria-label="Chat with us on WhatsApp"
     >
       <svg

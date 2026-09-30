@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import Script from "next/script";
 import "./globals.css";
 
@@ -12,6 +12,21 @@ export const metadata: Metadata = {
   title: "Rhennie Tasty Shack",
   description:
     "Premium Nigerian and continental cuisine, catering, meal subscriptions and unforgettable dining experiences.",
+  applicationName: "Rhennie Tasty Shack",
+  formatDetection: {
+    telephone: true,
+    email: true,
+    address: true,
+  },
+};
+
+/** Explicit viewport for Android / iPhone / desktop browsers. */
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+  viewportFit: "cover",
+  themeColor: "#080808",
 };
 
 export default function RootLayout({
@@ -19,21 +34,27 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const isDev = process.env.NODE_ENV === "development";
+
   return (
     <html
       lang="en"
       data-scroll-behavior="smooth"
       suppressHydrationWarning
     >
-      <body suppressHydrationWarning>
-        {/* Cursor's browser adds data-cursor-ref before hydration. Strip it so the dev overlay stays clear. */}
-        <Script id="strip-editor-refs" strategy="beforeInteractive">
-          {`(function(){function strip(node){if(!node||node.nodeType!==1)return;if(node.hasAttribute&&node.hasAttribute("data-cursor-ref"))node.removeAttribute("data-cursor-ref");if(node.querySelectorAll)node.querySelectorAll("[data-cursor-ref]").forEach(function(el){el.removeAttribute("data-cursor-ref")})}var orig=Element.prototype.setAttribute;Element.prototype.setAttribute=function(name,value){if(name==="data-cursor-ref")return;return orig.call(this,name,value)};strip(document.documentElement);var observer=new MutationObserver(function(records){for(var i=0;i<records.length;i++){var record=records[i];if(record.type==="attributes"&&record.target&&record.target.removeAttribute)record.target.removeAttribute("data-cursor-ref");var nodes=record.addedNodes||[];for(var j=0;j<nodes.length;j++)strip(nodes[j])}});observer.observe(document.documentElement,{subtree:true,childList:true,attributes:true,attributeFilter:["data-cursor-ref"]});document.addEventListener("DOMContentLoaded",function(){strip(document.documentElement)});setTimeout(function(){observer.disconnect();Element.prototype.setAttribute=orig},4000)})();`}
-        </Script>
+      <body suppressHydrationWarning className="overflow-x-clip">
+        {/* Dev-only: strip Cursor editor refs that can cause hydration noise. */}
+        {isDev ? (
+          <Script id="strip-editor-refs" strategy="afterInteractive">
+            {`(function(){function strip(node){if(!node||node.nodeType!==1)return;if(node.hasAttribute&&node.hasAttribute("data-cursor-ref"))node.removeAttribute("data-cursor-ref");if(node.querySelectorAll)node.querySelectorAll("[data-cursor-ref]").forEach(function(el){el.removeAttribute("data-cursor-ref")})}strip(document.documentElement);var observer=new MutationObserver(function(records){for(var i=0;i<records.length;i++){var record=records[i];if(record.type==="attributes"&&record.target&&record.target.removeAttribute)record.target.removeAttribute("data-cursor-ref");var nodes=record.addedNodes||[];for(var j=0;j<nodes.length;j++)strip(nodes[j])}});observer.observe(document.documentElement,{subtree:true,childList:true,attributes:true,attributeFilter:["data-cursor-ref"]});setTimeout(function(){observer.disconnect()},4000)})();`}
+          </Script>
+        ) : null}
         <CartProvider>
           <Navbar />
 
-          {children}
+          <div className="pb-[calc(6.5rem+env(safe-area-inset-bottom,0px))] sm:pb-0">
+            {children}
+          </div>
 
           <CartDrawer />
           <RideWith701Button />
