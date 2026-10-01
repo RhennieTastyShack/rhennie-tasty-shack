@@ -384,6 +384,76 @@ export default function RiderPortalPage() {
     }
   }
 
+  async function reportCustomerWaiting(delivery: DeliveryRow) {
+    const minutesRaw = window.prompt(
+      "Chargeable minutes AFTER free waiting (customer/sender/receiver delay only):",
+      "5"
+    );
+    if (minutesRaw == null) return;
+    const chargeableMinutes = Math.max(0, Math.floor(Number(minutesRaw) || 0));
+    if (chargeableMinutes <= 0) {
+      setError("Enter chargeable minutes greater than 0.");
+      return;
+    }
+
+    const causeRaw = window.prompt(
+      "Who caused the delay? Type customer, sender, or receiver:",
+      "customer"
+    );
+    if (causeRaw == null) return;
+    const cause = causeRaw.trim().toLowerCase();
+    if (!["customer", "sender", "receiver"].includes(cause)) {
+      setError("Cause must be customer, sender, or receiver.");
+      return;
+    }
+
+    const reason = window.prompt(
+      "Reason for waiting (shown to customer and Studio):",
+      "Customer not ready when partner arrived"
+    );
+    if (!reason?.trim()) return;
+
+    setBusyId(delivery.id);
+    setError("");
+    try {
+      const token = await getToken();
+      if (!token) return;
+
+      const response = await fetch("/api/admin/ride-waiting", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          delivery_id: delivery.id,
+          cause,
+          reason: reason.trim(),
+          chargeable_minutes: chargeableMinutes,
+          arrived_at: new Date().toISOString(),
+          waiting_started_at: new Date().toISOString(),
+        }),
+      });
+      const result = await response.json();
+      if (!response.ok || !result?.success) {
+        throw new Error(result?.message || "Unable to record waiting charge.");
+      }
+      setError("");
+      window.alert(
+        result.message ||
+          "Waiting charge recorded as pending for Studio review."
+      );
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Unable to record waiting charge."
+      );
+    } finally {
+      setBusyId(null);
+    }
+  }
+
   if (checking) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-[#0B0B0B]">
@@ -894,6 +964,19 @@ export default function RiderPortalPage() {
                           {busyId === delivery.id
                             ? "Updating..."
                             : `Mark ${getDeliveryStatusLabel(next)}`}
+                        </button>
+                      )}
+                      {(delivery.status === "ARRIVED_AT_RESTAURANT" ||
+                        delivery.status === "ARRIVED_AT_CUSTOMER") && (
+                        <button
+                          type="button"
+                          disabled={busyId === delivery.id}
+                          onClick={() =>
+                            void reportCustomerWaiting(delivery)
+                          }
+                          className="inline-flex min-h-[42px] items-center justify-center rounded-full border border-[#D4AF37]/40 px-4 text-xs font-bold uppercase tracking-wider text-[#D4AF37] disabled:opacity-60"
+                        >
+                          Report waiting fee
                         </button>
                       )}
                     </div>

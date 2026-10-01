@@ -443,11 +443,11 @@ export default function RiderJoinPage() {
                 {RIDE_BRAND.name}
               </p>
               <h1 className="mt-3 font-serif text-3xl font-bold sm:text-4xl">
-                Partner registration
+                {RIDE_BRAND.partnerHeadline}
               </h1>
               <p className="mt-3 text-sm leading-6 text-white/55">
-                {RIDE_BRAND.tagline}. Complete each step. Bank payout details stay
-                private in your portal after approval.
+                {RIDE_BRAND.supportCopy} Complete each step. Bank payout details
+                stay private in your portal after approval.
               </p>
             </div>
             <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full border border-[#D4AF37]/40 bg-[#0B0B0B] text-[#D4AF37]">

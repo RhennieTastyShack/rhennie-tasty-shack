@@ -151,10 +151,10 @@ export default function FeaturedMeals() {
                 font-extrabold
                 uppercase
                 tracking-[0.35em]
-                text-[#F26A21]
+                text-[#D4AF37]
               "
             >
-              From Our Kitchen
+              Featured
             </p>
 
             <h2
@@ -171,7 +171,7 @@ export default function FeaturedMeals() {
               "
             >
               Worth
-              <span className="text-[#F26A21]">
+              <span className="text-[#D4AF37]">
                 {" "}
                 remembering.
               </span>
@@ -187,9 +187,7 @@ export default function FeaturedMeals() {
                 sm:text-base
               "
             >
-              Discover some of Rhennie Tasty Shack&apos;s
-              signature favourites, freshly prepared and
-              beautifully served.
+              Signature favourites — freshly prepared and ready to order.
             </p>
           </div>
 
@@ -263,7 +261,7 @@ export default function FeaturedMeals() {
                 transition-all
                 duration-500
                 hover:-translate-y-2
-                hover:border-[#F26A21]/30
+                hover:border-[#D4AF37]/35
                 hover:shadow-[0_25px_60px_rgba(0,0,0,0.10)]
               "
             >
@@ -326,14 +324,14 @@ export default function FeaturedMeals() {
                       top-5
                       z-10
                       rounded-full
-                      bg-[#F26A21]
+                      bg-[#0B0B0B]
                       px-4
                       py-2.5
                       text-[8px]
                       font-extrabold
                       uppercase
                       tracking-[0.18em]
-                      text-white
+                      text-[#D4AF37]
                       shadow-lg
                       sm:left-6
                       sm:top-6

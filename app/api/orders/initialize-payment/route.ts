@@ -11,7 +11,10 @@ import {
 import { getCheckoutDeliveryQuote } from "@/lib/delivery-fee";
 import {
   getRidePlatformCommissionPercent,
+  getRideStartingFeeNgn,
+  getRideSurgeConfig,
   getVehiclePricingCatalog,
+  isSurgeActiveNow,
 } from "@/lib/platform-settings";
 import { APPETIZER_MINIMUM, isAppetizerDish } from "@/lib/party-menu";
 import {
@@ -400,12 +403,31 @@ export async function POST(request: Request) {
         Number(item.quantity);
     }
 
-    const vehicleCatalog = await getVehiclePricingCatalog();
-    const commissionPercent = await getRidePlatformCommissionPercent();
+    const [vehicleCatalog, commissionPercent, surgeConfig, startingFeeNgn] =
+      await Promise.all([
+        getVehiclePricingCatalog(),
+        getRidePlatformCommissionPercent(),
+        getRideSurgeConfig(),
+        getRideStartingFeeNgn(),
+      ]);
     const itemCount = items.reduce(
       (sum, item) => sum + Math.max(0, Number(item.quantity) || 0),
       0
     );
+    const preliminaryQuote = getCheckoutDeliveryQuote(
+      deliveryType,
+      deliveryAddress || "",
+      {
+        dispatchMode: resolvedDispatchMode,
+        itemCount,
+        catalog: vehicleCatalog,
+        startingFromNgn: startingFeeNgn,
+      }
+    );
+    const surgeActive = isSurgeActiveNow(surgeConfig, {
+      vehicleCategory: preliminaryQuote.recommendedVehicle?.category,
+      address: deliveryAddress || "",
+    });
     const deliveryQuote = getCheckoutDeliveryQuote(
       deliveryType,
       deliveryAddress || "",
@@ -413,6 +435,10 @@ export async function POST(request: Request) {
         dispatchMode: resolvedDispatchMode,
         itemCount,
         catalog: vehicleCatalog,
+        applySurge: surgeActive,
+        surgeMultiplier: surgeConfig.multiplier,
+        surgeReason: surgeConfig.reason,
+        startingFromNgn: startingFeeNgn,
       }
     );
     const deliveryFee = deliveryQuote.feeNgn;

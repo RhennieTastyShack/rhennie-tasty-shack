@@ -8,10 +8,12 @@ export default function PromoStrip() {
           <p className="text-xs font-bold uppercase tracking-[0.35em] text-[#D4AF37]">
             Promos and discounts
           </p>
-          <h2 className="mt-3 text-3xl font-bold">Bring a Rhennie code to checkout</h2>
+          <h2 className="mt-3 font-serif text-3xl font-bold">
+            A little something at checkout
+          </h2>
           <p className="mt-3 max-w-xl text-sm leading-7 text-white/70">
-            Active codes take a percentage off the food. Delivery and tips are
-            not discounted. WhatsApp support is on every page if you need a hand.
+            Active codes take a percentage off the food. Delivery and tips stay
+            the same.
           </p>
         </div>
         <Link

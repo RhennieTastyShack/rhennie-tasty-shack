@@ -7,14 +7,28 @@ export const RIDE_BRAND = {
   name: "Ride with 701",
   tagline: "Move. Deliver. Earn.",
   partnerLabel: "Delivery Partner",
+  partnerHeadline: "Partner With Ride With 701",
   joinPath: "/riders/join",
   portalPath: "/riders/portal",
   supportCopy:
-    "Join our growing delivery network and earn by completing deliveries with your preferred mode of transportation.",
+    "Whether you ride, drive or deliver, there’s a place for you on Ride With 701.",
 } as const;
 
 /** Default RTS platform share of a partner's GROSS delivery earning. Configurable via settings. */
 export const DEFAULT_PLATFORM_COMMISSION_PERCENT = 5;
+
+/** Fallback only — override via platform_settings.ride_base_location. */
+export const DEFAULT_RIDE_BASE_LOCATION =
+  "12 Olorunisola Road, Opp. Alowonle Hotel, Ayobo, Lagos, Nigeria";
+
+/** Fallback operating locations — override via platform_settings.ride_service_locations. */
+export const DEFAULT_RIDE_SERVICE_LOCATIONS = [
+  "12 Olorunisola Road, Opp. Alowonle Hotel, Ayobo, Lagos, Nigeria",
+  "16B Unity Street, Off Kekerejesu, Ikola, Alagbado, Lagos",
+] as const;
+
+/** Marketing / starting delivery fee — actual quotes vary by distance & vehicle. */
+export const DEFAULT_STARTING_DELIVERY_FEE_NGN = 800;
 
 export type VehicleCategory =
   | "bicycle"
@@ -24,6 +38,7 @@ export type VehicleCategory =
   | "car"
   | "mini_van"
   | "van"
+  | "bus"
   | "other";
 
 export type VehiclePricingProfile = {
@@ -45,15 +60,15 @@ export type VehiclePricingProfile = {
   surgeMultiplier: number;
 };
 
-/** Central vehicle pricing. Motorcycle matches the published base ₦500 + ₦200/km. */
+/** Central vehicle pricing defaults. Motorcycle starts from ₦800 + ₦200/km. */
 export const VEHICLE_PRICING: Record<VehicleCategory, VehiclePricingProfile> = {
   bicycle: {
     category: "bicycle",
     label: "Bicycle",
-    baseFeeNgn: 400,
+    baseFeeNgn: 800,
     perKmNgn: 150,
-    minimumFeeNgn: 700,
-    minimumPartnerEarningNgn: 600,
+    minimumFeeNgn: 800,
+    minimumPartnerEarningNgn: 700,
     maxDistanceKm: 8,
     maxCapacityNote: "Light parcels only",
     maxBags: 1,
@@ -67,10 +82,10 @@ export const VEHICLE_PRICING: Record<VehicleCategory, VehiclePricingProfile> = {
   electric_bicycle: {
     category: "electric_bicycle",
     label: "Electric Bicycle",
-    baseFeeNgn: 450,
+    baseFeeNgn: 800,
     perKmNgn: 170,
     minimumFeeNgn: 800,
-    minimumPartnerEarningNgn: 700,
+    minimumPartnerEarningNgn: 750,
     maxDistanceKm: 12,
     maxCapacityNote: "Light to medium parcels",
     maxBags: 2,
@@ -84,10 +99,10 @@ export const VEHICLE_PRICING: Record<VehicleCategory, VehiclePricingProfile> = {
   motorcycle: {
     category: "motorcycle",
     label: "Motorcycle / Bike",
-    baseFeeNgn: 500,
+    baseFeeNgn: 800,
     perKmNgn: 200,
-    minimumFeeNgn: 900,
-    minimumPartnerEarningNgn: 800,
+    minimumFeeNgn: 800,
+    minimumPartnerEarningNgn: 750,
     maxDistanceKm: 40,
     maxCapacityNote: "Standard food bags",
     maxBags: 4,
@@ -166,13 +181,30 @@ export const VEHICLE_PRICING: Record<VehicleCategory, VehiclePricingProfile> = {
     waitingFeePer15MinNgn: 400,
     surgeMultiplier: 1,
   },
+  bus: {
+    category: "bus",
+    label: "Bus",
+    baseFeeNgn: 5000,
+    perKmNgn: 650,
+    minimumFeeNgn: 7000,
+    minimumPartnerEarningNgn: 6000,
+    maxDistanceKm: 100,
+    maxCapacityNote: "Large group catering and bulk logistics",
+    maxBags: 60,
+    maxItems: 150,
+    maxWeightKg: 400,
+    maxVolumeLitres: 800,
+    largeOrderAdjustmentNgn: 2500,
+    waitingFeePer15MinNgn: 500,
+    surgeMultiplier: 1,
+  },
   other: {
     category: "other",
     label: "Other approved vehicle",
-    baseFeeNgn: 500,
+    baseFeeNgn: 800,
     perKmNgn: 200,
-    minimumFeeNgn: 900,
-    minimumPartnerEarningNgn: 800,
+    minimumFeeNgn: 800,
+    minimumPartnerEarningNgn: 750,
     maxDistanceKm: 40,
     maxCapacityNote: "As approved by Rhennie Studio",
     maxBags: 4,
@@ -192,10 +224,15 @@ export const FOOD_VEHICLE_LADDER: VehicleCategory[] = [
   "car",
   "mini_van",
   "van",
+  "bus",
 ];
 
-/** Join-form options. Values persist on riders.vehicle_type. */
-export const VEHICLE_OPTIONS: { value: string; label: string; category: VehicleCategory }[] = [
+/** Join-form options. Values persist on riders.vehicle_type. Truck / pickup truck excluded. */
+export const VEHICLE_OPTIONS: {
+  value: string;
+  label: string;
+  category: VehicleCategory;
+}[] = [
   { value: "bicycle", label: "Bicycle", category: "bicycle" },
   { value: "electric_bicycle", label: "Electric Bicycle", category: "electric_bicycle" },
   { value: "bike", label: "Motorcycle / Bike", category: "motorcycle" },
@@ -204,13 +241,23 @@ export const VEHICLE_OPTIONS: { value: string; label: string; category: VehicleC
   { value: "car", label: "Car", category: "car" },
   { value: "mini_van", label: "Mini Van", category: "mini_van" },
   { value: "van", label: "Van", category: "van" },
+  { value: "bus", label: "Bus", category: "bus" },
   { value: "other", label: "Other approved vehicle", category: "other" },
 ];
+
+const BLOCKED_VEHICLES = new Set([
+  "truck",
+  "pickup",
+  "pickup_truck",
+  "pickup-truck",
+  "lorry",
+]);
 
 export function normalizeVehicleCategory(
   vehicleType: string | null | undefined
 ): VehicleCategory {
   const raw = String(vehicleType || "bike").toLowerCase().trim();
+  if (BLOCKED_VEHICLES.has(raw)) return "van";
   const match = VEHICLE_OPTIONS.find((option) => option.value === raw);
   if (match) return match.category;
   if (raw === "walk" || raw === "on_foot") return "bicycle";
@@ -234,6 +281,8 @@ export type DeliveryQuoteInput = {
   estimatedVolumeLitres?: number;
   waitingBlocks?: number;
   applySurge?: boolean;
+  /** Platform surge multiplier when applySurge is true (defaults to vehicle profile). */
+  surgeMultiplier?: number;
   /** Optional override catalog (e.g. rows loaded from delivery_vehicle_pricing). */
   catalog?: Record<VehicleCategory, VehiclePricingProfile>;
 };
@@ -328,7 +377,7 @@ export function recommendFoodVehicle(
 
 /**
  * Quote a customer-facing Ride with 701 delivery fee for one vehicle profile.
- * Factors road distance, vehicle profile, order size, bags, weight, and volume.
+ * Initial quotes MUST pass waitingBlocks=0 — waiting is post-arrival only.
  * Customer sees ONE delivery amount — never a separate RTS commission line.
  */
 export function quoteRideDeliveryFee(input: DeliveryQuoteInput): {
@@ -338,8 +387,10 @@ export function quoteRideDeliveryFee(input: DeliveryQuoteInput): {
   breakdown: {
     base: number;
     distance: number;
+    vehicleFee: number;
     largeOrder: number;
     bulk: number;
+    surge: number;
     waiting: number;
     beforeSurge: number;
   };
@@ -359,7 +410,6 @@ export function quoteRideDeliveryFee(input: DeliveryQuoteInput): {
   const largeOrder =
     bags >= 4 || items >= 8 ? vehicle.largeOrderAdjustmentNgn : 0;
 
-  // Extra bulk when weight/volume exceeds light food-bag norms.
   let bulk = 0;
   if (weightKg >= 25 || volumeL >= 40) {
     bulk += Math.round(vehicle.largeOrderAdjustmentNgn * 1.5);
@@ -367,15 +417,24 @@ export function quoteRideDeliveryFee(input: DeliveryQuoteInput): {
     bulk += vehicle.largeOrderAdjustmentNgn;
   }
 
+  const vehicleFee = largeOrder + bulk;
+
+  // Waiting is NEVER part of the initial booking quote unless explicitly passed
+  // after customer-caused waiting has been recorded.
   const waiting =
     Math.max(0, Number(input.waitingBlocks) || 0) *
     vehicle.waitingFeePer15MinNgn;
 
-  const beforeSurge = base + distance + largeOrder + bulk + waiting;
-  const surged = input.applySurge
-    ? Math.round(beforeSurge * Number(vehicle.surgeMultiplier || 1))
+  const beforeSurge = base + distance + vehicleFee;
+  const multiplier = Math.max(
+    1,
+    Number(input.surgeMultiplier ?? vehicle.surgeMultiplier) || 1
+  );
+  const surgedTotal = input.applySurge
+    ? Math.round(beforeSurge * multiplier)
     : beforeSurge;
-  const feeNgn = Math.max(vehicle.minimumFeeNgn, surged);
+  const surge = Math.max(0, surgedTotal - beforeSurge);
+  const feeNgn = Math.max(vehicle.minimumFeeNgn, surgedTotal + waiting);
 
   return {
     feeNgn,
@@ -384,12 +443,27 @@ export function quoteRideDeliveryFee(input: DeliveryQuoteInput): {
     breakdown: {
       base,
       distance,
+      vehicleFee,
       largeOrder,
       bulk,
+      surge,
       waiting,
       beforeSurge,
     },
   };
+}
+
+/** Customer-caused waiting fee after free period (not used in initial quotes). */
+export function calculateWaitingFeeNgn(input: {
+  chargeableMinutes: number;
+  feePerMinuteNgn: number;
+  maxFeeNgn: number;
+}) {
+  const minutes = Math.max(0, Math.floor(Number(input.chargeableMinutes) || 0));
+  const perMin = Math.max(0, Math.round(Number(input.feePerMinuteNgn) || 0));
+  const maxFee = Math.max(0, Math.round(Number(input.maxFeeNgn) || 0));
+  const raw = minutes * perMin;
+  return maxFee > 0 ? Math.min(maxFee, raw) : raw;
 }
 
 export function splitDeliveryEarning(

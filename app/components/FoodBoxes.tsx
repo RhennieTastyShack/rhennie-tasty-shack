@@ -329,10 +329,10 @@ export default function FoodBoxes() {
             </div>
 
             <Link
-              href="/menu"
-              className="shrink-0 rounded-full bg-yellow-500 px-7 py-3.5 text-sm font-bold text-black transition-all hover:bg-yellow-400"
+              href="/menu?category=food-boxes"
+              className="shrink-0 rounded-full bg-[#D4AF37] px-7 py-3.5 text-sm font-bold text-black transition-all hover:bg-[#E5C65A]"
             >
-              Explore Our Menu →
+              Browse Food Boxes →
             </Link>
 
           </div>

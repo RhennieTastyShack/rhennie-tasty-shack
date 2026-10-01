@@ -15,32 +15,28 @@ export default function MenuHero() {
         {/* Eyebrow */}
         <div className="flex items-center justify-center gap-3">
 
-          <span className="h-px w-8 bg-[#F26A21] sm:w-12" />
+          <span className="h-px w-8 bg-[#D4AF37] sm:w-12" />
 
-          <span className="text-[9px] font-bold uppercase tracking-[0.35em] text-[#F26A21] sm:text-[10px] sm:tracking-[0.45em]">
-            The Rhennie Signature Collection
+          <span className="text-[9px] font-bold uppercase tracking-[0.35em] text-[#D4AF37] sm:text-[10px] sm:tracking-[0.45em]">
+            Rhennie Tasty Shack
           </span>
 
-          <span className="h-px w-8 bg-[#F26A21] sm:w-12" />
+          <span className="h-px w-8 bg-[#D4AF37] sm:w-12" />
 
         </div>
 
         {/* Heading */}
         <h1 className="mt-7 font-serif text-4xl font-bold leading-[0.95] tracking-tight text-white sm:text-5xl md:text-6xl lg:text-7xl">
-
-          Luxury Meals
-
-          <span className="mt-3 block text-[#F26A21]">
-            Crafted For Every Occasion
+          The Menu
+          <span className="mt-3 block text-[#D4AF37]">
+            Every collection. One place.
           </span>
-
         </h1>
 
         {/* Description */}
-        <p className="mx-auto mt-7 max-w-3xl text-sm leading-7 text-white/60 sm:text-base sm:leading-8 lg:text-lg">
-          Browse our premium collections ranging from signature meals,
-          executive lunch packs, breakfast favourites, grill house
-          selections, family pots, catering services and luxury food boxes.
+        <p className="mx-auto mt-7 max-w-2xl text-sm leading-7 text-white/60 sm:text-base sm:leading-8">
+          Signature meals, food boxes, pots by the litre and more — browse by
+          collection and order with ease.
         </p>
 
         {/* Bottom details */}

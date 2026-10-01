@@ -103,59 +103,37 @@ export default function Hero() {
       <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/45 to-black/10" />
       <div className="absolute inset-0 bg-gradient-to-b from-black/45 via-transparent to-black/75 sm:hidden" />
       <div className="absolute inset-x-0 bottom-0 h-56 bg-gradient-to-t from-black via-black/40 to-transparent" />
-      <div className="pointer-events-none absolute -left-32 top-1/4 h-72 w-72 rounded-full bg-[#F26A21]/10 blur-[110px]" />
+      <div className="pointer-events-none absolute -left-32 top-1/4 h-72 w-72 rounded-full bg-[#D4AF37]/10 blur-[110px]" />
 
       <div className="relative z-20 flex min-h-[calc(100svh-76px)] items-center px-5 py-16 sm:min-h-[calc(100svh-80px)] sm:px-8 sm:py-20 lg:min-h-[calc(100svh-96px)] lg:px-12 xl:px-20">
         <div className="mx-auto w-full max-w-7xl">
-          <div className="max-w-4xl">
-            <div className="mb-5 flex items-center gap-3 sm:mb-7">
-              <span className="h-px w-8 bg-[#F26A21] sm:w-14" />
-              <span className="text-[8px] font-bold uppercase tracking-[0.32em] text-white/85 sm:text-[10px] sm:tracking-[0.45em]">
-                Rhennie Tasty Shack
-              </span>
-            </div>
-
-            <h1 className="font-serif font-bold leading-[0.88] tracking-[-0.045em] text-white">
-              <span className="block text-[3.4rem] sm:text-6xl md:text-7xl lg:text-8xl xl:text-[7.5rem]">
-                Crafted for
-              </span>
-              <span className="mt-2 block text-[3.5rem] text-[#F26A21] sm:mt-3 sm:text-6xl md:text-7xl lg:text-8xl xl:text-[7.5rem]">
-                Exceptional
-              </span>
-              <span className="block text-[3.5rem] text-[#F26A21] sm:text-6xl md:text-7xl lg:text-8xl xl:text-[7.5rem]">
-                Taste.
-              </span>
-            </h1>
-
-            <p className="mt-6 max-w-xl text-[13px] leading-6 text-white/80 sm:mt-8 sm:text-base sm:leading-8 lg:text-lg">
-              Freshly prepared meals made with premium ingredients,
-              unforgettable flavours and exceptional service — delivered
-              straight to your doorstep.
+          <div className="max-w-3xl text-center sm:text-left">
+            <p className="text-[10px] font-bold uppercase tracking-[0.35em] text-white/80 sm:text-[11px]">
+              Rhennie Tasty Shack
             </p>
 
-            <div className="mt-7 flex w-full flex-col gap-3 sm:mt-10 sm:flex-row sm:items-center">
+            <h1 className="mt-4 font-serif text-[2rem] font-medium italic leading-snug tracking-tight text-[#D4AF37] sm:text-4xl md:text-[2.75rem]">
+              A Taste Above the Ordinary.
+            </h1>
+
+            <p className="mx-auto mt-5 max-w-md text-[14px] leading-7 text-white/70 sm:mx-0 sm:text-base">
+              Premium meals, crafted with care.
+            </p>
+
+            <div className="mt-8 flex w-full flex-col gap-3 sm:mt-9 sm:flex-row sm:items-center">
               <Link
                 href="/menu"
-                className="inline-flex min-h-[52px] w-full touch-manipulation items-center justify-center rounded-full bg-[#F26A21] px-7 text-[13px] font-bold text-white shadow-[0_15px_45px_rgba(242,106,33,0.28)] transition-all duration-300 hover:-translate-y-1 hover:bg-[#D95512] sm:w-auto sm:px-8 sm:text-sm"
+                className="inline-flex min-h-[52px] w-full touch-manipulation items-center justify-center rounded-full bg-[#D4AF37] px-8 text-[13px] font-bold text-black transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#E5C65A] sm:w-auto sm:text-sm"
               >
-                Order Your Meal
-                <span className="ml-2">→</span>
+                Order Now
               </Link>
 
               <Link
                 href="/menu"
-                className="inline-flex min-h-[52px] w-full touch-manipulation items-center justify-center rounded-full border border-white/60 bg-black/20 px-7 text-[13px] font-bold text-white backdrop-blur-md transition-all duration-300 hover:border-white hover:bg-white hover:text-black sm:w-auto sm:px-8 sm:text-sm"
+                className="inline-flex min-h-[52px] w-full touch-manipulation items-center justify-center rounded-full border border-white/50 bg-transparent px-8 text-[13px] font-bold text-white transition-all duration-300 hover:border-white hover:bg-white hover:text-black sm:w-auto sm:text-sm"
               >
-                Explore Our Menu
+                View Menu
               </Link>
-            </div>
-
-            <div className="mt-7 flex flex-wrap items-center gap-x-4 gap-y-2 text-[8px] font-semibold uppercase tracking-[0.15em] text-white/60 sm:mt-10 sm:gap-x-7 sm:text-[10px]">
-              <span>Premium Ingredients</span>
-              <span className="h-1 w-1 rounded-full bg-[#F26A21]" />
-              <span>Freshly Prepared</span>
-              <span className="h-1 w-1 rounded-full bg-[#F26A21]" />
-              <span>Fast Delivery</span>
             </div>
           </div>
         </div>
@@ -174,8 +152,8 @@ export default function Hero() {
               aria-label={`Show hero video ${index + 1}`}
               aria-current={currentVideo === index}
               className={`h-1.5 touch-manipulation rounded-full transition-all duration-500 ${
-                currentVideo === index
-                  ? "w-9 bg-[#F26A21]"
+                  currentVideo === index
+                  ? "w-9 bg-[#D4AF37]"
                   : "w-4 bg-white/40 hover:bg-white"
               }`}
             />
@@ -189,7 +167,7 @@ export default function Hero() {
             Scroll
           </span>
           <div className="flex h-8 w-5 justify-center rounded-full border border-white/40 p-1">
-            <div className="h-1.5 w-1 rounded-full bg-[#F26A21] motion-safe:animate-bounce" />
+            <div className="h-1.5 w-1 rounded-full bg-[#D4AF37] motion-safe:animate-bounce" />
           </div>
         </div>
       </div>

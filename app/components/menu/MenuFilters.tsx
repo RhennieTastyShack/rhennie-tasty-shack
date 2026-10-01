@@ -91,19 +91,19 @@ export default function MenuFilters({
         {showCollectionChips ? (
           <div className="flex flex-col items-center">
             <div className="mb-3 flex items-center gap-3">
-              <span className="h-px w-8 bg-[#F26A21]" />
-              <p className="text-[9px] font-bold uppercase tracking-[0.4em] text-[#F26A21]">
-                Explore Our Menu
+              <span className="h-px w-8 bg-[#D4AF37]" />
+              <p className="text-[9px] font-bold uppercase tracking-[0.4em] text-[#D4AF37]">
+                Collections
               </p>
-              <span className="h-px w-8 bg-[#F26A21]" />
+              <span className="h-px w-8 bg-[#D4AF37]" />
             </div>
 
             <h3 className="text-center font-serif text-2xl font-bold text-[#171717] sm:text-3xl">
-              Find Something Delicious
+              Browse the menu
             </h3>
 
             <p className="mt-2 text-center text-xs text-gray-500 sm:text-sm">
-              Search our menu or explore a collection.
+              Including Food Boxes, pots by the litre and signature meals.
             </p>
           </div>
         ) : null}
@@ -174,8 +174,8 @@ export default function MenuFilters({
                       aria-pressed={isActive}
                       className={`group relative flex min-h-[42px] items-center justify-center whitespace-nowrap rounded-full border px-5 text-[9px] font-bold uppercase tracking-[0.12em] transition-all duration-300 sm:min-h-[44px] sm:px-6 ${
                         isActive
-                          ? "border-[#F26A21] bg-[#F26A21] text-white shadow-[0_8px_25px_rgba(242,106,33,0.22)]"
-                          : "border-black/10 bg-white text-gray-600 hover:border-[#F26A21]/50 hover:text-[#F26A21] hover:shadow-sm"
+                          ? "border-[#0B0B0B] bg-[#0B0B0B] text-[#D4AF37] shadow-[0_8px_25px_rgba(0,0,0,0.12)]"
+                          : "border-black/10 bg-white text-gray-600 hover:border-[#D4AF37]/50 hover:text-[#171717] hover:shadow-sm"
                       }`}
                     >
                       {category.label}

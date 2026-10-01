@@ -3,6 +3,7 @@ import Script from "next/script";
 import "./globals.css";
 
 import Navbar from "@/app/components/Navbar";
+import SiteFooter from "@/app/components/SiteFooter";
 import CartDrawer from "@/app/components/cart/CartDrawer";
 import WhatsAppButton from "@/app/components/WhatsAppButton";
 import RideWith701Button from "@/app/components/RideWith701Button";
@@ -61,6 +62,7 @@ export default function RootLayout({
             {children}
           </div>
 
+          <SiteFooter />
           <CartDrawer />
           <RideWith701Button />
           <WhatsAppButton />

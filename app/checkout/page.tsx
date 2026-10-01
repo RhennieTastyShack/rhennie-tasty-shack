@@ -82,14 +82,64 @@ export default function CheckoutPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [mounted, setMounted] = useState(false);
+  const [ridePricing, setRidePricing] = useState({
+    startingFromNgn: 800,
+    surgeActive: false,
+    surgeMultiplier: 1,
+    surgeReason: "",
+  });
+
+  useEffect(() => {
+    let cancelled = false;
+    const params = new URLSearchParams();
+    if (deliveryAddress.trim()) {
+      params.set("address", deliveryAddress.trim());
+    }
+    const query = params.toString();
+    fetch(`/api/ride/pricing${query ? `?${query}` : ""}`, {
+      cache: "no-store",
+    })
+      .then((response) => response.json())
+      .then((result) => {
+        if (cancelled || !result?.success) return;
+        setRidePricing({
+          startingFromNgn: Math.max(
+            800,
+            Math.round(Number(result.starting_from_ngn) || 800)
+          ),
+          surgeActive: Boolean(result?.surge?.active),
+          surgeMultiplier: Math.max(
+            1,
+            Number(result?.surge?.multiplier) || 1
+          ),
+          surgeReason: String(result?.surge?.reason || ""),
+        });
+      })
+      .catch(() => {
+        /* keep defaults */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [deliveryAddress]);
 
   const deliveryQuote = useMemo(
     () =>
       getCheckoutDeliveryQuote(deliveryType, deliveryAddress, {
         dispatchMode,
         itemCount: totalItems,
+        applySurge: ridePricing.surgeActive,
+        surgeMultiplier: ridePricing.surgeMultiplier,
+        surgeReason: ridePricing.surgeReason,
+        startingFromNgn: ridePricing.startingFromNgn,
       }),
-    [deliveryType, deliveryAddress, dispatchMode, totalItems]
+    [
+      deliveryType,
+      deliveryAddress,
+      dispatchMode,
+      totalItems,
+      ridePricing,
+    ]
   );
 
   const deliveryFee = deliveryQuote.feeNgn;
@@ -725,9 +775,10 @@ export default function CheckoutPage() {
                         className="w-full resize-none rounded-2xl border border-black/10 bg-[#F8F6F2] px-4 py-3 text-sm outline-none transition-all placeholder:text-black/30 focus:border-[#F26A21] focus:bg-white focus:ring-4 focus:ring-[#F26A21]/10"
                       />
                       <p className="mt-2 text-xs leading-5 text-black/45">
-                        Lagos areas map to kilometres for Ride with 701 motorcycle
-                        rates (from about ₦900). Include the area name so the quote
-                        is right. Own rider and pickup stay ₦0 for logistics.
+                        Delivery from ₦
+                        {ridePricing.startingFromNgn.toLocaleString("en-NG")}.
+                        Final quote depends on area, distance and vehicle. Include
+                        the area name. Own rider and pickup stay ₦0 for logistics.
                       </p>
                     </div>
 
@@ -1009,32 +1060,95 @@ export default function CheckoutPage() {
                   </div>
 
                   {deliveryType === "delivery" &&
-                  dispatchMode === "PLATFORM" &&
-                  deliveryQuote.recommendedVehicle &&
-                  deliveryAddress.trim() ? (
+                  dispatchMode === "PLATFORM" ? (
                     <div className="mt-3 rounded-2xl border border-[#D4AF37]/20 bg-[#FFF8E8] px-3 py-3 text-xs leading-5 text-black/65">
                       <p className="font-bold text-[#171717]">
                         Ride with 701
                       </p>
-                      <p className="mt-1">
-                        Recommended vehicle:{" "}
-                        {deliveryQuote.recommendedVehicle.label}
+                      <p className="mt-1 text-black/55">
+                        Delivery from{" "}
+                        {formatPrice(deliveryQuote.startingFromNgn)}
                       </p>
-                      <p className="mt-1 font-semibold text-[#171717]">
-                        Delivery: {formatPrice(deliveryFee)}
-                      </p>
-                      {deliveryQuote.capacityNote ? (
+                      {deliveryAddress.trim() &&
+                      deliveryQuote.recommendedVehicle &&
+                      deliveryQuote.breakdown ? (
+                        <>
+                          <p className="mt-2">
+                            Recommended vehicle:{" "}
+                            {deliveryQuote.recommendedVehicle.label}
+                          </p>
+                          <div className="mt-3 space-y-1.5 border-t border-[#D4AF37]/20 pt-3">
+                            <div className="flex justify-between gap-3">
+                              <span>Base Delivery Fee</span>
+                              <span>
+                                {formatPrice(deliveryQuote.breakdown.base)}
+                              </span>
+                            </div>
+                            {deliveryQuote.breakdown.distance > 0 ? (
+                              <div className="flex justify-between gap-3">
+                                <span>
+                                  Distance Fee (
+                                  {deliveryQuote.breakdown.distanceKm} km)
+                                </span>
+                                <span>
+                                  {formatPrice(
+                                    deliveryQuote.breakdown.distance
+                                  )}
+                                </span>
+                              </div>
+                            ) : null}
+                            {deliveryQuote.breakdown.vehicleFee > 0 ? (
+                              <div className="flex justify-between gap-3">
+                                <span>Vehicle Fee</span>
+                                <span>
+                                  {formatPrice(
+                                    deliveryQuote.breakdown.vehicleFee
+                                  )}
+                                </span>
+                              </div>
+                            ) : null}
+                            {deliveryQuote.breakdown.surge > 0 ? (
+                              <div className="flex justify-between gap-3 text-[#B45309]">
+                                <span>
+                                  Surge Fee
+                                  {deliveryQuote.breakdown.surgeReason
+                                    ? ` · ${deliveryQuote.breakdown.surgeReason}`
+                                    : ""}
+                                </span>
+                                <span>
+                                  {formatPrice(deliveryQuote.breakdown.surge)}
+                                </span>
+                              </div>
+                            ) : null}
+                            <div className="flex justify-between gap-3 border-t border-[#D4AF37]/20 pt-2 font-semibold text-[#171717]">
+                              <span>Estimated Total</span>
+                              <span>{formatPrice(deliveryFee)}</span>
+                            </div>
+                          </div>
+                          <p className="mt-2 text-black/45">
+                            Waiting/delay fees are not included and only apply
+                            later if the customer, sender or receiver causes a
+                            wait after free waiting ends.
+                          </p>
+                          {deliveryQuote.capacityNote ? (
+                            <p className="mt-2 text-black/55">
+                              {deliveryQuote.capacityNote}
+                            </p>
+                          ) : null}
+                          {deliveryQuote.partnersSuggested > 1 ? (
+                            <p className="mt-2 text-black/55">
+                              Large load may need{" "}
+                              {deliveryQuote.partnersSuggested} partners or a
+                              higher-capacity vehicle.
+                            </p>
+                          ) : null}
+                        </>
+                      ) : (
                         <p className="mt-2 text-black/55">
-                          {deliveryQuote.capacityNote}
+                          Enter your delivery address for an estimated fee
+                          breakdown.
                         </p>
-                      ) : null}
-                      {deliveryQuote.partnersSuggested > 1 ? (
-                        <p className="mt-2 text-black/55">
-                          Large load may need{" "}
-                          {deliveryQuote.partnersSuggested} partners or a
-                          higher-capacity vehicle.
-                        </p>
-                      ) : null}
+                      )}
                     </div>
                   ) : null}
 
