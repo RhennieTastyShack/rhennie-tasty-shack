@@ -11,6 +11,8 @@ import { RIDE_BRAND } from "@/lib/ride-with-701";
 
 const mainLinks = [
   { label: "Menu", href: "/menu" },
+  { label: "Catering", href: "/catering" },
+  { label: "Ride with 701", href: RIDE_BRAND.joinPath },
   { label: "Event Concierge", href: "/event-concierge" },
   { label: "Customer Support", href: "/customer-care" },
 ] as const;
@@ -93,24 +95,15 @@ export default function Navbar() {
         { label: "Meal Plans", href: "/subscription" },
       ];
 
-  const rideLinks: DrawerLink[] = [
-    { label: RIDE_BRAND.name, href: RIDE_BRAND.joinPath },
-    {
-      label: RIDE_BRAND.partnerHeadline,
-      href: RIDE_BRAND.joinPath,
-    },
-    { label: `${RIDE_BRAND.partnerLabel} Portal`, href: RIDE_BRAND.portalPath },
-  ];
-
   return (
-    <header className="sticky top-0 z-[9999] w-full border-b border-black/8 bg-white/95 pt-[env(safe-area-inset-top,0px)] text-[#171717] backdrop-blur-xl supports-[backdrop-filter]:bg-white/90">
-      <div className="mx-auto flex h-[72px] w-full max-w-7xl items-center justify-between gap-3 px-4 sm:px-6 lg:h-[84px] lg:gap-4 lg:px-12 xl:px-16">
+    <header className="sticky top-0 z-[9999] w-full overflow-x-hidden border-b border-black/8 bg-white/95 pt-[env(safe-area-inset-top,0px)] text-[#171717] backdrop-blur-xl supports-[backdrop-filter]:bg-white/90">
+      <div className="mx-auto flex h-14 w-full max-w-7xl items-center justify-between gap-2 px-4 sm:h-[72px] sm:gap-3 sm:px-6 lg:h-[84px] lg:gap-4 lg:px-12 xl:px-16">
         <Link
           href="/"
           onClick={closeMenu}
-          className="flex min-w-0 shrink-0 items-center gap-2.5 sm:gap-3"
+          className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3 lg:flex-none"
         >
-          <div className="relative h-11 w-11 shrink-0 sm:h-14 sm:w-14">
+          <div className="relative h-8 w-8 shrink-0 sm:h-14 sm:w-14">
             <Image
               src="/images/logo.png"
               alt="Rhennie Tasty Shack"
@@ -121,11 +114,11 @@ export default function Navbar() {
             />
           </div>
 
-          <div className="hidden min-w-0 sm:block">
-            <p className="truncate text-base font-bold leading-tight text-[#171717] md:text-lg">
+          <div className="min-w-0">
+            <p className="truncate text-[13px] font-bold leading-tight text-[#171717] sm:text-base md:text-lg">
               Rhennie Tasty Shack
             </p>
-            <p className="mt-1 text-[10px] font-medium italic tracking-wide text-[#F26A21] md:text-[11px]">
+            <p className="mt-0.5 truncate text-[9px] font-medium italic tracking-wide text-[#F26A21] sm:mt-1 sm:text-[10px] md:text-[11px]">
               A Taste Above the Ordinary.
             </p>
           </div>
@@ -133,20 +126,20 @@ export default function Navbar() {
 
         <nav
           aria-label="Main"
-          className="hidden items-center gap-7 lg:flex xl:gap-10"
+          className="hidden items-center gap-4 lg:flex xl:gap-7"
         >
           {mainLinks.map((link) => (
             <Link
               key={link.label}
               href={link.href}
-              className="relative whitespace-nowrap text-[13px] font-medium tracking-wide text-black/65 transition-colors duration-300 after:absolute after:-bottom-1 after:left-0 after:h-px after:w-0 after:bg-[#F26A21] after:transition-all after:duration-300 hover:text-[#F26A21] hover:after:w-full"
+              className="relative whitespace-nowrap text-[12px] font-medium tracking-wide text-black/65 transition-colors duration-300 after:absolute after:-bottom-1 after:left-0 after:h-px after:w-0 after:bg-[#F26A21] after:transition-all after:duration-300 hover:text-[#F26A21] hover:after:w-full xl:text-[13px]"
             >
               {link.label}
             </Link>
           ))}
         </nav>
 
-        <div className="flex shrink-0 items-center gap-2 sm:gap-2.5">
+        <div className="flex shrink-0 items-center gap-1.5 sm:gap-2.5">
           <Link
             href={signedIn ? "/client-portal" : "/login"}
             onClick={closeMenu}
@@ -166,9 +159,10 @@ export default function Navbar() {
                   }`
                 : "Open cart"
             }
-            className="relative flex h-11 w-11 touch-manipulation items-center justify-center rounded-full border border-black/10 bg-[#F8F6F2] text-[#171717] transition-all duration-300 hover:border-[#F26A21] hover:bg-[#F26A21] hover:text-white"
+            className="relative flex h-9 w-9 touch-manipulation items-center justify-center rounded-full border border-black/10 bg-[#F8F6F2] text-[#171717] transition-all duration-300 hover:border-[#F26A21] hover:bg-[#F26A21] hover:text-white sm:h-11 sm:w-11"
           >
-            <ShoppingBag size={19} strokeWidth={2} />
+            <ShoppingBag size={17} strokeWidth={2} className="sm:hidden" />
+            <ShoppingBag size={19} strokeWidth={2} className="hidden sm:block" />
             {totalItems > 0 && (
               <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full border-2 border-white bg-[#F26A21] px-1 text-[9px] font-extrabold text-white">
                 {totalItems > 99 ? "99+" : totalItems}
@@ -189,16 +183,16 @@ export default function Navbar() {
             aria-expanded={open}
             aria-controls="rts-nav-drawer"
             onClick={() => setOpen((previous) => !previous)}
-            className={`relative z-[10001] flex h-11 w-11 touch-manipulation items-center justify-center rounded-full border transition-all duration-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#F26A21] ${
+            className={`relative z-[10001] flex h-9 w-9 touch-manipulation items-center justify-center rounded-full border transition-all duration-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#F26A21] sm:h-11 sm:w-11 ${
               open
                 ? "border-[#171717] bg-[#171717] text-white"
                 : "border-[#F26A21] bg-[#F26A21] text-white hover:bg-[#D95512]"
             }`}
           >
             {open ? (
-              <X size={22} strokeWidth={2.25} />
+              <X size={20} strokeWidth={2.25} />
             ) : (
-              <Menu size={22} strokeWidth={2.25} />
+              <Menu size={20} strokeWidth={2.25} />
             )}
           </button>
         </div>
@@ -219,18 +213,18 @@ export default function Navbar() {
       <aside
         id="rts-nav-drawer"
         aria-hidden={!open}
-        className={`fixed right-0 top-0 z-[10002] flex h-[100dvh] w-[min(100vw,380px)] flex-col border-l border-black/8 bg-white shadow-[-20px_0_60px_rgba(0,0,0,0.18)] transition-transform duration-300 ease-out ${
+        className={`fixed right-0 top-0 z-[10002] flex h-[100dvh] w-[min(100vw,380px)] max-w-full flex-col border-l border-black/8 bg-white shadow-[-20px_0_60px_rgba(0,0,0,0.18)] transition-transform duration-300 ease-out ${
           open ? "translate-x-0" : "translate-x-full"
         }`}
       >
-        <div className="flex items-center justify-between border-b border-black/8 px-5 py-5 pt-[calc(1.25rem+env(safe-area-inset-top,0px))]">
+        <div className="flex items-center justify-between border-b border-black/8 px-5 py-4 pt-[calc(1rem+env(safe-area-inset-top,0px))]">
           <div className="flex min-w-0 items-center gap-3">
-            <div className="relative h-11 w-11 shrink-0">
+            <div className="relative h-10 w-10 shrink-0">
               <Image
                 src="/images/logo.png"
                 alt=""
                 fill
-                sizes="44px"
+                sizes="40px"
                 className="object-contain"
               />
             </div>
@@ -247,7 +241,7 @@ export default function Navbar() {
             type="button"
             aria-label="Close menu"
             onClick={closeMenu}
-            className="flex h-10 w-10 items-center justify-center rounded-full border border-black/10 text-[#171717] transition hover:border-[#F26A21] hover:text-[#F26A21]"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-black/10 text-[#171717] transition hover:border-[#F26A21] hover:text-[#F26A21]"
           >
             <X size={20} strokeWidth={2} />
           </button>
@@ -255,22 +249,39 @@ export default function Navbar() {
 
         <nav
           aria-label="More navigation"
-          className="flex-1 overflow-y-auto overscroll-contain px-5 py-6 [-webkit-overflow-scrolling:touch]"
+          className="flex-1 overflow-y-auto overscroll-contain px-5 py-5 [-webkit-overflow-scrolling:touch]"
         >
-          <DrawerSection title="Explore" links={exploreLinks} onNavigate={closeMenu} />
-          <DrawerSection title="Account" links={accountLinks} onNavigate={closeMenu} />
-          <DrawerSection title="Ride with 701" links={rideLinks} onNavigate={closeMenu} />
+          <DrawerSection
+            title="Explore"
+            links={exploreLinks}
+            onNavigate={closeMenu}
+          />
+          <DrawerSection
+            title="Account"
+            links={accountLinks}
+            onNavigate={closeMenu}
+          />
 
           {signedIn ? (
             <button
               type="button"
               onClick={() => void handleLogout()}
-              className="mt-4 w-full border-t border-black/8 pt-5 text-left text-[14px] font-medium text-black/60 transition hover:text-[#F26A21]"
+              className="mt-2 w-full border-t border-black/8 pt-5 text-left text-[14px] font-medium text-black/60 transition hover:text-[#F26A21]"
             >
               Log out
             </button>
           ) : null}
         </nav>
+
+        <div className="shrink-0 border-t border-black/8 px-5 pb-[calc(1.25rem+env(safe-area-inset-bottom,0px))] pt-4">
+          <Link
+            href="/menu"
+            onClick={closeMenu}
+            className="flex h-12 w-full items-center justify-center rounded-full bg-[#F26A21] px-5 text-sm font-bold text-white transition hover:bg-[#D95512]"
+          >
+            Order Now
+          </Link>
+        </div>
       </aside>
     </header>
   );
@@ -286,17 +297,17 @@ function DrawerSection({
   onNavigate: () => void;
 }) {
   return (
-    <div className="mb-7">
+    <div className="mb-8">
       <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.28em] text-[#F26A21]">
         {title}
       </p>
-      <ul className="space-y-1">
+      <ul className="space-y-2">
         {links.map((link) => (
           <li key={`${title}-${link.label}`}>
             <Link
               href={link.href}
               onClick={onNavigate}
-              className="block rounded-lg px-1 py-2.5 text-[15px] font-medium text-[#171717]/90 transition-colors hover:text-[#F26A21]"
+              className="block rounded-xl px-1 py-3 text-[15px] font-medium text-[#171717]/90 transition-colors hover:text-[#F26A21]"
             >
               {link.label}
             </Link>

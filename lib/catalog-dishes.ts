@@ -245,7 +245,7 @@ export const CATALOG_DISHES: CatalogDish[] = [
     collection: "Executive Lunch",
     collectionMatch: EXECUTIVE_LUNCH,
     description:
-      "Fresh RTS chicken sandwiches packed for sharing. Available Fridays only.",
+      "Branded RTS sandwich pack with creamy chicken filling, fresh lettuce and tomato. Available Fridays only.",
     price: 10000,
     image: "/images/rts-chicken-sandwich.jpg",
     displayOrder: 18,
@@ -256,7 +256,7 @@ export const CATALOG_DISHES: CatalogDish[] = [
     collection: "Food Boxes",
     collectionMatch: FOOD_BOXES,
     description:
-      "Hearty RTS pasta box with sides and drinks. Available Wednesdays only.",
+      "Stir-fry pasta with sausage, grilled chicken, fried plantain, fries, dipping sauces and Chivita juice. Available Wednesdays only.",
     price: 15000,
     image: "/images/rts-pasta-box.jpg",
     displayOrder: 58,
@@ -267,7 +267,7 @@ export const CATALOG_DISHES: CatalogDish[] = [
     collection: "Food Boxes",
     collectionMatch: FOOD_BOXES,
     description:
-      "Individual party jollof meal pack with chicken and plantain. Minimum order of 10 packs.",
+      "Individual party pack with jollof rice, fried plantain and chicken. Minimum order of 10 packs.",
     price: 6200,
     image: "/images/party-jollof-pack.jpg",
     displayOrder: 59,
@@ -289,7 +289,7 @@ export const CATALOG_DISHES: CatalogDish[] = [
     collection: "Food Boxes",
     collectionMatch: FOOD_BOXES,
     description:
-      "A generous RTS treat box with rice, chicken, plantain, snacks and drinks for sharing.",
+      "Jollof rice, special fried rice, grilled chicken, fried plantain, fresh apples, McVitie's and Chivita juice.",
     price: 65000,
     image: "/images/rts-treat-box.jpg",
     displayOrder: 69,
@@ -300,7 +300,7 @@ export const CATALOG_DISHES: CatalogDish[] = [
     collection: "Food Boxes",
     collectionMatch: FOOD_BOXES,
     description:
-      "Premium RTS feast box packed with rice, pasta, proteins, small chops, fruit and drinks.",
+      "Jollof rice, special fried rice, stir-fry pasta, grilled and fried chicken, small chops, chicken sandwiches, puff-puff, plantain, fresh fruit, juice and sparkling drink.",
     price: 280000,
     image: "/images/rts-feast-box.jpg",
     displayOrder: 70,
@@ -311,7 +311,7 @@ export const CATALOG_DISHES: CatalogDish[] = [
     collection: "Food Boxes",
     collectionMatch: FOOD_BOXES,
     description:
-      "Our grand RTS celebration spread with rice, pasta, proteins, small chops, desserts, fruit and drinks.",
+      "Jollof rice, special fried rice, stir-fry pasta, assorted chicken, small chops, sandwiches, puff-puff, plantain, salad, cake, fresh fruit, juice and sparkling drink.",
     price: 260000,
     image: "/images/rts-grand-feast-box.jpg",
     displayOrder: 71,

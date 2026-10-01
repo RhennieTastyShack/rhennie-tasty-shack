@@ -86,8 +86,8 @@ export default function MenuFilters({
   const hasFilters = Boolean(activeCategory || urlSearch);
 
   return (
-    <section className="relative z-30 border-b border-black/[0.06] bg-[#FAF8F4] py-8">
-      <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-12 xl:px-16">
+    <section className="relative z-30 overflow-x-hidden border-b border-black/[0.06] bg-[#FAF8F4] py-6 sm:py-8">
+      <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
         {showCollectionChips ? (
           <div className="mx-auto max-w-2xl text-center">
             <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-[#F26A21]">
@@ -127,8 +127,8 @@ export default function MenuFilters({
         </div>
 
         {showCollectionChips ? (
-          <div className="mt-7 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            <div className="flex min-w-max items-center justify-start gap-1 sm:flex-wrap sm:justify-center sm:gap-x-1 sm:gap-y-2">
+          <div className="mt-5 overflow-x-auto overscroll-x-contain pb-1 [scrollbar-width:none] [-webkit-overflow-scrolling:touch] [&::-webkit-scrollbar]:hidden sm:mt-7">
+            <div className="flex w-max min-w-full items-center justify-start gap-1.5 sm:flex-wrap sm:justify-center sm:gap-x-1 sm:gap-y-2">
               {categories.map((category) => {
                 const isActive = activeCategory === category.value;
 
@@ -138,7 +138,7 @@ export default function MenuFilters({
                     type="button"
                     onClick={() => handleCategory(category.value)}
                     aria-pressed={isActive}
-                    className={`min-h-[40px] whitespace-nowrap rounded-full px-4 text-[12px] font-medium transition-colors sm:px-5 ${
+                    className={`min-h-[36px] whitespace-nowrap rounded-full px-3.5 text-[11px] font-medium transition-colors sm:min-h-[40px] sm:px-5 sm:text-[12px] ${
                       isActive
                         ? "bg-[#F26A21] text-white"
                         : "bg-white text-black/55 hover:text-[#171717]"

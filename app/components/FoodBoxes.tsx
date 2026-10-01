@@ -12,7 +12,7 @@ const featuredBoxes = [
     price: "₦15,000",
     image: "/images/rts-pasta-box.jpg",
     description:
-      "Hearty RTS pasta box with sides and drinks. Available Wednesdays only.",
+      "Stir-fry pasta with sausage, grilled chicken, fried plantain, fries, dipping sauces and Chivita juice. Available Wednesdays only.",
   },
   {
     number: "02",
@@ -21,7 +21,7 @@ const featuredBoxes = [
     image: "/images/rts-treat-box.jpg",
     popular: true,
     description:
-      "A generous RTS treat box with rice, chicken, plantain, snacks and drinks for sharing.",
+      "Jollof rice, special fried rice, grilled chicken, fried plantain, fresh apples, McVitie's and Chivita juice.",
   },
   {
     number: "03",
@@ -29,7 +29,7 @@ const featuredBoxes = [
     price: "₦260,000",
     image: "/images/rts-grand-feast-box.jpg",
     description:
-      "Our grand RTS celebration spread with rice, pasta, proteins, small chops, desserts, fruit and drinks.",
+      "Jollof rice, special fried rice, stir-fry pasta, assorted chicken, small chops, sandwiches, puff-puff, plantain, salad, cake, fresh fruit, juice and sparkling drink.",
   },
   {
     number: "04",
@@ -37,7 +37,7 @@ const featuredBoxes = [
     price: "₦280,000",
     image: "/images/rts-feast-box.jpg",
     description:
-      "Premium RTS feast box packed with rice, pasta, proteins, small chops, fruit and drinks.",
+      "Jollof rice, special fried rice, stir-fry pasta, grilled and fried chicken, small chops, chicken sandwiches, puff-puff, plantain, fresh fruit, juice and sparkling drink.",
   },
 ];
 

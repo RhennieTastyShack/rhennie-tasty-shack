@@ -90,7 +90,7 @@ VALUES
 (
   'RTS Chicken Sandwich',
   'Executive Lunch',
-  'Fresh RTS chicken sandwiches packed for sharing. Available Fridays only.',
+  'Branded RTS sandwich pack with creamy chicken filling, fresh lettuce and tomato. Available Fridays only.',
   10000,
   '/images/rts-chicken-sandwich.jpg',
   true
@@ -99,7 +99,7 @@ VALUES
 (
   'RTS Pasta Box',
   'Food Boxes',
-  'Hearty RTS pasta box with sides and drinks. Available Wednesdays only.',
+  'Stir-fry pasta with sausage, grilled chicken, fried plantain, fries, dipping sauces and Chivita juice. Available Wednesdays only.',
   15000,
   '/images/rts-pasta-box.jpg',
   true
@@ -108,7 +108,7 @@ VALUES
 (
   'Party Jollof Pack',
   'Food Boxes',
-  'Individual party jollof meal pack with chicken and plantain. Minimum order of 10 packs.',
+  'Individual party pack with jollof rice, fried plantain and chicken. Minimum order of 10 packs.',
   6200,
   '/images/party-jollof-pack.jpg',
   true
@@ -117,7 +117,7 @@ VALUES
 (
   'RTS Treat Box',
   'Food Boxes',
-  'A generous RTS treat box with rice, chicken, plantain, snacks and drinks for sharing.',
+  'Jollof rice, special fried rice, grilled chicken, fried plantain, fresh apples, McVitie''s and Chivita juice.',
   65000,
   '/images/rts-treat-box.jpg',
   true
@@ -126,7 +126,7 @@ VALUES
 (
   'RTS Feast Box',
   'Food Boxes',
-  'Premium RTS feast box packed with rice, pasta, proteins, small chops, fruit and drinks.',
+  'Jollof rice, special fried rice, stir-fry pasta, grilled and fried chicken, small chops, chicken sandwiches, puff-puff, plantain, fresh fruit, juice and sparkling drink.',
   280000,
   '/images/rts-feast-box.jpg',
   true
@@ -135,7 +135,7 @@ VALUES
 (
   'RTS Grand Feast Box',
   'Food Boxes',
-  'Our grand RTS celebration spread with rice, pasta, proteins, small chops, desserts, fruit and drinks.',
+  'Jollof rice, special fried rice, stir-fry pasta, assorted chicken, small chops, sandwiches, puff-puff, plantain, salad, cake, fresh fruit, juice and sparkling drink.',
   260000,
   '/images/rts-grand-feast-box.jpg',
   true

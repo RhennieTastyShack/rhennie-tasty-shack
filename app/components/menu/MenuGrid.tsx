@@ -11,6 +11,7 @@ import MenuFilters from "./MenuFilters";
 import MealCard from "./MealCard";
 import FoodByLitreCard from "./FoodByLitreCard";
 import CollectionCard from "./CollectionCard";
+import CategoryTabs from "./CategoryTabs";
 
 type MenuItem = {
   id: string;
@@ -694,7 +695,7 @@ export default function MenuGrid() {
   return (
     <section
       id="meals"
-      className="relative overflow-hidden bg-[#F8F6F2] px-4 pb-20 pt-0 text-[#171717] sm:px-6 lg:px-8"
+      className="relative overflow-x-hidden bg-[#F8F6F2] px-0 pb-20 pt-0 text-[#171717]"
     >
       {/* BACKGROUND DECORATION */}
 
@@ -702,11 +703,17 @@ export default function MenuGrid() {
 
       <div className="pointer-events-none absolute -right-40 bottom-40 h-80 w-80 rounded-full bg-[#F26A21]/5 blur-[100px]" />
 
-      <div className="relative mx-auto max-w-7xl">
-        {!category && !search ? <CollectionCard /> : null}
+      {!category && !search ? <CategoryTabs /> : null}
 
-        <MenuFilters showCollectionChips={Boolean(category || search)} />
+      {!category && !search ? (
+        <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <CollectionCard />
+        </div>
+      ) : null}
 
+      <MenuFilters showCollectionChips={Boolean(category || search)} />
+
+      <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* RESULT HEADER */}
 
         <div className="mb-8 mt-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
