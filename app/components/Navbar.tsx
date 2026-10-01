@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Menu, X, ShoppingBag } from "lucide-react";
 
 import { useCart } from "@/app/context/CartContext";
@@ -45,8 +45,17 @@ export default function Navbar() {
     openCart();
   };
 
+  useEffect(() => {
+    if (!open) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previous;
+    };
+  }, [open]);
+
   return (
-    <header className="relative z-[9999] w-full border-b border-white/10 bg-[#080808]/95 text-white backdrop-blur-xl">
+    <header className="sticky top-0 z-[9999] w-full border-b border-white/10 bg-[#080808]/95 pt-[env(safe-area-inset-top,0px)] text-white backdrop-blur-xl supports-[backdrop-filter]:bg-[#080808]/85">
       <div className="mx-auto flex h-[76px] max-w-7xl items-center justify-between gap-3 px-4 sm:px-6 lg:h-24 lg:px-8">
         <Link
           href="/"
@@ -143,7 +152,7 @@ export default function Navbar() {
       </div>
 
       <div
-        className={`absolute left-0 right-0 top-full z-[9998] max-h-[min(80vh,720px)] overflow-y-auto border-b border-[#F26A21]/20 bg-[#080808]/98 shadow-[0_20px_60px_rgba(0,0,0,0.55)] backdrop-blur-2xl transition-all duration-300 ${
+        className={`absolute left-0 right-0 top-full z-[9998] max-h-[min(80dvh,720px)] overflow-y-auto overscroll-contain border-b border-[#F26A21]/20 bg-[#080808]/98 shadow-[0_20px_60px_rgba(0,0,0,0.55)] backdrop-blur-2xl transition-all duration-300 [-webkit-overflow-scrolling:touch] ${
           open
             ? "visible translate-y-0 opacity-100"
             : "invisible pointer-events-none -translate-y-3 opacity-0"
