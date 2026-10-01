@@ -8,98 +8,64 @@ const reviews = [
     role: "Corporate Client",
     image: "/images/feyishola.jpeg",
     review:
-      "Rhennie Tasty Shack exceeded my expectations. The food was fresh, beautifully packaged, and absolutely delicious. I'll definitely be ordering again!",
+      "The food was fresh, beautifully packaged, and absolutely delicious. I’ll definitely be ordering again.",
   },
   {
     name: "Samad Faronbi",
     role: "Loyal Customer",
     image: "/images/samad.jpeg",
     review:
-      "Excellent customer service and amazing meals. Every order arrives on time and tastes just as good as it looks.",
+      "Excellent service and amazing meals. Every order arrives on time and tastes as good as it looks.",
   },
   {
     name: "Sinmiloluwa A.",
     role: "Food Enthusiast",
     image: "/images/simi.jpeg",
     review:
-      "Hands down one of the best food brands I've tried. Quality, taste, and presentation are always top-notch.",
+      "Quality, taste and presentation are always top-notch. One of the best food brands I’ve tried.",
   },
 ];
 
 export default function Reviews() {
   return (
-    <section
-      id="reviews"
-      className="bg-gradient-to-b from-white to-gray-50 py-20 md:py-28"
-    >
-      <div className="mx-auto max-w-7xl px-5 md:px-8">
-
-        <div className="mb-16 text-center">
-
-          <span className="inline-block rounded-full bg-yellow-100 px-4 py-2 text-sm font-semibold text-yellow-700">
-            Customer Reviews
-          </span>
-
-          <h2 className="mt-5 text-3xl font-extrabold text-gray-900 md:text-5xl">
-            What Our Customers Say
-          </h2>
-
-          <p className="mx-auto mt-5 max-w-2xl text-base text-gray-600 md:text-lg">
-            Every meal is prepared with care, and these reviews reflect the
-            experiences of our valued customers.
+    <section id="reviews" className="bg-[#FAF8F4] py-16 sm:py-20 lg:py-24">
+      <div className="mx-auto max-w-7xl px-5 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-2xl text-center">
+          <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-[#D4AF37]">
+            Testimonials
           </p>
-
+          <h2 className="mt-3 font-serif text-3xl font-bold text-[#171717] sm:text-4xl">
+            Loved by our guests.
+          </h2>
         </div>
 
-        <div className="grid gap-8 md:grid-cols-2 xl:grid-cols-3">
-
+        <div className="mt-12 grid gap-6 md:grid-cols-3">
           {reviews.map((review) => (
-            <div
+            <article
               key={review.name}
-              className="group rounded-3xl border border-gray-100 bg-white p-8 shadow-lg transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl"
+              className="rounded-[24px] border border-black/6 bg-white p-7"
             >
-
-              <div className="flex items-center gap-5">
-
+              <div className="flex items-center gap-4">
                 <Image
                   src={review.image}
                   alt={review.name}
-                  width={80}
-                  height={80}
-                  className="h-20 w-20 rounded-full object-cover ring-4 ring-yellow-100"
+                  width={56}
+                  height={56}
+                  className="h-14 w-14 rounded-full object-cover"
                 />
-
                 <div>
-
-                  <h3 className="text-xl font-bold text-gray-900">
+                  <h3 className="text-base font-bold text-[#171717]">
                     {review.name}
                   </h3>
-
-                  <p className="text-sm text-yellow-600">
-                    {review.role}
-                  </p>
-
-                  <span className="mt-2 inline-block rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700">
-                    ✔ Verified Customer
-                  </span>
-
+                  <p className="text-xs text-black/45">{review.role}</p>
                 </div>
-
               </div>
-
-              <div className="mt-6 text-2xl text-yellow-500">
-                ★★★★★
-              </div>
-
-              <p className="mt-5 italic leading-8 text-gray-600">
-                "{review.review}"
+              <p className="mt-5 text-sm leading-7 text-black/60">
+                “{review.review}”
               </p>
-
-            </div>
+            </article>
           ))}
-
         </div>
-
       </div>
     </section>
   );

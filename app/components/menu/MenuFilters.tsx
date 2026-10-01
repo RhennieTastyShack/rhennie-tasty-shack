@@ -86,65 +86,39 @@ export default function MenuFilters({
   const hasFilters = Boolean(activeCategory || urlSearch);
 
   return (
-    <section className="relative z-30 border-y border-black/[0.06] bg-white px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
+    <section className="relative z-30 border-b border-black/[0.06] bg-[#FAF8F4] px-4 py-8 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl">
         {showCollectionChips ? (
-          <div className="flex flex-col items-center">
-            <div className="mb-3 flex items-center gap-3">
-              <span className="h-px w-8 bg-[#D4AF37]" />
-              <p className="text-[9px] font-bold uppercase tracking-[0.4em] text-[#D4AF37]">
-                Collections
-              </p>
-              <span className="h-px w-8 bg-[#D4AF37]" />
-            </div>
-
-            <h3 className="text-center font-serif text-2xl font-bold text-[#171717] sm:text-3xl">
-              Browse the menu
-            </h3>
-
-            <p className="mt-2 text-center text-xs text-gray-500 sm:text-sm">
-              Including Food Boxes, pots by the litre and signature meals.
+          <div className="mx-auto max-w-2xl text-center">
+            <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-[#D4AF37]">
+              The Menu
             </p>
+            <h3 className="mt-2 font-serif text-2xl font-bold text-[#171717] sm:text-3xl">
+              Browse by collection
+            </h3>
           </div>
         ) : null}
 
         <div
-          className={`mx-auto w-full max-w-2xl ${
+          className={`mx-auto w-full max-w-xl ${
             showCollectionChips ? "mt-6" : ""
           }`}
         >
-          <div className="group relative">
-            <div className="pointer-events-none absolute left-5 top-1/2 z-10 -translate-y-1/2 text-gray-400 transition-colors group-focus-within:text-[#F26A21]">
-              <svg
-                width="19"
-                height="19"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <circle cx="11" cy="11" r="7" />
-                <path d="m20 20-3.5-3.5" />
-              </svg>
-            </div>
-
+          <div className="relative">
             <input
               type="search"
               value={search}
               onChange={(event) => handleSearch(event.target.value)}
-              placeholder="Search meals, dishes or collections..."
+              placeholder="Search the menu..."
               aria-label="Search meals"
-              className="h-14 w-full rounded-full border border-black/10 bg-[#F8F6F2] pl-12 pr-12 text-sm text-[#171717] outline-none transition-all duration-300 placeholder:text-gray-400 focus:border-[#F26A21] focus:bg-white focus:ring-4 focus:ring-[#F26A21]/10"
+              className="h-12 w-full rounded-full border border-black/10 bg-white px-5 text-sm text-[#171717] outline-none transition placeholder:text-black/35 focus:border-[#D4AF37]"
             />
-
             {search ? (
               <button
                 type="button"
                 onClick={() => handleSearch("")}
                 aria-label="Clear search"
-                className="absolute right-4 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-[#F26A21] hover:text-white"
+                className="absolute right-3 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full text-black/40 hover:bg-black/5"
               >
                 ×
               </button>
@@ -153,69 +127,43 @@ export default function MenuFilters({
         </div>
 
         {showCollectionChips ? (
-          <div className="mt-7">
-            <div className="mb-3 flex items-center justify-between">
-              <p className="text-[9px] font-bold uppercase tracking-[0.25em] text-gray-400">
-                Collections
-              </p>
-              <p className="text-[9px] text-gray-400 sm:hidden">Swipe →</p>
-            </div>
+          <div className="mt-7 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <div className="flex min-w-max items-center justify-start gap-1 sm:flex-wrap sm:justify-center sm:gap-x-1 sm:gap-y-2">
+              {categories.map((category) => {
+                const isActive = activeCategory === category.value;
 
-            <div className="overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-              <div className="flex min-w-max items-center gap-2 sm:flex-wrap sm:justify-center sm:gap-3">
-                {categories.map((category) => {
-                  const isActive = activeCategory === category.value;
-
-                  return (
-                    <button
-                      key={category.value || "all"}
-                      type="button"
-                      onClick={() => handleCategory(category.value)}
-                      aria-pressed={isActive}
-                      className={`group relative flex min-h-[42px] items-center justify-center whitespace-nowrap rounded-full border px-5 text-[9px] font-bold uppercase tracking-[0.12em] transition-all duration-300 sm:min-h-[44px] sm:px-6 ${
-                        isActive
-                          ? "border-[#0B0B0B] bg-[#0B0B0B] text-[#D4AF37] shadow-[0_8px_25px_rgba(0,0,0,0.12)]"
-                          : "border-black/10 bg-white text-gray-600 hover:border-[#D4AF37]/50 hover:text-[#171717] hover:shadow-sm"
-                      }`}
-                    >
-                      {category.label}
-                      {isActive ? (
-                        <span className="ml-2 h-1.5 w-1.5 rounded-full bg-white" />
-                      ) : null}
-                    </button>
-                  );
-                })}
-              </div>
+                return (
+                  <button
+                    key={category.value || "all"}
+                    type="button"
+                    onClick={() => handleCategory(category.value)}
+                    aria-pressed={isActive}
+                    className={`min-h-[40px] whitespace-nowrap rounded-full px-4 text-[12px] font-medium transition-colors sm:px-5 ${
+                      isActive
+                        ? "bg-[#0B0B0B] text-[#D4AF37]"
+                        : "text-black/55 hover:bg-white hover:text-[#171717]"
+                    }`}
+                  >
+                    {category.label}
+                  </button>
+                );
+              })}
             </div>
           </div>
         ) : null}
 
         {hasFilters ? (
-          <div className="mt-6 flex flex-col items-center justify-center gap-3 border-t border-black/[0.06] pt-5 sm:flex-row">
-            <div className="flex flex-wrap items-center justify-center gap-2">
-              <span className="text-[9px] font-bold uppercase tracking-[0.2em] text-gray-400">
-                Showing
-              </span>
-
-              {activeCategory ? (
-                <span className="rounded-full bg-[#FFF1E9] px-3 py-1.5 text-[9px] font-bold uppercase tracking-wider text-[#F26A21]">
-                  {activeCategoryLabel}
-                </span>
-              ) : null}
-
-              {urlSearch ? (
-                <span className="max-w-[220px] truncate rounded-full bg-[#FFF1E9] px-3 py-1.5 text-[9px] font-bold text-[#F26A21]">
-                  “{urlSearch}”
-                </span>
-              ) : null}
-            </div>
-
+          <div className="mt-5 flex flex-wrap items-center justify-center gap-3 text-xs text-black/45">
+            <span>
+              Showing {activeCategory ? activeCategoryLabel : "all meals"}
+              {urlSearch ? ` · “${urlSearch}”` : ""}
+            </span>
             <button
               type="button"
               onClick={clearFilters}
-              className="rounded-full border border-black/10 px-4 py-2 text-[9px] font-bold uppercase tracking-[0.15em] text-gray-500 transition-all duration-300 hover:border-[#F26A21] hover:bg-[#F26A21] hover:text-white"
+              className="font-semibold text-[#171717] underline-offset-4 hover:underline"
             >
-              Clear Filters
+              Clear
             </button>
           </div>
         ) : null}

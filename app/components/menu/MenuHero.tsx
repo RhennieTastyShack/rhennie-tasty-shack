@@ -28,15 +28,11 @@ export default function MenuHero() {
         {/* Heading */}
         <h1 className="mt-7 font-serif text-4xl font-bold leading-[0.95] tracking-tight text-white sm:text-5xl md:text-6xl lg:text-7xl">
           The Menu
-          <span className="mt-3 block text-[#D4AF37]">
-            Every collection. One place.
-          </span>
         </h1>
 
-        {/* Description */}
-        <p className="mx-auto mt-7 max-w-2xl text-sm leading-7 text-white/60 sm:text-base sm:leading-8">
-          Signature meals, food boxes, pots by the litre and more — browse by
-          collection and order with ease.
+        <p className="mx-auto mt-6 max-w-xl text-sm leading-7 text-white/60 sm:text-base">
+          Signature meals, Food Boxes and party pots — browse and order with
+          ease.
         </p>
 
         {/* Bottom details */}

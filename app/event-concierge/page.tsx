@@ -2,24 +2,24 @@ import Link from "next/link";
 
 const services = [
   {
-    title: "Private Events",
+    title: "Event Catering",
     description:
-      "Birthdays, intimate celebrations and gatherings with thoughtfully prepared menus.",
+      "Full catering for celebrations, gatherings and special occasions.",
   },
   {
     title: "Corporate Catering",
     description:
-      "Meetings, conferences and office lunches handled with polish and precision.",
+      "Meetings, conferences, office lunches and professional events.",
   },
   {
-    title: "Weddings & Celebrations",
+    title: "Private Celebrations",
     description:
-      "Curated food experiences for the moments that matter most.",
+      "Birthdays, weddings and intimate occasions with curated menus.",
   },
   {
-    title: "Custom Experiences",
+    title: "Large Orders",
     description:
-      "Tell us what you need — we build the menu around your occasion.",
+      "Generous portions and food boxes for bigger guest lists.",
   },
 ];
 
@@ -35,12 +35,12 @@ export default function EventConciergePage() {
           </p>
 
           <h1 className="mt-5 max-w-3xl font-serif text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl">
-            Catering, planned with care.
+            Exceptional food for unforgettable occasions.
           </h1>
 
           <p className="mt-5 max-w-2xl text-sm leading-7 text-white/65 sm:text-base">
-            From corporate lunches to celebrations, our Event Concierge helps
-            you shape the menu, quote and experience — without the guesswork.
+            Catering, consultations and quotations — planned with care for
+            birthdays, weddings, corporate events and private celebrations.
           </p>
 
           <div className="mt-9 flex flex-col gap-3 sm:flex-row">
@@ -66,19 +66,15 @@ export default function EventConciergePage() {
             What we cover
           </p>
           <h2 className="mt-3 font-serif text-3xl font-bold sm:text-4xl">
-            One place for every occasion.
+            One destination for catering.
           </h2>
-          <p className="mt-4 text-sm leading-7 text-black/55">
-            Catering and event orders live here — not as a separate competing
-            destination.
-          </p>
         </div>
 
         <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
           {services.map((service) => (
             <article
               key={service.title}
-              className="rounded-[24px] border border-black/8 bg-white p-7 transition duration-300 hover:-translate-y-1 hover:border-[#D4AF37]/35 hover:shadow-[0_18px_40px_rgba(0,0,0,0.06)]"
+              className="rounded-[24px] border border-black/8 bg-white p-7"
             >
               <h3 className="text-lg font-bold">{service.title}</h3>
               <p className="mt-3 text-sm leading-6 text-black/55">
@@ -96,7 +92,7 @@ export default function EventConciergePage() {
             className="rounded-[24px] border border-black/8 bg-white p-7 transition hover:border-[#D4AF37]/40"
           >
             <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-[#D4AF37]">
-              Step 1
+              Quote
             </p>
             <h3 className="mt-3 text-xl font-bold">Request a Quote</h3>
             <p className="mt-2 text-sm leading-6 text-black/55">
@@ -109,7 +105,7 @@ export default function EventConciergePage() {
             className="rounded-[24px] border border-black/8 bg-white p-7 transition hover:border-[#D4AF37]/40"
           >
             <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-[#D4AF37]">
-              Step 2
+              Consult
             </p>
             <h3 className="mt-3 text-xl font-bold">Event Consultation</h3>
             <p className="mt-2 text-sm leading-6 text-black/55">

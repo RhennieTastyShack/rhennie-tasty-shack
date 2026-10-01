@@ -117,7 +117,7 @@ export default function Hero() {
             </h1>
 
             <p className="mx-auto mt-5 max-w-md text-[14px] leading-7 text-white/70 sm:mx-0 sm:text-base">
-              Premium meals, crafted with care.
+              Premium meals and catering, prepared with care.
             </p>
 
             <div className="mt-8 flex w-full flex-col gap-3 sm:mt-9 sm:flex-row sm:items-center">
@@ -125,14 +125,14 @@ export default function Hero() {
                 href="/menu"
                 className="inline-flex min-h-[52px] w-full touch-manipulation items-center justify-center rounded-full bg-[#D4AF37] px-8 text-[13px] font-bold text-black transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#E5C65A] sm:w-auto sm:text-sm"
               >
-                Order Now
+                View Menu
               </Link>
 
               <Link
-                href="/menu"
+                href="/event-concierge"
                 className="inline-flex min-h-[52px] w-full touch-manipulation items-center justify-center rounded-full border border-white/50 bg-transparent px-8 text-[13px] font-bold text-white transition-all duration-300 hover:border-white hover:bg-white hover:text-black sm:w-auto sm:text-sm"
               >
-                View Menu
+                Plan Your Event
               </Link>
             </div>
           </div>

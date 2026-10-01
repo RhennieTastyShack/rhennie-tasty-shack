@@ -1,95 +1,67 @@
-import {
-  Clock,
-  ChefHat,
-  Truck,
-  Star,
-  UtensilsCrossed,
-  ShieldCheck,
-} from "lucide-react";
+import { ChefHat, Truck, UtensilsCrossed, ShieldCheck } from "lucide-react";
 
 const features = [
   {
     icon: ChefHat,
-    title: "Expert Chefs",
+    title: "Expert chefs",
     description:
-      "Every meal is carefully prepared by experienced chefs using premium ingredients.",
-  },
-  {
-    icon: Truck,
-    title: "Fast Delivery",
-    description:
-      "Hot, fresh meals delivered quickly to your home, office, or event.",
+      "Meals prepared with premium ingredients and careful attention.",
   },
   {
     icon: UtensilsCrossed,
-    title: "Freshly Made",
-    description:
-      "Every order is prepared fresh to ensure maximum taste and quality.",
+    title: "Freshly made",
+    description: "Orders prepared fresh for flavour, quality and presentation.",
   },
   {
-    icon: Clock,
-    title: "Always On Time",
-    description:
-      "We value your time and ensure prompt preparation and delivery.",
-  },
-  {
-    icon: Star,
-    title: "Premium Experience",
-    description:
-      "Luxury presentation, exceptional taste, and outstanding customer service.",
+    icon: Truck,
+    title: "Reliable delivery",
+    description: "Hot meals delivered to your home, office or event.",
   },
   {
     icon: ShieldCheck,
-    title: "Trusted Quality",
-    description:
-      "Hygienic preparation, quality ingredients, and consistent excellence every time.",
+    title: "Trusted quality",
+    description: "Consistent excellence from everyday meals to catering.",
   },
 ];
 
 export default function WhyChooseUs() {
   return (
-    <section className="bg-black py-24 text-white">
-      <div className="mx-auto max-w-7xl px-6">
-
-        <div className="mb-16 text-center">
-          <h2 className="text-4xl font-bold">
-            Why Choose
-            <span className="text-yellow-400"> Rhennie Tasty Shack</span>
+    <section className="bg-white py-16 sm:py-20 lg:py-24">
+      <div className="mx-auto max-w-7xl px-5 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-2xl text-center">
+          <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-[#D4AF37]">
+            Why Rhennie
+          </p>
+          <h2 className="mt-3 font-serif text-3xl font-bold text-[#171717] sm:text-4xl">
+            Why choose Rhennie Tasty Shack
           </h2>
-
-          <p className="mt-5 text-gray-300 max-w-3xl mx-auto">
-            We don't just prepare meals—we create memorable dining experiences
-            with premium ingredients, excellent service, and unmatched quality.
+          <p className="mt-4 text-sm leading-7 text-black/55">
+            Premium ingredients, thoughtful service and food that feels
+            special — every time.
           </p>
         </div>
 
-        <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-
+        <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
           {features.map((feature) => {
             const Icon = feature.icon;
-
             return (
-              <div
+              <article
                 key={feature.title}
-                className="rounded-3xl border border-yellow-500/20 bg-white/5 p-8 transition duration-500 hover:-translate-y-2 hover:border-yellow-500 hover:bg-white/10"
+                className="rounded-[24px] border border-black/6 bg-[#FAF8F4] p-7"
               >
-                <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-yellow-500 text-black">
-                  <Icon size={32} />
+                <div className="mb-5 flex h-11 w-11 items-center justify-center rounded-full bg-[#0B0B0B] text-[#D4AF37]">
+                  <Icon size={20} />
                 </div>
-
-                <h3 className="mb-4 text-2xl font-semibold">
+                <h3 className="text-lg font-semibold text-[#171717]">
                   {feature.title}
                 </h3>
-
-                <p className="text-gray-300 leading-7">
+                <p className="mt-3 text-sm leading-6 text-black/55">
                   {feature.description}
                 </p>
-              </div>
+              </article>
             );
           })}
-
         </div>
-
       </div>
     </section>
   );

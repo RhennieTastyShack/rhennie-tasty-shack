@@ -3,7 +3,6 @@
 import Image from "next/image";
 import Link from "next/link";
 import {
-  FaFacebookF,
   FaInstagram,
   FaTiktok,
   FaWhatsapp,
@@ -40,16 +39,13 @@ export default function Footer() {
               Rhennie Tasty <span className="text-[#D4AF37]">Shack</span>
             </h2>
 
-            <div className="mt-3 flex items-center gap-3">
-              <span className="h-px w-8 bg-[#D4AF37]" />
-              <span className="text-[9px] font-bold uppercase tracking-[0.3em] text-[#D4AF37]">
-                Premium Catering
-              </span>
-            </div>
+            <p className="mt-3 text-[12px] font-medium italic text-[#D4AF37]/90">
+              A Taste Above the Ordinary.
+            </p>
 
             <p className="mt-5 text-sm leading-7 text-gray-400">
-              Premium meals and event catering — crafted with care for everyday
-              dining and unforgettable occasions.
+              Premium meals and event catering for everyday dining and
+              unforgettable occasions.
             </p>
           </div>
 
@@ -69,14 +65,6 @@ export default function Footer() {
               </li>
               <li>
                 <Link
-                  href="/menu?category=food-boxes"
-                  className="text-sm text-gray-400 transition-colors hover:text-[#D4AF37]"
-                >
-                  Food Boxes
-                </Link>
-              </li>
-              <li>
-                <Link
                   href="/event-concierge"
                   className="text-sm text-gray-400 transition-colors hover:text-[#D4AF37]"
                 >
@@ -88,7 +76,15 @@ export default function Footer() {
                   href="/customer-care"
                   className="text-sm text-gray-400 transition-colors hover:text-[#D4AF37]"
                 >
-                  Customer Care
+                  Customer Support
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/menu?category=food-boxes"
+                  className="text-sm text-gray-400 transition-colors hover:text-[#D4AF37]"
+                >
+                  Food Boxes
                 </Link>
               </li>
               <li>
@@ -194,15 +190,6 @@ export default function Footer() {
 
             <div className="mt-7 flex flex-wrap gap-3">
               <a
-                href="https://facebook.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="Facebook"
-                className="flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-[#111111] text-gray-300 transition-all duration-300 hover:border-[#D4AF37] hover:bg-[#D4AF37] hover:text-black"
-              >
-                <FaFacebookF />
-              </a>
-              <a
                 href="https://instagram.com/rhennietastyshack"
                 target="_blank"
                 rel="noopener noreferrer"
@@ -235,7 +222,7 @@ export default function Footer() {
               href="/customer-care"
               className="mt-7 inline-flex items-center gap-2 rounded-full bg-[#D4AF37] px-6 py-3 text-sm font-bold text-black transition-all duration-300 hover:bg-[#E5C65A]"
             >
-              Customer Care
+              Customer Support
               <span>→</span>
             </Link>
           </div>

@@ -11,11 +11,11 @@ const faqs = [
   },
   {
     q: "How do I plan catering or an event?",
-    a: "Use Event Concierge to request a quote or open your Event Concierge portal for consultations and quotations.",
+    a: "Use Event Concierge to request a quote or continue in your Event Concierge portal.",
   },
   {
     q: "How do I get help with an existing order?",
-    a: "Check Orders in your account, or contact us on WhatsApp / phone with your order details.",
+    a: "Check Orders in your account, or contact us on WhatsApp or phone with your order details.",
   },
   {
     q: "What if I have a delivery question?",
@@ -35,26 +35,21 @@ export default function CustomerCarePage() {
             We’re here to help.
           </h1>
           <p className="mt-4 max-w-xl text-sm leading-7 text-black/55 sm:text-base">
-            Contact, order help and common questions — in one calm place.
+            Order help, delivery questions and WhatsApp support — simply.
           </p>
+          <a
+            href="https://wa.me/2348121577759"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-8 inline-flex min-h-[48px] items-center justify-center rounded-full bg-[#D4AF37] px-7 text-sm font-bold text-black transition hover:bg-[#E5C65A]"
+          >
+            Chat on WhatsApp
+          </a>
         </div>
       </section>
 
       <section className="mx-auto max-w-7xl px-5 py-14 sm:px-6 md:px-8">
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <CareCard
-            title="WhatsApp Support"
-            body="Chat with the team for quick order and menu questions."
-            href="https://wa.me/2348121577759"
-            cta="Chat on WhatsApp"
-            external
-          />
-          <CareCard
-            title="Call Us"
-            body="Speak with Rhennie Tasty Shack directly."
-            href="tel:07049180363"
-            cta="07049180363"
-          />
           <CareCard
             title="Order Help"
             body="Review recent orders or continue in your account."
@@ -62,15 +57,31 @@ export default function CustomerCarePage() {
             cta="View orders"
           />
           <CareCard
-            title="Event Concierge"
-            body="Catering and event planning support."
-            href="/event-concierge"
-            cta="Plan an event"
+            title="Delivery Help"
+            body="Questions about delivery fees, timing or Ride with 701."
+            href="/customer-care#delivery"
+            cta="Delivery FAQs"
+          />
+          <CareCard
+            title="WhatsApp Support"
+            body="Chat with the team for quick order and menu questions."
+            href="https://wa.me/2348121577759"
+            cta="Open WhatsApp"
+            external
+          />
+          <CareCard
+            title="General Enquiries"
+            body="Call or email Rhennie Tasty Shack directly."
+            href="tel:07049180363"
+            cta="07049180363"
           />
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-5 pb-10 sm:px-6 md:px-8">
+      <section
+        id="delivery"
+        className="mx-auto max-w-7xl px-5 pb-10 sm:px-6 md:px-8"
+      >
         <div className="rounded-[28px] border border-black/8 bg-white p-7 sm:p-10">
           <h2 className="font-serif text-2xl font-bold sm:text-3xl">
             Contact details
@@ -101,11 +112,8 @@ export default function CustomerCarePage() {
                 <Link href="/menu" className="hover:text-[#D4AF37]">
                   Menu
                 </Link>
-                <Link
-                  href="/menu?category=food-boxes"
-                  className="hover:text-[#D4AF37]"
-                >
-                  Food Boxes
+                <Link href="/event-concierge" className="hover:text-[#D4AF37]">
+                  Event Concierge
                 </Link>
                 <Link href="/client-portal" className="hover:text-[#D4AF37]">
                   My Account
@@ -155,7 +163,7 @@ function CareCard({
   external?: boolean;
 }) {
   const className =
-    "flex h-full flex-col rounded-[24px] border border-black/8 bg-white p-7 transition duration-300 hover:-translate-y-1 hover:border-[#D4AF37]/35 hover:shadow-[0_16px_36px_rgba(0,0,0,0.05)]";
+    "flex h-full flex-col rounded-[24px] border border-black/8 bg-white p-7 transition duration-300 hover:-translate-y-1 hover:border-[#D4AF37]/35";
 
   const content = (
     <>

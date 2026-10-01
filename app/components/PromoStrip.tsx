@@ -20,7 +20,7 @@ export default function PromoStrip() {
           href="/promos"
           className="inline-flex min-h-[52px] items-center justify-center rounded-full bg-[#D4AF37] px-8 text-sm font-bold text-black"
         >
-          See promos
+          View Promos
         </Link>
       </div>
     </section>
