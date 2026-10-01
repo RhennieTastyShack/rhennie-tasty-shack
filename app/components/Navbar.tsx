@@ -103,29 +103,29 @@ export default function Navbar() {
   ];
 
   return (
-    <header className="sticky top-0 z-[9999] w-full border-b border-white/10 bg-[#080808]/95 pt-[env(safe-area-inset-top,0px)] text-white backdrop-blur-xl supports-[backdrop-filter]:bg-[#080808]/85">
-      <div className="mx-auto flex h-[76px] max-w-7xl items-center justify-between gap-3 px-4 sm:px-6 lg:h-24 lg:gap-4 lg:px-8">
+    <header className="sticky top-0 z-[9999] w-full border-b border-black/8 bg-white/95 pt-[env(safe-area-inset-top,0px)] text-[#171717] backdrop-blur-xl supports-[backdrop-filter]:bg-white/90">
+      <div className="mx-auto flex h-[72px] w-full max-w-7xl items-center justify-between gap-3 px-4 sm:px-6 lg:h-[84px] lg:gap-4 lg:px-12 xl:px-16">
         <Link
           href="/"
           onClick={closeMenu}
           className="flex min-w-0 shrink-0 items-center gap-2.5 sm:gap-3"
         >
-          <div className="relative h-12 w-12 shrink-0 sm:h-16 sm:w-16">
+          <div className="relative h-11 w-11 shrink-0 sm:h-14 sm:w-14">
             <Image
               src="/images/logo.png"
               alt="Rhennie Tasty Shack"
               fill
               priority
-              sizes="64px"
+              sizes="56px"
               className="object-contain"
             />
           </div>
 
           <div className="hidden min-w-0 sm:block">
-            <p className="truncate text-base font-bold leading-tight text-white md:text-lg">
+            <p className="truncate text-base font-bold leading-tight text-[#171717] md:text-lg">
               Rhennie Tasty Shack
             </p>
-            <p className="mt-1 text-[10px] font-medium italic tracking-wide text-[#D4AF37]/90 md:text-[11px]">
+            <p className="mt-1 text-[10px] font-medium italic tracking-wide text-[#F26A21] md:text-[11px]">
               A Taste Above the Ordinary.
             </p>
           </div>
@@ -133,25 +133,25 @@ export default function Navbar() {
 
         <nav
           aria-label="Main"
-          className="hidden items-center gap-8 lg:flex xl:gap-12"
+          className="hidden items-center gap-7 lg:flex xl:gap-10"
         >
           {mainLinks.map((link) => (
             <Link
               key={link.label}
               href={link.href}
-              className="relative whitespace-nowrap text-[13px] font-medium tracking-wide text-white/75 transition-colors duration-300 after:absolute after:-bottom-1 after:left-0 after:h-px after:w-0 after:bg-[#D4AF37] after:transition-all after:duration-300 hover:text-white hover:after:w-full"
+              className="relative whitespace-nowrap text-[13px] font-medium tracking-wide text-black/65 transition-colors duration-300 after:absolute after:-bottom-1 after:left-0 after:h-px after:w-0 after:bg-[#F26A21] after:transition-all after:duration-300 hover:text-[#F26A21] hover:after:w-full"
             >
               {link.label}
             </Link>
           ))}
         </nav>
 
-        <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+        <div className="flex shrink-0 items-center gap-2 sm:gap-2.5">
           <Link
             href={signedIn ? "/client-portal" : "/login"}
             onClick={closeMenu}
             aria-label={signedIn ? "Open account" : "Sign in"}
-            className="hidden h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-white/5 text-white transition-all duration-300 hover:border-[#D4AF37] hover:text-[#D4AF37] sm:inline-flex"
+            className="hidden h-11 w-11 items-center justify-center rounded-full border border-black/10 bg-[#F8F6F2] text-[#171717] transition-all duration-300 hover:border-[#F26A21] hover:text-[#F26A21] sm:inline-flex"
           >
             <UserRound size={18} strokeWidth={2} />
           </Link>
@@ -166,11 +166,11 @@ export default function Navbar() {
                   }`
                 : "Open cart"
             }
-            className="relative flex h-11 w-11 touch-manipulation items-center justify-center rounded-full border border-white/15 bg-white/5 text-white transition-all duration-300 hover:border-[#D4AF37] hover:bg-[#D4AF37] hover:text-black"
+            className="relative flex h-11 w-11 touch-manipulation items-center justify-center rounded-full border border-black/10 bg-[#F8F6F2] text-[#171717] transition-all duration-300 hover:border-[#F26A21] hover:bg-[#F26A21] hover:text-white"
           >
             <ShoppingBag size={19} strokeWidth={2} />
             {totalItems > 0 && (
-              <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full border-2 border-[#080808] bg-[#D4AF37] px-1 text-[9px] font-extrabold text-black">
+              <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full border-2 border-white bg-[#F26A21] px-1 text-[9px] font-extrabold text-white">
                 {totalItems > 99 ? "99+" : totalItems}
               </span>
             )}
@@ -178,7 +178,7 @@ export default function Navbar() {
 
           <Link
             href="/menu"
-            className="hidden rounded-full bg-[#D4AF37] px-6 py-3 text-sm font-bold text-black transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#E5C65A] lg:inline-flex"
+            className="hidden rounded-full bg-[#F26A21] px-5 py-2.5 text-sm font-bold text-white transition-all duration-300 hover:bg-[#D95512] lg:inline-flex"
           >
             Order Now
           </Link>
@@ -189,10 +189,10 @@ export default function Navbar() {
             aria-expanded={open}
             aria-controls="rts-nav-drawer"
             onClick={() => setOpen((previous) => !previous)}
-            className={`relative z-[10001] flex h-11 w-11 touch-manipulation items-center justify-center rounded-full border transition-all duration-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D4AF37] ${
+            className={`relative z-[10001] flex h-11 w-11 touch-manipulation items-center justify-center rounded-full border transition-all duration-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#F26A21] ${
               open
-                ? "border-white bg-white text-[#171717]"
-                : "border-[#D4AF37]/70 bg-[#D4AF37] text-black hover:bg-[#E5C65A]"
+                ? "border-[#171717] bg-[#171717] text-white"
+                : "border-[#F26A21] bg-[#F26A21] text-white hover:bg-[#D95512]"
             }`}
           >
             {open ? (
@@ -204,28 +204,26 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* Backdrop */}
       <button
         type="button"
         aria-label="Close menu overlay"
         tabIndex={open ? 0 : -1}
         onClick={closeMenu}
-        className={`fixed inset-0 z-[10000] bg-black/55 transition-opacity duration-300 ${
+        className={`fixed inset-0 z-[10000] bg-black/40 transition-opacity duration-300 ${
           open
             ? "visible opacity-100"
             : "invisible pointer-events-none opacity-0"
         }`}
       />
 
-      {/* Drawer — all breakpoints */}
       <aside
         id="rts-nav-drawer"
         aria-hidden={!open}
-        className={`fixed right-0 top-0 z-[10002] flex h-[100dvh] w-[min(100vw,380px)] flex-col border-l border-white/10 bg-[#0B0B0B] shadow-[-20px_0_60px_rgba(0,0,0,0.45)] transition-transform duration-300 ease-out ${
+        className={`fixed right-0 top-0 z-[10002] flex h-[100dvh] w-[min(100vw,380px)] flex-col border-l border-black/8 bg-white shadow-[-20px_0_60px_rgba(0,0,0,0.18)] transition-transform duration-300 ease-out ${
           open ? "translate-x-0" : "translate-x-full"
         }`}
       >
-        <div className="flex items-center justify-between border-b border-white/10 px-5 py-5 pt-[calc(1.25rem+env(safe-area-inset-top,0px))]">
+        <div className="flex items-center justify-between border-b border-black/8 px-5 py-5 pt-[calc(1.25rem+env(safe-area-inset-top,0px))]">
           <div className="flex min-w-0 items-center gap-3">
             <div className="relative h-11 w-11 shrink-0">
               <Image
@@ -237,10 +235,10 @@ export default function Navbar() {
               />
             </div>
             <div className="min-w-0">
-              <p className="truncate text-sm font-bold text-white">
+              <p className="truncate text-sm font-bold text-[#171717]">
                 Rhennie Tasty Shack
               </p>
-              <p className="mt-0.5 truncate text-[10px] italic text-[#D4AF37]/90">
+              <p className="mt-0.5 truncate text-[10px] italic text-[#F26A21]">
                 A Taste Above the Ordinary.
               </p>
             </div>
@@ -249,7 +247,7 @@ export default function Navbar() {
             type="button"
             aria-label="Close menu"
             onClick={closeMenu}
-            className="flex h-10 w-10 items-center justify-center rounded-full border border-white/20 text-white transition hover:border-[#D4AF37] hover:text-[#D4AF37]"
+            className="flex h-10 w-10 items-center justify-center rounded-full border border-black/10 text-[#171717] transition hover:border-[#F26A21] hover:text-[#F26A21]"
           >
             <X size={20} strokeWidth={2} />
           </button>
@@ -267,7 +265,7 @@ export default function Navbar() {
             <button
               type="button"
               onClick={() => void handleLogout()}
-              className="mt-4 w-full border-t border-white/10 pt-5 text-left text-[14px] font-medium text-white/70 transition hover:text-[#D4AF37]"
+              className="mt-4 w-full border-t border-black/8 pt-5 text-left text-[14px] font-medium text-black/60 transition hover:text-[#F26A21]"
             >
               Log out
             </button>
@@ -289,7 +287,7 @@ function DrawerSection({
 }) {
   return (
     <div className="mb-7">
-      <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.28em] text-[#D4AF37]">
+      <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.28em] text-[#F26A21]">
         {title}
       </p>
       <ul className="space-y-1">
@@ -298,7 +296,7 @@ function DrawerSection({
             <Link
               href={link.href}
               onClick={onNavigate}
-              className="block rounded-lg px-1 py-2.5 text-[15px] font-medium text-white/85 transition-colors hover:text-[#D4AF37]"
+              className="block rounded-lg px-1 py-2.5 text-[15px] font-medium text-[#171717]/90 transition-colors hover:text-[#F26A21]"
             >
               {link.label}
             </Link>

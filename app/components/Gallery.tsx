@@ -40,10 +40,10 @@ const gallery = [
 
 export default function Gallery() {
   return (
-    <section id="gallery" className="bg-[#080808] py-16 text-white sm:py-20 lg:py-24">
-      <div className="mx-auto max-w-7xl px-5 sm:px-6 lg:px-8">
+    <section id="gallery" className="bg-[#080808] py-12 text-white sm:py-16 lg:py-20">
+      <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-12 xl:px-16">
         <div className="mx-auto max-w-2xl text-center">
-          <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-[#D4AF37]">
+          <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-[#F26A21]">
             Gallery
           </p>
           <h2 className="mt-3 font-serif text-3xl font-bold sm:text-4xl">
@@ -83,7 +83,7 @@ export default function Gallery() {
         <div className="mt-10 text-center">
           <Link
             href="/menu"
-            className="inline-flex min-h-[48px] items-center justify-center rounded-full bg-[#D4AF37] px-7 text-sm font-bold text-black transition hover:bg-[#E5C65A]"
+            className="inline-flex min-h-[48px] items-center justify-center rounded-full bg-[#F26A21] px-7 text-sm font-bold text-white transition hover:bg-[#D95512]"
           >
             View Menu
           </Link>

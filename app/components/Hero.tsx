@@ -103,34 +103,38 @@ export default function Hero() {
       <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/45 to-black/10" />
       <div className="absolute inset-0 bg-gradient-to-b from-black/45 via-transparent to-black/75 sm:hidden" />
       <div className="absolute inset-x-0 bottom-0 h-56 bg-gradient-to-t from-black via-black/40 to-transparent" />
-      <div className="pointer-events-none absolute -left-32 top-1/4 h-72 w-72 rounded-full bg-[#D4AF37]/10 blur-[110px]" />
+      <div className="pointer-events-none absolute -left-32 top-1/4 h-72 w-72 rounded-full bg-[#F26A21]/10 blur-[110px]" />
 
-      <div className="relative z-20 flex min-h-[calc(100svh-76px)] items-center px-5 py-16 sm:min-h-[calc(100svh-80px)] sm:px-8 sm:py-20 lg:min-h-[calc(100svh-96px)] lg:px-12 xl:px-20">
-        <div className="mx-auto w-full max-w-7xl">
+      <div className="relative z-20 flex min-h-[calc(100svh-76px)] items-center py-16 sm:min-h-[calc(100svh-80px)] sm:py-20 lg:min-h-[calc(100svh-96px)]">
+        <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-12 xl:px-16">
           <div className="max-w-3xl text-center sm:text-left">
             <p className="text-[10px] font-bold uppercase tracking-[0.35em] text-white/80 sm:text-[11px]">
               Rhennie Tasty Shack
             </p>
 
-            <h1 className="mt-4 font-serif text-[2rem] font-medium italic leading-snug tracking-tight text-[#D4AF37] sm:text-4xl md:text-[2.75rem]">
+            <p className="mt-3 text-[13px] font-medium italic tracking-wide text-[#F26A21] sm:text-sm">
               A Taste Above the Ordinary.
+            </p>
+
+            <h1 className="mt-5 font-serif text-[2.15rem] font-bold leading-[1.05] tracking-tight text-white sm:text-4xl md:text-5xl lg:text-[3.25rem]">
+              Crafted for Exceptional Taste.
             </h1>
 
-            <p className="mx-auto mt-5 max-w-md text-[14px] leading-7 text-white/70 sm:mx-0 sm:text-base">
-              Premium meals and catering, prepared with care.
+            <p className="mx-auto mt-4 max-w-md text-[14px] leading-7 text-white/70 sm:mx-0 sm:text-base">
+              Luxury Dining at Your Doorstep.
             </p>
 
             <div className="mt-8 flex w-full flex-col gap-3 sm:mt-9 sm:flex-row sm:items-center">
               <Link
                 href="/menu"
-                className="inline-flex min-h-[52px] w-full touch-manipulation items-center justify-center rounded-full bg-[#D4AF37] px-8 text-[13px] font-bold text-black transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#E5C65A] sm:w-auto sm:text-sm"
+                className="inline-flex min-h-[52px] w-full touch-manipulation items-center justify-center rounded-full bg-[#F26A21] px-8 text-[13px] font-bold text-[#FFFFFF] transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#D95512] sm:w-auto sm:text-sm"
               >
                 View Menu
               </Link>
 
               <Link
                 href="/event-concierge"
-                className="inline-flex min-h-[52px] w-full touch-manipulation items-center justify-center rounded-full border border-white/50 bg-transparent px-8 text-[13px] font-bold text-white transition-all duration-300 hover:border-white hover:bg-white hover:text-black sm:w-auto sm:text-sm"
+                className="inline-flex min-h-[52px] w-full touch-manipulation items-center justify-center rounded-full border-2 border-[#FFFFFF] bg-transparent px-8 text-[13px] font-bold text-[#FFFFFF] transition-all duration-300 hover:bg-[#FFFFFF] hover:text-[#171717] sm:w-auto sm:text-sm"
               >
                 Plan Your Event
               </Link>
@@ -153,7 +157,7 @@ export default function Hero() {
               aria-current={currentVideo === index}
               className={`h-1.5 touch-manipulation rounded-full transition-all duration-500 ${
                   currentVideo === index
-                  ? "w-9 bg-[#D4AF37]"
+                  ? "w-9 bg-[#F26A21]"
                   : "w-4 bg-white/40 hover:bg-white"
               }`}
             />
@@ -167,7 +171,7 @@ export default function Hero() {
             Scroll
           </span>
           <div className="flex h-8 w-5 justify-center rounded-full border border-white/40 p-1">
-            <div className="h-1.5 w-1 rounded-full bg-[#D4AF37] motion-safe:animate-bounce" />
+            <div className="h-1.5 w-1 rounded-full bg-[#F26A21] motion-safe:animate-bounce" />
           </div>
         </div>
       </div>

@@ -26,10 +26,10 @@ const features = [
 
 export default function WhyChooseUs() {
   return (
-    <section className="bg-white py-16 sm:py-20 lg:py-24">
-      <div className="mx-auto max-w-7xl px-5 sm:px-6 lg:px-8">
+    <section className="bg-white py-12 sm:py-16 lg:py-20">
+      <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-12 xl:px-16">
         <div className="mx-auto max-w-2xl text-center">
-          <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-[#D4AF37]">
+          <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-[#F26A21]">
             Why Rhennie
           </p>
           <h2 className="mt-3 font-serif text-3xl font-bold text-[#171717] sm:text-4xl">
@@ -49,8 +49,8 @@ export default function WhyChooseUs() {
                 key={feature.title}
                 className="rounded-[24px] border border-black/6 bg-[#FAF8F4] p-7"
               >
-                <div className="mb-5 flex h-11 w-11 items-center justify-center rounded-full bg-[#0B0B0B] text-[#D4AF37]">
-                  <Icon size={20} />
+                <div className="mb-5 flex h-11 w-11 items-center justify-center rounded-full bg-[#FFF1E9] text-[#F26A21]">
+                  <Icon size={20} strokeWidth={2.25} />
                 </div>
                 <h3 className="text-lg font-semibold text-[#171717]">
                   {feature.title}

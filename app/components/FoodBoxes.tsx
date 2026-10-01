@@ -106,62 +106,47 @@ export default function FoodBoxes() {
   return (
     <section
       id="foodboxes"
-      className="relative overflow-hidden bg-[#080808] py-20 text-white md:py-24"
+      className="relative overflow-hidden bg-white py-12 text-[#171717] sm:py-16 lg:py-20"
     >
-      {/* Decorative gold glow */}
-      <div className="pointer-events-none absolute -left-40 top-20 h-96 w-96 rounded-full bg-yellow-500/10 blur-3xl" />
+      <div className="pointer-events-none absolute -left-40 top-20 h-96 w-96 rounded-full bg-[#F26A21]/6 blur-3xl" />
+      <div className="pointer-events-none absolute -right-40 top-1/3 h-96 w-96 rounded-full bg-[#F26A21]/6 blur-3xl" />
 
-      <div className="pointer-events-none absolute -right-40 top-1/3 h-96 w-96 rounded-full bg-yellow-500/10 blur-3xl" />
-
-      <div className="relative mx-auto max-w-7xl px-5 sm:px-6">
-
-        {/* HEADER */}
-        <div className="mx-auto mb-14 max-w-4xl text-center">
-
+      <div className="relative mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-12 xl:px-16">
+        <div className="mx-auto mb-12 max-w-4xl text-center">
           <div className="mb-5 flex items-center justify-center gap-4">
-            <span className="h-px w-12 bg-yellow-500" />
-
-            <span className="text-xs font-bold uppercase tracking-[0.35em] text-yellow-500">
+            <span className="h-px w-12 bg-[#F26A21]" />
+            <span className="text-xs font-bold uppercase tracking-[0.35em] text-[#F26A21]">
               Signature Collection
             </span>
-
-            <span className="h-px w-12 bg-yellow-500" />
+            <span className="h-px w-12 bg-[#F26A21]" />
           </div>
 
           <h2 className="font-serif text-4xl font-bold leading-tight sm:text-5xl md:text-6xl">
             Signature{" "}
-            <span className="text-yellow-500">
-              Food Boxes
-            </span>
+            <span className="text-[#F26A21]">Food Boxes</span>
           </h2>
 
-          <p className="mx-auto mt-5 max-w-2xl text-sm leading-7 text-gray-400 sm:text-base">
-            Thoughtfully curated food experiences for celebrations,
-            intimate gatherings, gifting, brunches and unforgettable moments.
+          <p className="mx-auto mt-5 max-w-2xl text-sm leading-7 text-black/55 sm:text-base">
+            Thoughtfully curated food experiences for celebrations, intimate
+            gatherings, gifting, brunches and unforgettable moments.
           </p>
-
         </div>
 
-        {/* FOOD BOXES */}
-        <div className="grid items-stretch gap-7 md:grid-cols-2 xl:grid-cols-6">
-
+        <div className="grid items-stretch gap-4 sm:gap-5 md:grid-cols-2 lg:gap-6 xl:grid-cols-6">
           {boxes.map((box) => (
             <article
               key={box.title}
-              className={`group flex h-[500px] w-full flex-col overflow-hidden rounded-[28px] border bg-[#0d0d0d] transition-all duration-500 hover:-translate-y-2 ${
+              className={`group flex h-[500px] w-full flex-col overflow-hidden rounded-[28px] border bg-white transition-all duration-500 hover:-translate-y-2 ${
                 box.number === "07"
                   ? "xl:col-span-2 xl:col-start-3"
                   : "xl:col-span-2"
               } ${
                 box.popular
-                  ? "border-yellow-500 bg-[#15130c] shadow-[0_25px_70px_rgba(234,179,8,0.14)]"
-                  : "border-white/10 hover:border-yellow-500/50"
+                  ? "border-[#F26A21] shadow-[0_20px_50px_rgba(242,106,33,0.12)]"
+                  : "border-black/8 hover:border-[#F26A21]/40"
               }`}
             >
-
-              {/* IMAGE */}
-              <div className="relative h-[250px] w-full shrink-0 overflow-hidden">
-
+              <div className="relative h-[250px] w-full shrink-0 overflow-hidden bg-[#ECE8E1]">
                 <Image
                   src={box.image}
                   alt={box.title}
@@ -170,98 +155,72 @@ export default function FoodBoxes() {
                   sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw"
                   className="object-cover transition-transform duration-700 group-hover:scale-105"
                 />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/5 to-transparent" />
 
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent" />
-
-                {/* NUMBER */}
-                <div className="absolute left-5 top-5 flex h-8 w-8 items-center justify-center rounded-full border border-yellow-500 bg-black/80 text-xs font-bold text-yellow-500">
+                <div className="absolute left-5 top-5 flex h-8 w-8 items-center justify-center rounded-full border border-[#F26A21] bg-white text-xs font-bold text-[#F26A21]">
                   {box.number}
                 </div>
 
-                {/* MOST POPULAR */}
                 {box.popular && (
-                  <div className="absolute right-5 top-5 rounded-full bg-yellow-500 px-4 py-2 text-[10px] font-extrabold uppercase tracking-[0.15em] text-black shadow-lg">
+                  <div className="absolute right-5 top-5 rounded-full bg-[#F26A21] px-4 py-2 text-[10px] font-extrabold uppercase tracking-[0.15em] text-white shadow-lg">
                     Most Popular
                   </div>
                 )}
-
               </div>
 
-              {/* CONTENT */}
               <div className="flex flex-1 flex-col p-6">
-
-                <h3 className="min-h-[54px] text-[22px] font-bold leading-tight text-white sm:text-2xl">
+                <h3 className="min-h-[54px] text-[22px] font-bold leading-tight text-[#171717] sm:text-2xl">
                   {box.title}
                 </h3>
 
-                <p className="mt-3 h-[72px] overflow-hidden text-sm leading-6 text-gray-400">
+                <p className="mt-3 h-[72px] overflow-hidden text-sm leading-6 text-black/55">
                   {box.description}
                 </p>
 
-                {/* PRICE + BUTTON */}
-                <div className="mt-auto flex items-end justify-between gap-4 border-t border-white/10 pt-5">
-
+                <div className="mt-auto flex items-end justify-between gap-4 border-t border-black/8 pt-5">
                   <div>
-                    <p className="text-[9px] font-semibold uppercase tracking-[0.25em] text-gray-500">
+                    <p className="text-[9px] font-semibold uppercase tracking-[0.25em] text-black/40">
                       Starting from
                     </p>
-
-                    <p className="mt-1 text-[25px] font-extrabold tracking-tight text-yellow-500">
+                    <p className="mt-1 text-[25px] font-extrabold tracking-tight text-[#F26A21]">
                       {box.price}
                     </p>
                   </div>
 
                   <Link
                     href="/menu"
-                    className="flex items-center gap-2 rounded-full border border-yellow-500/60 px-5 py-2.5 text-xs font-bold text-yellow-500 transition-all duration-300 hover:bg-yellow-500 hover:text-black"
+                    className="flex items-center gap-2 rounded-full border border-[#F26A21] px-5 py-2.5 text-xs font-bold text-[#F26A21] transition-all duration-300 hover:bg-[#F26A21] hover:text-white"
                   >
                     View Box
                     <span>→</span>
                   </Link>
-
                 </div>
-
               </div>
-
             </article>
           ))}
-
         </div>
 
-        {/* PLATTER COLLECTION */}
-        <div className="mt-24">
-
+        <div className="mt-20">
           <div className="mx-auto mb-10 max-w-3xl text-center">
-
-            <span className="text-xs font-bold uppercase tracking-[0.35em] text-yellow-500">
+            <span className="text-xs font-bold uppercase tracking-[0.35em] text-[#F26A21]">
               Platter Collection
             </span>
-
-            <h3 className="mt-3 font-serif text-3xl font-bold sm:text-4xl">
-              Perfect for{" "}
-              <span className="text-yellow-500">
-                Sharing
-              </span>
+            <h3 className="mt-3 font-serif text-3xl font-bold text-[#171717] sm:text-4xl">
+              Perfect for <span className="text-[#F26A21]">Sharing</span>
             </h3>
-
-            <p className="mt-4 text-sm leading-7 text-gray-400">
-              Deliciously prepared platters made for intimate gatherings,
-              casual celebrations and sharing.
+            <p className="mt-4 text-sm leading-7 text-black/55">
+              Deliciously prepared platters made for intimate gatherings, casual
+              celebrations and sharing.
             </p>
-
           </div>
 
-          {/* PLATTERS */}
-          <div className="mx-auto grid max-w-5xl items-stretch gap-7 md:grid-cols-2">
-
+          <div className="mx-auto grid max-w-5xl items-stretch gap-4 sm:gap-5 md:grid-cols-2 lg:gap-6">
             {platters.map((platter) => (
               <article
                 key={platter.title}
-                className="group flex h-[450px] w-full flex-col overflow-hidden rounded-[28px] border border-white/10 bg-[#0d0d0d] transition-all duration-500 hover:-translate-y-2 hover:border-yellow-500/50"
+                className="group flex h-[450px] w-full flex-col overflow-hidden rounded-[28px] border border-black/8 bg-white transition-all duration-500 hover:-translate-y-2 hover:border-[#F26A21]/40"
               >
-
-                <div className="relative h-[240px] w-full shrink-0 overflow-hidden">
-
+                <div className="relative h-[240px] w-full shrink-0 overflow-hidden bg-[#ECE8E1]">
                   <Image
                     src={platter.image}
                     alt={platter.title}
@@ -269,76 +228,53 @@ export default function FoodBoxes() {
                     sizes="(max-width: 768px) 100vw, 50vw"
                     className="object-cover transition-transform duration-700 group-hover:scale-105"
                   />
-
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
-
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
                 </div>
 
                 <div className="flex flex-1 flex-col p-7">
-
-                  <h4 className="min-h-[55px] text-2xl font-bold">
+                  <h4 className="min-h-[55px] text-2xl font-bold text-[#171717]">
                     {platter.title}
                   </h4>
-
-                  <p className="mt-3 h-[60px] overflow-hidden text-sm leading-6 text-gray-400">
+                  <p className="mt-3 h-[60px] overflow-hidden text-sm leading-6 text-black/55">
                     {platter.description}
                   </p>
-
-                  <div className="mt-auto flex items-center justify-between gap-4 border-t border-white/10 pt-5">
-
-                    <span className="text-2xl font-extrabold text-yellow-500">
+                  <div className="mt-auto flex items-center justify-between gap-4 border-t border-black/8 pt-5">
+                    <span className="text-2xl font-extrabold text-[#F26A21]">
                       {platter.price}
                     </span>
-
                     <Link
                       href="/menu"
-                      className="flex items-center gap-2 rounded-full border border-yellow-500/60 px-5 py-2.5 text-xs font-bold text-yellow-500 transition-all duration-300 hover:bg-yellow-500 hover:text-black"
+                      className="flex items-center gap-2 rounded-full border border-[#F26A21] px-5 py-2.5 text-xs font-bold text-[#F26A21] transition-all duration-300 hover:bg-[#F26A21] hover:text-white"
                     >
                       View Platter
                       <span>→</span>
                     </Link>
-
                   </div>
-
                 </div>
-
               </article>
             ))}
-
           </div>
-
         </div>
 
-        {/* CUSTOM ORDER CTA */}
-        <div className="mt-16 rounded-[28px] border border-yellow-500/20 bg-[#101010] p-7 md:p-9">
-
+        <div className="mt-16 rounded-[28px] border border-[#F26A21]/25 bg-[#FFF7F2] p-7 md:p-9">
           <div className="flex flex-col items-center justify-between gap-7 text-center md:flex-row md:text-left">
-
             <div>
-
-              <p className="text-xl font-bold md:text-2xl">
+              <p className="text-xl font-bold text-[#171717] md:text-2xl">
                 Planning something special?
               </p>
-
-              <p className="mt-2 max-w-xl text-sm leading-6 text-gray-400">
-                Need a custom food box for your celebration, event or
-                corporate gathering? We can create something specially
-                curated for you.
+              <p className="mt-2 max-w-xl text-sm leading-6 text-black/55">
+                Need a custom food box for your celebration, event or corporate
+                gathering? We can create something specially curated for you.
               </p>
-
             </div>
-
             <Link
               href="/menu?category=food-boxes"
-              className="shrink-0 rounded-full bg-[#D4AF37] px-7 py-3.5 text-sm font-bold text-black transition-all hover:bg-[#E5C65A]"
+              className="shrink-0 rounded-full bg-[#F26A21] px-7 py-3.5 text-sm font-bold text-white transition-all hover:bg-[#D95512]"
             >
               Browse Food Boxes →
             </Link>
-
           </div>
-
         </div>
-
       </div>
     </section>
   );

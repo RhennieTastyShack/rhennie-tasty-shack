@@ -88,13 +88,10 @@ export default function FeaturedMeals() {
         relative
         overflow-hidden
         bg-[#F8F6F2]
-        px-5
-        py-20
+        py-12
         text-[#171717]
-        sm:px-6
-        sm:py-24
-        lg:px-8
-        lg:py-28
+        sm:py-16
+        lg:py-20
       "
     >
       {/* ===================================================
@@ -129,7 +126,7 @@ export default function FeaturedMeals() {
         "
       />
 
-      <div className="relative mx-auto max-w-7xl">
+      <div className="relative mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-12 xl:px-16">
         {/* =================================================
             SECTION HEADER
         ================================================== */}
@@ -151,7 +148,7 @@ export default function FeaturedMeals() {
                 font-extrabold
                 uppercase
                 tracking-[0.35em]
-                text-[#D4AF37]
+                text-[#F26A21]
               "
             >
               Featured
@@ -171,7 +168,7 @@ export default function FeaturedMeals() {
               "
             >
               Worth
-              <span className="text-[#D4AF37]">
+              <span className="text-[#F26A21]">
                 {" "}
                 remembering.
               </span>
@@ -232,15 +229,16 @@ export default function FeaturedMeals() {
 
         <div
           className="
-            mt-14
+            mt-10
             grid
             grid-cols-1
             items-stretch
-            gap-6
-            sm:mt-16
+            gap-4
+            sm:mt-12
             sm:grid-cols-2
+            sm:gap-5
             lg:grid-cols-3
-            lg:gap-7
+            lg:gap-6
           "
         >
           {featuredMeals.map((meal, index) => (
@@ -261,7 +259,7 @@ export default function FeaturedMeals() {
                 transition-all
                 duration-500
                 hover:-translate-y-2
-                hover:border-[#D4AF37]/35
+                hover:border-[#F26A21]/35
                 hover:shadow-[0_25px_60px_rgba(0,0,0,0.10)]
               "
             >
@@ -324,14 +322,14 @@ export default function FeaturedMeals() {
                       top-5
                       z-10
                       rounded-full
-                      bg-[#0B0B0B]
+                      bg-[#F26A21]
                       px-4
                       py-2.5
                       text-[8px]
                       font-extrabold
                       uppercase
                       tracking-[0.18em]
-                      text-[#D4AF37]
+                      text-white
                       shadow-lg
                       sm:left-6
                       sm:top-6
@@ -484,8 +482,8 @@ export default function FeaturedMeals() {
                         overflow-visible
                         rounded-full
                         border
-                        border-[#171717]
-                        bg-[#171717]
+                        border-[#F26A21]
+                        bg-[#F26A21]
                         px-6
                         py-3.5
                         text-center
@@ -493,12 +491,12 @@ export default function FeaturedMeals() {
                         font-extrabold
                         text-white
                         opacity-100
-                        shadow-[0_8px_22px_rgba(0,0,0,0.15)]
+                        shadow-[0_8px_22px_rgba(242,106,33,0.25)]
                         transition-all
                         duration-300
                         hover:-translate-y-0.5
-                        hover:border-[#F26A21]
-                        hover:bg-[#F26A21]
+                        hover:border-[#D95512]
+                        hover:bg-[#D95512]
                         hover:text-white
                         focus-visible:outline
                         focus-visible:outline-2

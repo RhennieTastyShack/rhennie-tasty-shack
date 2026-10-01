@@ -27,8 +27,8 @@ export default function CustomerCarePage() {
   return (
     <main className="min-h-screen bg-[#FAF8F4] text-[#171717]">
       <section className="border-b border-black/5 bg-white">
-        <div className="mx-auto max-w-7xl px-5 py-16 sm:px-6 md:px-8 md:py-20">
-          <p className="text-[10px] font-bold uppercase tracking-[0.35em] text-[#D4AF37]">
+        <div className="mx-auto w-full max-w-7xl px-4 py-12 sm:px-6 sm:py-16 lg:px-12 xl:px-16">
+          <p className="text-[10px] font-bold uppercase tracking-[0.35em] text-[#F26A21]">
             Customer Support
           </p>
           <h1 className="mt-4 max-w-2xl font-serif text-4xl font-bold tracking-tight sm:text-5xl">
@@ -41,14 +41,14 @@ export default function CustomerCarePage() {
             href="https://wa.me/2348121577759"
             target="_blank"
             rel="noopener noreferrer"
-            className="mt-8 inline-flex min-h-[48px] items-center justify-center rounded-full bg-[#D4AF37] px-7 text-sm font-bold text-black transition hover:bg-[#E5C65A]"
+            className="mt-8 inline-flex min-h-[48px] items-center justify-center rounded-full bg-[#F26A21] px-7 text-sm font-bold text-white transition hover:bg-[#D95512]"
           >
             Chat on WhatsApp
           </a>
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-5 py-14 sm:px-6 md:px-8">
+      <section className="mx-auto w-full max-w-7xl px-4 py-12 sm:px-6 lg:px-12 xl:px-16">
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           <CareCard
             title="Order Help"
@@ -80,7 +80,7 @@ export default function CustomerCarePage() {
 
       <section
         id="delivery"
-        className="mx-auto max-w-7xl px-5 pb-10 sm:px-6 md:px-8"
+        className="mx-auto w-full max-w-7xl px-4 pb-10 sm:px-6 lg:px-12 xl:px-16"
       >
         <div className="rounded-[28px] border border-black/8 bg-white p-7 sm:p-10">
           <h2 className="font-serif text-2xl font-bold sm:text-3xl">
@@ -93,7 +93,7 @@ export default function CustomerCarePage() {
               </p>
               <a
                 href="mailto:mohrhennie567@gmail.com"
-                className="mt-2 block break-all transition hover:text-[#D4AF37]"
+                className="mt-2 block break-all transition hover:text-[#F26A21]"
               >
                 mohrhennie567@gmail.com
               </a>
@@ -109,13 +109,13 @@ export default function CustomerCarePage() {
                 Quick links
               </p>
               <div className="mt-2 flex flex-col gap-1">
-                <Link href="/menu" className="hover:text-[#D4AF37]">
+                <Link href="/menu" className="hover:text-[#F26A21]">
                   Menu
                 </Link>
-                <Link href="/event-concierge" className="hover:text-[#D4AF37]">
+                <Link href="/event-concierge" className="hover:text-[#F26A21]">
                   Event Concierge
                 </Link>
-                <Link href="/client-portal" className="hover:text-[#D4AF37]">
+                <Link href="/client-portal" className="hover:text-[#F26A21]">
                   My Account
                 </Link>
               </div>
@@ -124,18 +124,18 @@ export default function CustomerCarePage() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-5 pb-20 sm:px-6 md:px-8">
+      <section className="mx-auto w-full max-w-7xl px-4 pb-16 sm:px-6 lg:px-12 xl:px-16">
         <h2 className="font-serif text-2xl font-bold sm:text-3xl">FAQs</h2>
         <div className="mt-6 space-y-3">
           {faqs.map((item) => (
             <details
               key={item.q}
-              className="group rounded-2xl border border-black/8 bg-white px-5 py-4 open:border-[#D4AF37]/35"
+              className="group rounded-2xl border border-black/8 bg-white px-5 py-4 open:border-[#F26A21]/35"
             >
               <summary className="cursor-pointer list-none text-sm font-semibold marker:content-none [&::-webkit-details-marker]:hidden">
                 <span className="flex items-center justify-between gap-4">
                   {item.q}
-                  <span className="text-[#D4AF37] transition group-open:rotate-45">
+                  <span className="text-[#F26A21] transition group-open:rotate-45">
                     +
                   </span>
                 </span>
@@ -163,13 +163,13 @@ function CareCard({
   external?: boolean;
 }) {
   const className =
-    "flex h-full flex-col rounded-[24px] border border-black/8 bg-white p-7 transition duration-300 hover:-translate-y-1 hover:border-[#D4AF37]/35";
+    "flex h-full flex-col rounded-[24px] border border-black/8 bg-white p-7 transition duration-300 hover:-translate-y-1 hover:border-[#F26A21]/35";
 
   const content = (
     <>
       <h3 className="text-lg font-bold">{title}</h3>
       <p className="mt-3 flex-1 text-sm leading-6 text-black/55">{body}</p>
-      <span className="mt-6 text-sm font-bold text-[#D4AF37]">{cta} →</span>
+      <span className="mt-6 text-sm font-bold text-[#F26A21]">{cta} →</span>
     </>
   );
 

@@ -147,7 +147,7 @@ a {
 ========================================================= */
 
 a {
-  color: inherit;
+  /* Do not set color here — unlayered color beats Tailwind utilities */
   text-decoration: none;
 }
 
@@ -267,8 +267,8 @@ select:-webkit-autofill:focus {
   margin-left: auto;
   margin-right: auto;
 
-  padding-left: 20px;
-  padding-right: 20px;
+  padding-left: 16px;
+  padding-right: 16px;
 }
 
 @media (min-width: 640px) {
@@ -280,8 +280,15 @@ select:-webkit-autofill:focus {
 
 @media (min-width: 1024px) {
   .rts-container {
-    padding-left: 32px;
-    padding-right: 32px;
+    padding-left: 48px;
+    padding-right: 48px;
+  }
+}
+
+@media (min-width: 1280px) {
+  .rts-container {
+    padding-left: 64px;
+    padding-right: 64px;
   }
 }
 
@@ -290,21 +297,21 @@ select:-webkit-autofill:focus {
 ========================================================= */
 
 .rts-section {
-  padding-top: 56px;
-  padding-bottom: 56px;
+  padding-top: 48px;
+  padding-bottom: 48px;
 }
 
 @media (min-width: 640px) {
   .rts-section {
-    padding-top: 72px;
-    padding-bottom: 72px;
+    padding-top: 64px;
+    padding-bottom: 64px;
   }
 }
 
 @media (min-width: 1024px) {
   .rts-section {
-    padding-top: 88px;
-    padding-bottom: 88px;
+    padding-top: 80px;
+    padding-bottom: 80px;
   }
 }
 
@@ -737,27 +744,27 @@ select:-webkit-autofill:focus {
 }
 
 /* =========================================================
-   GOLD BUTTON
+   ACCENT BUTTON (RTS orange — kept class name for compatibility)
 ========================================================= */
 
 .rts-button-gold {
   background:
-    var(--rts-gold);
+    var(--rts-orange);
 
   color:
-    #111111;
+    #ffffff;
 
   box-shadow:
     0 12px 30px
-    rgba(240, 199, 94, 0.16);
+    rgba(242, 106, 33, 0.22);
 }
 
 .rts-button-gold:hover {
+  background:
+    var(--rts-orange-dark);
+
   transform:
     translateY(-2px);
-
-  filter:
-    brightness(0.96);
 }
 
 /* =========================================================

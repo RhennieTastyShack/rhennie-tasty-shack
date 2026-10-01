@@ -195,10 +195,10 @@ function SignupForm() {
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-[#0B0B0B] px-5 py-20 sm:px-6 lg:px-8">
-      <div className="w-full max-w-md rounded-[32px] border border-[#D4AF37]/20 bg-[#171717] p-6 shadow-2xl sm:p-8 lg:p-10">
+      <div className="w-full max-w-md rounded-[32px] border border-[#F26A21]/20 bg-[#171717] p-6 shadow-2xl sm:p-8 lg:p-10">
 
         <div className="text-center">
-          <span className="inline-block rounded-full border border-[#D4AF37]/20 bg-[#1F1F1F] px-5 py-2 text-xs uppercase tracking-[0.3em] text-[#D4AF37]">
+          <span className="inline-block rounded-full border border-[#F26A21]/20 bg-[#1F1F1F] px-5 py-2 text-xs uppercase tracking-[0.3em] text-[#F26A21]">
             Client Portal
           </span>
 
@@ -219,7 +219,7 @@ function SignupForm() {
           className="mt-10 space-y-6"
         >
           <div>
-            <label className="mb-2 block text-sm text-[#D4AF37]">
+            <label className="mb-2 block text-sm text-[#F26A21]">
               Full Name
             </label>
 
@@ -230,12 +230,12 @@ function SignupForm() {
               placeholder="Your full name"
               autoComplete="name"
               required
-              className="min-h-[50px] w-full rounded-xl border border-[#D4AF37]/20 bg-[#111111] px-4 py-3 text-white outline-none transition focus:border-[#D4AF37]"
+              className="min-h-[50px] w-full rounded-xl border border-[#F26A21]/20 bg-[#111111] px-4 py-3 text-white outline-none transition focus:border-[#F26A21]"
             />
           </div>
 
           <div>
-            <label className="mb-2 block text-sm text-[#D4AF37]">
+            <label className="mb-2 block text-sm text-[#F26A21]">
               Email Address
             </label>
 
@@ -246,12 +246,12 @@ function SignupForm() {
               placeholder="you@example.com"
               autoComplete="username"
               required
-              className="min-h-[50px] w-full rounded-xl border border-[#D4AF37]/20 bg-[#111111] px-4 py-3 text-white outline-none transition focus:border-[#D4AF37]"
+              className="min-h-[50px] w-full rounded-xl border border-[#F26A21]/20 bg-[#111111] px-4 py-3 text-white outline-none transition focus:border-[#F26A21]"
             />
           </div>
 
           <div>
-            <label className="mb-2 block text-sm text-[#D4AF37]">
+            <label className="mb-2 block text-sm text-[#F26A21]">
               Phone Number
             </label>
 
@@ -262,12 +262,12 @@ function SignupForm() {
               placeholder="08012345678"
               autoComplete="tel"
               required
-              className="min-h-[50px] w-full rounded-xl border border-[#D4AF37]/20 bg-[#111111] px-4 py-3 text-white outline-none transition focus:border-[#D4AF37]"
+              className="min-h-[50px] w-full rounded-xl border border-[#F26A21]/20 bg-[#111111] px-4 py-3 text-white outline-none transition focus:border-[#F26A21]"
             />
           </div>
 
           <div>
-            <label className="mb-2 block text-sm text-[#D4AF37]">
+            <label className="mb-2 block text-sm text-[#F26A21]">
               Password
             </label>
 
@@ -278,7 +278,7 @@ function SignupForm() {
               autoComplete="new-password"
               required
               minLength={6}
-              className="min-h-[50px] w-full rounded-xl border border-[#D4AF37]/20 bg-[#111111] px-4 py-3 text-white outline-none transition focus:border-[#D4AF37]"
+              className="min-h-[50px] w-full rounded-xl border border-[#F26A21]/20 bg-[#111111] px-4 py-3 text-white outline-none transition focus:border-[#F26A21]"
             />
           </div>
 
@@ -297,7 +297,7 @@ function SignupForm() {
           <button
             type="submit"
             disabled={loading}
-            className="flex min-h-[50px] w-full items-center justify-center rounded-full bg-[#D4AF37] px-5 text-base font-semibold text-black transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+            className="flex min-h-[50px] w-full items-center justify-center rounded-full bg-[#F26A21] px-5 text-base font-semibold text-black transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {loading
               ? "Creating Account..."
@@ -310,7 +310,7 @@ function SignupForm() {
 
           <Link
             href={loginHref}
-            className="font-semibold text-[#D4AF37] hover:underline"
+            className="font-semibold text-[#F26A21] hover:underline"
           >
             Sign In
           </Link>

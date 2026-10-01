@@ -161,7 +161,7 @@ function AuthCallbackContent() {
 
           <Link
             href="/login"
-            className="mt-8 flex min-h-[48px] w-full items-center justify-center rounded-full bg-[#D4AF37] px-5 font-semibold text-black transition hover:opacity-90"
+            className="mt-8 flex min-h-[48px] w-full items-center justify-center rounded-full bg-[#F26A21] px-5 font-semibold text-black transition hover:opacity-90"
           >
             Go to Sign In
           </Link>
@@ -176,8 +176,8 @@ function AuthCallbackContent() {
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-[#0B0B0B] px-5 py-20">
-      <div className="w-full max-w-md rounded-[32px] border border-[#D4AF37]/20 bg-[#171717] p-6 text-center shadow-2xl sm:p-8 lg:p-10">
-        <div className="mx-auto h-10 w-10 animate-spin rounded-full border-2 border-[#D4AF37]/20 border-t-[#D4AF37]" />
+      <div className="w-full max-w-md rounded-[32px] border border-[#F26A21]/20 bg-[#171717] p-6 text-center shadow-2xl sm:p-8 lg:p-10">
+        <div className="mx-auto h-10 w-10 animate-spin rounded-full border-2 border-[#F26A21]/20 border-t-[#F26A21]" />
 
         <p className="mt-6 text-lg font-semibold text-white">
           {message}

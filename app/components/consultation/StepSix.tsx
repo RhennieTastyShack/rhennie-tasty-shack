@@ -10,7 +10,7 @@ export default function StepSix({
 
       <div>
 
-        <span className="inline-block rounded-full border border-[#D4AF37]/20 bg-[#171717] px-5 py-2 text-sm uppercase tracking-[0.3em] text-[#D4AF37]">
+        <span className="inline-block rounded-full border border-[#F26A21]/20 bg-[#171717] px-5 py-2 text-sm uppercase tracking-[0.3em] text-[#F26A21]">
           Step 6
         </span>
 
@@ -79,7 +79,7 @@ export default function StepSix({
 
       </div>
 
-      <div className="rounded-3xl border border-[#D4AF37]/10 bg-[#171717] p-8">
+      <div className="rounded-3xl border border-[#F26A21]/10 bg-[#171717] p-8">
 
         <h3 className="mb-4 text-2xl font-semibold text-white">
           Special Requests
@@ -105,7 +105,7 @@ function SummaryCard({
   items,
 }: SummaryCardProps) {
   return (
-    <div className="rounded-3xl border border-[#D4AF37]/10 bg-[#171717] p-8">
+    <div className="rounded-3xl border border-[#F26A21]/10 bg-[#171717] p-8">
 
       <h3 className="mb-6 text-2xl font-semibold text-white">
         {title}

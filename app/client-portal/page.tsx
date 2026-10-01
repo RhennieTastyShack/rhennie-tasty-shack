@@ -66,7 +66,7 @@ export default function ClientPortalPage() {
 
         <div className="text-center">
 
-          <span className="inline-flex rounded-full border border-[#D4AF37]/30 bg-[#111111] px-5 py-2 text-[10px] font-bold uppercase tracking-[0.35em] text-[#D4AF37]">
+          <span className="inline-flex rounded-full border border-[#F26A21]/30 bg-[#111111] px-5 py-2 text-[10px] font-bold uppercase tracking-[0.35em] text-[#F26A21]">
             Client Portal
           </span>
 
@@ -79,7 +79,7 @@ export default function ClientPortalPage() {
             everything Rhennie Tasty Shack has to offer.
           </p>
 
-          <p className="mx-auto mt-4 max-w-2xl text-sm leading-7 text-[#D4AF37]">
+          <p className="mx-auto mt-4 max-w-2xl text-sm leading-7 text-[#F26A21]">
             {loginNote()}
           </p>
 
@@ -95,7 +95,7 @@ export default function ClientPortalPage() {
 
           <div className="mb-6">
 
-            <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-[#D4AF37]">
+            <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-[#F26A21]">
               Quick Access
             </p>
 
@@ -111,10 +111,10 @@ export default function ClientPortalPage() {
               <Link
                 key={item.title}
                 href={item.href}
-                className="group rounded-[28px] border border-white/10 bg-[#111111] p-7 transition duration-300 hover:-translate-y-1 hover:border-[#D4AF37]/40 hover:bg-[#141414]"
+                className="group rounded-[28px] border border-white/10 bg-[#111111] p-7 transition duration-300 hover:-translate-y-1 hover:border-[#F26A21]/40 hover:bg-[#141414]"
               >
 
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-[#D4AF37]/20 bg-[#181818] text-xl">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-[#F26A21]/20 bg-[#181818] text-xl">
                   {item.icon}
                 </div>
 
@@ -126,7 +126,7 @@ export default function ClientPortalPage() {
                   {item.description}
                 </p>
 
-                <div className="mt-6 text-sm font-bold text-[#D4AF37] transition group-hover:text-[#E5C65A]">
+                <div className="mt-6 text-sm font-bold text-[#F26A21] transition group-hover:text-[#D95512]">
                   Explore →
                 </div>
 
@@ -139,13 +139,13 @@ export default function ClientPortalPage() {
 
         {/* ================= ORDERS CTA ================= */}
 
-        <section className="mt-10 rounded-[30px] border border-[#D4AF37]/20 bg-gradient-to-br from-[#17150d] to-[#101010] p-7 sm:p-9">
+        <section className="mt-10 rounded-[30px] border border-[#F26A21]/20 bg-gradient-to-br from-[#17150d] to-[#101010] p-7 sm:p-9">
 
           <div className="flex flex-col gap-7 md:flex-row md:items-center md:justify-between">
 
             <div>
 
-              <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-[#D4AF37]">
+              <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-[#F26A21]">
                 Your Orders
               </p>
 
@@ -162,7 +162,7 @@ export default function ClientPortalPage() {
 
             <Link
               href="/client-portal/orders"
-              className="inline-flex shrink-0 items-center justify-center rounded-full bg-[#D4AF37] px-7 py-3.5 text-sm font-bold text-black transition hover:bg-[#E5C65A]"
+              className="inline-flex shrink-0 items-center justify-center rounded-full bg-[#F26A21] px-7 py-3.5 text-sm font-bold text-black transition hover:bg-[#D95512]"
             >
               View My Orders →
             </Link>
@@ -179,7 +179,7 @@ export default function ClientPortalPage() {
 
             <div>
 
-              <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-[#D4AF37]">
+              <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-[#F26A21]">
                 Event Concierge
               </p>
 
@@ -196,7 +196,7 @@ export default function ClientPortalPage() {
 
             <Link
               href="/client-portal/event-concierge"
-              className="inline-flex shrink-0 items-center justify-center rounded-full border border-[#D4AF37]/50 px-7 py-3.5 text-sm font-bold text-[#D4AF37] transition hover:bg-[#D4AF37] hover:text-black"
+              className="inline-flex shrink-0 items-center justify-center rounded-full border border-[#F26A21]/50 px-7 py-3.5 text-sm font-bold text-[#F26A21] transition hover:bg-[#F26A21] hover:text-black"
             >
               Plan My Event →
             </Link>
@@ -213,7 +213,7 @@ export default function ClientPortalPage() {
 
             <div>
 
-              <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-[#D4AF37]">
+              <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-[#F26A21]">
                 Meal Subscription
               </p>
 
@@ -231,14 +231,14 @@ export default function ClientPortalPage() {
             <div className="flex flex-col gap-3 sm:flex-row sm:shrink-0">
               <Link
                 href="/client-portal/subscriptions?plan=weekly-plan"
-                className="inline-flex items-center justify-center rounded-full bg-[#D4AF37] px-7 py-3.5 text-sm font-bold text-black transition hover:bg-[#E5C65A]"
+                className="inline-flex items-center justify-center rounded-full bg-[#F26A21] px-7 py-3.5 text-sm font-bold text-black transition hover:bg-[#D95512]"
               >
                 Build Meal Plan →
               </Link>
 
               <Link
                 href="/client-portal/my-subscriptions"
-                className="inline-flex items-center justify-center rounded-full border border-[#D4AF37]/50 px-7 py-3.5 text-sm font-bold text-[#D4AF37] transition hover:bg-[#D4AF37] hover:text-black"
+                className="inline-flex items-center justify-center rounded-full border border-[#F26A21]/50 px-7 py-3.5 text-sm font-bold text-[#F26A21] transition hover:bg-[#F26A21] hover:text-black"
               >
                 My Subscriptions
               </Link>
@@ -260,7 +260,7 @@ export default function ClientPortalPage() {
             href="https://wa.me/2348121577759?text=Hello%20Rhennie%20Tasty%20Shack,%20I%20need%20help%20with%20my%20client%20portal."
             target="_blank"
             rel="noopener noreferrer"
-            className="mt-4 inline-flex rounded-full bg-[#D4AF37] px-7 py-3.5 text-sm font-bold text-black transition hover:bg-[#E5C65A]"
+            className="mt-4 inline-flex rounded-full bg-[#F26A21] px-7 py-3.5 text-sm font-bold text-black transition hover:bg-[#D95512]"
           >
             Chat With Us →
           </a>

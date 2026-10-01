@@ -86,11 +86,11 @@ export default function MenuFilters({
   const hasFilters = Boolean(activeCategory || urlSearch);
 
   return (
-    <section className="relative z-30 border-b border-black/[0.06] bg-[#FAF8F4] px-4 py-8 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-7xl">
+    <section className="relative z-30 border-b border-black/[0.06] bg-[#FAF8F4] py-8">
+      <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-12 xl:px-16">
         {showCollectionChips ? (
           <div className="mx-auto max-w-2xl text-center">
-            <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-[#D4AF37]">
+            <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-[#F26A21]">
               The Menu
             </p>
             <h3 className="mt-2 font-serif text-2xl font-bold text-[#171717] sm:text-3xl">
@@ -111,7 +111,7 @@ export default function MenuFilters({
               onChange={(event) => handleSearch(event.target.value)}
               placeholder="Search the menu..."
               aria-label="Search meals"
-              className="h-12 w-full rounded-full border border-black/10 bg-white px-5 text-sm text-[#171717] outline-none transition placeholder:text-black/35 focus:border-[#D4AF37]"
+              className="h-12 w-full rounded-full border border-black/10 bg-white px-5 text-sm text-[#171717] outline-none transition placeholder:text-black/35 focus:border-[#F26A21]"
             />
             {search ? (
               <button
@@ -140,8 +140,8 @@ export default function MenuFilters({
                     aria-pressed={isActive}
                     className={`min-h-[40px] whitespace-nowrap rounded-full px-4 text-[12px] font-medium transition-colors sm:px-5 ${
                       isActive
-                        ? "bg-[#0B0B0B] text-[#D4AF37]"
-                        : "text-black/55 hover:bg-white hover:text-[#171717]"
+                        ? "bg-[#F26A21] text-white"
+                        : "bg-white text-black/55 hover:text-[#171717]"
                     }`}
                   >
                     {category.label}

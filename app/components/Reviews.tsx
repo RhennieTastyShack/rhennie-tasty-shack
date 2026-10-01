@@ -28,10 +28,10 @@ const reviews = [
 
 export default function Reviews() {
   return (
-    <section id="reviews" className="bg-[#FAF8F4] py-16 sm:py-20 lg:py-24">
-      <div className="mx-auto max-w-7xl px-5 sm:px-6 lg:px-8">
+    <section id="reviews" className="bg-[#FAF8F4] py-12 sm:py-16 lg:py-20">
+      <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-12 xl:px-16">
         <div className="mx-auto max-w-2xl text-center">
-          <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-[#D4AF37]">
+          <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-[#F26A21]">
             Testimonials
           </p>
           <h2 className="mt-3 font-serif text-3xl font-bold text-[#171717] sm:text-4xl">

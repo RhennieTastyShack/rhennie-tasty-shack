@@ -39,8 +39,8 @@ export default function ForgotPasswordPage() {
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-[#0B0B0B] px-6 py-20">
-      <div className="w-full max-w-md rounded-[32px] border border-[#D4AF37]/20 bg-[#171717] p-10 shadow-2xl">
-        <p className="text-center text-[10px] font-bold uppercase tracking-[0.3em] text-[#D4AF37]">
+      <div className="w-full max-w-md rounded-[32px] border border-[#F26A21]/20 bg-[#171717] p-10 shadow-2xl">
+        <p className="text-center text-[10px] font-bold uppercase tracking-[0.3em] text-[#F26A21]">
           Rhennie Tasty Shack
         </p>
         <h1 className="mt-4 text-center text-3xl font-bold text-white">
@@ -52,7 +52,7 @@ export default function ForgotPasswordPage() {
 
         <form onSubmit={handleReset} className="mt-8 space-y-5">
           <div>
-            <label className="mb-2 block text-sm text-[#D4AF37]">
+            <label className="mb-2 block text-sm text-[#F26A21]">
               Email address
             </label>
             <input
@@ -61,7 +61,7 @@ export default function ForgotPasswordPage() {
               onChange={(e) => setEmail(e.target.value)}
               required
               placeholder="you@example.com"
-              className="w-full rounded-xl border border-[#D4AF37]/20 bg-[#111111] px-4 py-4 text-white outline-none focus:border-[#D4AF37]"
+              className="w-full rounded-xl border border-[#F26A21]/20 bg-[#111111] px-4 py-4 text-white outline-none focus:border-[#F26A21]"
             />
           </div>
 
@@ -71,14 +71,14 @@ export default function ForgotPasswordPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-full bg-[#D4AF37] py-4 font-semibold text-black disabled:opacity-60"
+            className="w-full rounded-full bg-[#F26A21] py-4 font-semibold text-black disabled:opacity-60"
           >
             {loading ? "Sending..." : "Send reset link"}
           </button>
         </form>
 
         <p className="mt-8 text-center text-sm text-[#B8B8B8]">
-          <Link href="/login" className="text-[#D4AF37]">
+          <Link href="/login" className="text-[#F26A21]">
             Back to sign in
           </Link>
         </p>

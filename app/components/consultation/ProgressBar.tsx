@@ -27,9 +27,9 @@ export default function ProgressBar({
               <div
                 className={`flex h-11 w-11 items-center justify-center rounded-full border text-sm font-bold transition-all ${
                   current < step
-                    ? "border-[#D4AF37] bg-[#D4AF37] text-black"
+                    ? "border-[#F26A21] bg-[#F26A21] text-black"
                     : current === step
-                    ? "border-[#D4AF37] bg-[#1A1A1A] text-[#D4AF37]"
+                    ? "border-[#F26A21] bg-[#1A1A1A] text-[#F26A21]"
                     : "border-[#444] bg-[#111] text-[#777]"
                 }`}
               >
@@ -39,7 +39,7 @@ export default function ProgressBar({
               <span
                 className={`mt-3 text-center text-xs uppercase tracking-[0.15em] ${
                   current <= step
-                    ? "text-[#D4AF37]"
+                    ? "text-[#F26A21]"
                     : "text-[#666]"
                 }`}
               >
@@ -54,7 +54,7 @@ export default function ProgressBar({
       <div className="h-2 overflow-hidden rounded-full bg-[#222]">
 
         <div
-          className="h-full rounded-full bg-[#D4AF37] transition-all duration-500"
+          className="h-full rounded-full bg-[#F26A21] transition-all duration-500"
           style={{
             width: `${progress}%`,
           }}

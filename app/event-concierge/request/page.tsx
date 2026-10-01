@@ -166,11 +166,11 @@ export default function EventConciergePage() {
             </h2>
 
             <p className="mt-6 max-w-md text-sm leading-7 text-black/55">
-              Tell us the celebration, the guests and the venue.
-              Appetizers can include waffle boxes, a seafood platter of
-              crabs, prawns, glazed corn, fish and sauce, and tapioca.
-              Every appetizer has a minimum order of 10. The regular menu is the meal.
-              Logistics is written for this event.
+              Tell us the celebration, guest count and venue. Appetizers can
+              include waffle boxes, a seafood platter of crabs, prawns,
+              glazed corn, fish and sauce, and tapioca. Every appetizer has
+              a minimum order of 10, with main courses from the regular menu
+              and logistics quoted for your event.
             </p>
 
             <div className="mt-8 space-y-4">

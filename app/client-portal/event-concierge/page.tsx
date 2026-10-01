@@ -168,22 +168,19 @@ export default function EventConciergePage() {
 
             {/* Heading */}
             <h1 className="font-serif text-5xl font-bold leading-[0.92] tracking-[-0.04em] sm:text-6xl md:text-7xl lg:text-8xl">
-
-              Your Occasion.
-
+              Your Occasion.{" "}
               <span className="mt-3 block text-[#F26A21]">
                 Our Culinary Craft.
               </span>
-
             </h1>
 
             {/* Description */}
             <p className="mt-8 max-w-2xl text-sm leading-7 text-white/65 sm:text-base sm:leading-8 lg:text-lg">
-              A private table for the occasion you are hosting.
-              Guests begin with appetizers — waffle boxes, a seafood platter
-              of crabs, prawns, glazed corn, fish and sauce, and tapioca.
-              Every appetizer starts at 10. Then the regular menu.
-              Logistics is quoted for that event alone.
+              A private table for the occasion you are hosting. Guests begin
+              with appetizers — waffle boxes, a seafood platter of crabs,
+              prawns, glazed corn, fish and sauce, and tapioca. Appetizers
+              have a minimum order of 10, followed by the regular menu.
+              Logistics is quoted for your event alone.
             </p>
 
             {/* Buttons */}
@@ -240,10 +237,8 @@ export default function EventConciergePage() {
           </p>
 
           <h2 className="mt-4 font-serif text-3xl font-bold leading-tight sm:text-4xl md:text-5xl">
-            More Than Catering.
-            <span className="block text-[#F26A21]">
-              An Experience.
-            </span>
+            More Than Catering.{" "}
+            <span className="block text-[#F26A21]">An Experience.</span>
           </h2>
 
           <p className="mx-auto mt-6 max-w-2xl text-sm leading-7 text-black/55 sm:text-base sm:leading-8">
@@ -392,11 +387,10 @@ export default function EventConciergePage() {
               Bites before the regular menu
             </h2>
             <p className="mt-4 text-sm leading-7 text-black/50 sm:text-base">
-              Waffles come with grilled chicken, sausage and sauce.
-              Every appetizer has a minimum order of 10. Pasta cups are
-              ₦3,500, and the creamy and fire pastas are ₦4,500. The
-              regular menu is still the meal. Logistics is written for
-              this event.
+              Waffles come with grilled chicken, sausage and sauce. Every
+              appetizer has a minimum order of 10. Pasta cups are ₦3,500;
+              creamy and fire pastas are ₦4,500. Main courses follow from
+              the regular menu, with logistics quoted for your event.
             </p>
           </div>
 

@@ -90,9 +90,9 @@ function LoginForm() {
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-[#0B0B0B] px-6 py-20">
-      <div className="w-full max-w-md rounded-[32px] border border-[#D4AF37]/20 bg-[#171717] p-10 shadow-2xl">
+      <div className="w-full max-w-md rounded-[32px] border border-[#F26A21]/20 bg-[#171717] p-10 shadow-2xl">
         <div className="text-center">
-          <span className="inline-block rounded-full border border-[#D4AF37]/20 bg-[#1F1F1F] px-5 py-2 text-xs uppercase tracking-[0.3em] text-[#D4AF37]">
+          <span className="inline-block rounded-full border border-[#F26A21]/20 bg-[#1F1F1F] px-5 py-2 text-xs uppercase tracking-[0.3em] text-[#F26A21]">
             Client Portal
           </span>
 
@@ -104,7 +104,7 @@ function LoginForm() {
             Sign in to manage your orders, quotations and meal plans.
           </p>
 
-          <p className="mt-4 text-sm leading-6 text-[#D4AF37]">
+          <p className="mt-4 text-sm leading-6 text-[#F26A21]">
             {loginNote()}
           </p>
         </div>
@@ -115,7 +115,7 @@ function LoginForm() {
           className="mt-10 space-y-6"
         >
           <div>
-            <label className="mb-2 block text-sm text-[#D4AF37]">
+            <label className="mb-2 block text-sm text-[#F26A21]">
               Email Address
             </label>
 
@@ -126,12 +126,12 @@ function LoginForm() {
               placeholder="you@example.com"
               autoComplete="username"
               required
-              className="w-full rounded-xl border border-[#D4AF37]/20 bg-[#111111] px-4 py-4 text-white outline-none transition focus:border-[#D4AF37]"
+              className="w-full rounded-xl border border-[#F26A21]/20 bg-[#111111] px-4 py-4 text-white outline-none transition focus:border-[#F26A21]"
             />
           </div>
 
           <div>
-            <label className="mb-2 block text-sm text-[#D4AF37]">
+            <label className="mb-2 block text-sm text-[#F26A21]">
               Password
             </label>
 
@@ -141,7 +141,7 @@ function LoginForm() {
               placeholder="••••••••"
               required
               autoComplete="current-password"
-              className="w-full rounded-xl border border-[#D4AF37]/20 bg-[#111111] px-4 py-4 text-white outline-none transition focus:border-[#D4AF37]"
+              className="w-full rounded-xl border border-[#F26A21]/20 bg-[#111111] px-4 py-4 text-white outline-none transition focus:border-[#F26A21]"
             />
           </div>
 
@@ -154,7 +154,7 @@ function LoginForm() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-full bg-[#D4AF37] py-4 text-lg font-semibold text-black transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+            className="w-full rounded-full bg-[#F26A21] py-4 text-lg font-semibold text-black transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {loading ? "Signing In..." : "Sign In"}
           </button>
@@ -162,7 +162,7 @@ function LoginForm() {
           <div className="text-center">
             <Link
               href={`/forgot-password?next=${encodeURIComponent(nextPath)}`}
-              className="text-sm font-semibold text-[#D4AF37] underline"
+              className="text-sm font-semibold text-[#F26A21] underline"
             >
               Forgot password?
             </Link>
@@ -173,7 +173,7 @@ function LoginForm() {
           Don&apos;t have an account?{" "}
           <Link
             href={`/signup?next=${encodeURIComponent(nextPath)}`}
-            className="font-semibold text-[#D4AF37] hover:underline"
+            className="font-semibold text-[#F26A21] hover:underline"
           >
             Create one
           </Link>
