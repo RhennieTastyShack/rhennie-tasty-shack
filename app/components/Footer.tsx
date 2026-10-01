@@ -65,10 +65,10 @@ export default function Footer() {
               </li>
               <li>
                 <Link
-                  href="/catering"
+                  href="/event-concierge"
                   className="text-sm text-gray-400 transition-colors hover:text-[#F26A21]"
                 >
-                  Catering
+                  Event Concierge
                 </Link>
               </li>
               <li>
@@ -77,14 +77,6 @@ export default function Footer() {
                   className="text-sm text-gray-400 transition-colors hover:text-[#F26A21]"
                 >
                   Ride with 701
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/event-concierge"
-                  className="text-sm text-gray-400 transition-colors hover:text-[#F26A21]"
-                >
-                  Event Concierge
                 </Link>
               </li>
               <li>

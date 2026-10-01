@@ -11,9 +11,8 @@ import { RIDE_BRAND } from "@/lib/ride-with-701";
 
 const mainLinks = [
   { label: "Menu", href: "/menu" },
-  { label: "Catering", href: "/catering" },
-  { label: "Ride with 701", href: RIDE_BRAND.joinPath },
   { label: "Event Concierge", href: "/event-concierge" },
+  { label: "Ride with 701", href: RIDE_BRAND.joinPath },
   { label: "Customer Support", href: "/customer-care" },
 ] as const;
 
@@ -161,13 +160,16 @@ export default function Navbar() {
             }
             className="relative flex h-9 w-9 touch-manipulation items-center justify-center rounded-full border border-black/10 bg-[#F8F6F2] text-[#171717] transition-all duration-300 hover:border-[#F26A21] hover:bg-[#F26A21] hover:text-white sm:h-11 sm:w-11"
           >
-            <ShoppingBag size={17} strokeWidth={2} className="sm:hidden" />
-            <ShoppingBag size={19} strokeWidth={2} className="hidden sm:block" />
-            {totalItems > 0 && (
+            <ShoppingBag
+              strokeWidth={2}
+              aria-hidden="true"
+              className="h-[17px] w-[17px] sm:h-[19px] sm:w-[19px]"
+            />
+            {totalItems > 0 ? (
               <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full border-2 border-white bg-[#F26A21] px-1 text-[9px] font-extrabold text-white">
                 {totalItems > 99 ? "99+" : totalItems}
               </span>
-            )}
+            ) : null}
           </button>
 
           <Link
