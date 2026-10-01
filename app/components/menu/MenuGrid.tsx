@@ -238,174 +238,180 @@ export default function MenuGrid() {
       setLoading(true);
       setError("");
 
-      const { data, error } = await supabase
-        .from("menu_items")
-        .select(`
-          id,
-          name,
-          description,
-          price,
-          image_url,
-          available,
-          featured,
-          display_order,
-          sort_order,
-          collections!inner (
+      try {
+        const { data, error } = await supabase
+          .from("menu_items")
+          .select(`
+            id,
             name,
-            slug,
-            active,
-            display_order
-          )
-        `)
-        .eq("collections.active", true)
-        .order("display_order", {
-          ascending: true,
-        })
-        .order("sort_order", {
-          ascending: true,
-        });
+            description,
+            price,
+            image_url,
+            available,
+            featured,
+            display_order,
+            sort_order,
+            collections!inner (
+              name,
+              slug,
+              active,
+              display_order
+            )
+          `)
+          .eq("collections.active", true)
+          .order("display_order", {
+            ascending: true,
+          })
+          .order("sort_order", {
+            ascending: true,
+          });
 
-      if (!mounted) {
-        return;
-      }
+        if (!mounted) {
+          return;
+        }
 
-      if (error) {
-        console.error(
-          "Menu loading error:",
-          error
-        );
+        if (error) {
+          console.error(
+            "Menu loading error:",
+            error
+          );
 
-        setError(
-          "Unable to load our menu right now."
-        );
+          setError(
+            "Unable to load our menu right now."
+          );
 
-        setMeals([]);
+          setMeals([]);
+          return;
+        }
+
+        const formattedMeals: MenuItem[] =
+          (data || []).map((item: any) => {
+            const name = item.name || "";
+            const rawCollection =
+              item.collections?.name || "";
+
+            return {
+              id: item.id,
+
+              name,
+
+              collection: polishCollectionName(
+                name,
+                rawCollection
+              ),
+
+              collectionSlug:
+                item.collections?.slug || "",
+
+              description:
+                item.description || "",
+
+              price:
+                Number(item.price) || 0,
+
+              image_url:
+                item.image_url || null,
+
+              available:
+                item.available ?? true,
+
+              featured:
+                item.featured ?? false,
+
+              display_order:
+                Number(item.display_order) || 0,
+
+              sort_order:
+                Number(item.sort_order) || 0,
+            };
+          });
+
+        // Show menu as soon as primary data arrives — never leave the
+        // loading screen visible alongside already-loaded meals.
+        setMeals(formattedMeals);
         setLoading(false);
 
-        return;
-      }
+        try {
+          const partyResponse = await fetch("/api/menu", {
+            cache: "no-store",
+          });
+          const partyRows = await partyResponse.json();
 
-      const formattedMeals: MenuItem[] =
-        (data || []).map((item: any) => {
-          const name = item.name || "";
-          const rawCollection =
-            item.collections?.name || "";
+          if (Array.isArray(partyRows)) {
+            const hiddenNames = new Set(
+              [
+                ...RETIRED_PARTY_DISHES,
+                ...PARTY_DISHES.flatMap((dish) => dish.previousNames || []),
+              ].map((name) => name.toLowerCase())
+            );
 
-          return {
-            id: item.id,
+            const partyMeals: MenuItem[] = partyRows
+              .filter((row) =>
+                /appetizer|party table/i.test(String(row.collection || ""))
+              )
+              .filter((row) => row.available !== false)
+              .filter(
+                (row) =>
+                  !hiddenNames.has(String(row.name || "").toLowerCase())
+              )
+              .map((row, index) => ({
+                id: String(row.id),
+                name: String(row.name || ""),
+                collection: "Appetizers",
+                collectionSlug: "appetizers",
+                description: String(row.description || ""),
+                price: Number(row.price) || 0,
+                image_url: row.image_url || null,
+                available: true,
+                featured: false,
+                display_order: 80 + index,
+                sort_order: index,
+              }));
 
-            name,
+            const partyByName = new Map(
+              partyMeals.map((meal) => [meal.name.toLowerCase(), meal])
+            );
 
-            collection: polishCollectionName(
-              name,
-              rawCollection
-            ),
+            const refreshed = formattedMeals
+              .filter(
+                (meal) => !hiddenNames.has(meal.name.toLowerCase())
+              )
+              .map((meal) => {
+                const party = partyByName.get(meal.name.toLowerCase());
+                const isAppetizer = /appetizer|party/i.test(
+                  `${meal.collection} ${meal.collectionSlug}`
+                );
 
-            collectionSlug:
-              item.collections?.slug || "",
+                if (!party || !isAppetizer) return meal;
 
-            description:
-              item.description || "",
+                return {
+                  ...meal,
+                  description: party.description,
+                  price: party.price,
+                  image_url: party.image_url || meal.image_url,
+                };
+              });
 
-            price:
-              Number(item.price) || 0,
+            const names = new Set(
+              refreshed.map((meal) => meal.name.toLowerCase())
+            );
 
-            image_url:
-              item.image_url || null,
+            if (!mounted) return;
 
-            available:
-              item.available ?? true,
-
-            featured:
-              item.featured ?? false,
-
-            display_order:
-              Number(item.display_order) || 0,
-
-            sort_order:
-              Number(item.sort_order) || 0,
-          };
-        });
-
-      setMeals(formattedMeals);
-      setLoading(false);
-
-      try {
-        const partyResponse = await fetch("/api/menu", {
-          cache: "no-store",
-        });
-        const partyRows = await partyResponse.json();
-
-        if (Array.isArray(partyRows)) {
-          const hiddenNames = new Set(
-            [
-              ...RETIRED_PARTY_DISHES,
-              ...PARTY_DISHES.flatMap((dish) => dish.previousNames || []),
-            ].map((name) => name.toLowerCase())
-          );
-
-          const partyMeals: MenuItem[] = partyRows
-            .filter((row) =>
-              /appetizer|party table/i.test(String(row.collection || ""))
-            )
-            .filter((row) => row.available !== false)
-            .filter(
-              (row) =>
-                !hiddenNames.has(String(row.name || "").toLowerCase())
-            )
-            .map((row, index) => ({
-              id: String(row.id),
-              name: String(row.name || ""),
-              collection: "Appetizers",
-              collectionSlug: "appetizers",
-              description: String(row.description || ""),
-              price: Number(row.price) || 0,
-              image_url: row.image_url || null,
-              available: true,
-              featured: false,
-              display_order: 80 + index,
-              sort_order: index,
-            }));
-
-          const partyByName = new Map(
-            partyMeals.map((meal) => [meal.name.toLowerCase(), meal])
-          );
-
-          const refreshed = formattedMeals
-            .filter(
-              (meal) => !hiddenNames.has(meal.name.toLowerCase())
-            )
-            .map((meal) => {
-              const party = partyByName.get(meal.name.toLowerCase());
-              const isAppetizer = /appetizer|party/i.test(
-                `${meal.collection} ${meal.collectionSlug}`
-              );
-
-              if (!party || !isAppetizer) return meal;
-
-              return {
-                ...meal,
-                description: party.description,
-                price: party.price,
-                image_url: party.image_url || meal.image_url,
-              };
-            });
-
-          const names = new Set(
-            refreshed.map((meal) => meal.name.toLowerCase())
-          );
-
-          if (!mounted) return;
-
-          setMeals([
-            ...refreshed,
-            ...partyMeals.filter(
-              (meal) => !names.has(meal.name.toLowerCase())
-            ),
-          ]);
+            setMeals([
+              ...refreshed,
+              ...partyMeals.filter(
+                (meal) => !names.has(meal.name.toLowerCase())
+              ),
+            ]);
+          }
+        } catch {
+          // The dishes already on screen stay visible if the appetizer refresh is slow.
         }
-      } catch {
-        // The dishes already on screen stay visible if the appetizer refresh is slow.
+      } finally {
+        if (mounted) {
+          setLoading(false);
+        }
       }
     }
 
@@ -569,7 +575,8 @@ export default function MenuGrid() {
      LOADING
   ======================================================= */
 
-  if (loading) {
+  // Never keep the loading screen up once meals are already on screen.
+  if (loading && meals.length === 0) {
     return (
       <section className="bg-[#F8F6F2] px-4 py-10 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl">

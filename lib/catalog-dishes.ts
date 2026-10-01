@@ -247,8 +247,19 @@ export const CATALOG_DISHES: CatalogDish[] = [
     description:
       "A luxurious three-meal experience featuring jollof rice, fried rice and pasta, served with four generous pieces of seasoned chicken.",
     price: 32000,
-    image: "/images/Luxury Brunch Box.png",
+    image: "/images/Jollof & Pasta Feast Box.png",
     displayOrder: 60,
+    sortOrder: 0,
+  },
+  {
+    name: "Luxury Brunch Box",
+    collection: "Food Boxes",
+    collectionMatch: FOOD_BOXES,
+    // Verified seed copy from database/menu.sql — expand contents when confirmed.
+    description: "A premium brunch box curated by Rhennie Tasty Shack.",
+    price: 35000,
+    image: "/images/Luxury Brunch Box.png",
+    displayOrder: 61,
     sortOrder: 0,
   },
   {
@@ -259,18 +270,20 @@ export const CATALOG_DISHES: CatalogDish[] = [
       "Fried rice, stir fry pasta, 2 pieces of peppered turkey, 1 mini bottled water, 1 fruit juice, 5 samosa, 5 spring rolls, 10 puff-puff, 2 chocolates and 2 McVitie's.",
     price: 40000,
     image: "/images/box-45-turkey.jpg",
-    displayOrder: 61,
+    displayOrder: 62,
     sortOrder: 0,
   },
   {
+    // CONTENT REVIEW: previously duplicated Weekend Treat Box ingredients.
+    // Keep product live with a safe name-based description until contents are confirmed.
     name: "Peppered Turkey Box",
     collection: "Food Boxes",
     collectionMatch: FOOD_BOXES,
     description:
-      "Fried rice, stir fry pasta, 2 pieces of peppered turkey, 1 mini bottled water, 1 fruit juice, 5 samosa, 5 spring rolls, 10 puff-puff, 2 chocolates and 2 McVitie's.",
+      "A premium food box featuring peppered turkey. Full contents available on request.",
     price: 45000,
     image: "/images/box-45-turkey.jpg",
-    displayOrder: 62,
+    displayOrder: 63,
     sortOrder: 0,
   },
   {
@@ -281,7 +294,7 @@ export const CATALOG_DISHES: CatalogDish[] = [
       "2 apples, 2 pieces of peppered turkey, 10 pieces of peppered beef, 10 samosa, 10 spring rolls, 15 puff-puff, 1 fruit juice, fried rice and jollof rice.",
     price: 50000,
     image: "/images/box-50-family.jpg",
-    displayOrder: 63,
+    displayOrder: 64,
     sortOrder: 0,
   },
   {
@@ -292,7 +305,7 @@ export const CATALOG_DISHES: CatalogDish[] = [
       "2 pieces of peppered turkey, stir fry pasta, fried rice, fried plantain, 10 puff-puff, 5 samosa, 5 spring rolls, 1 fruit juice, 1 Pringles, 1 Vitamilk and 3 McVitie's.",
     price: 50000,
     image: "/images/box-50-plantain.jpg",
-    displayOrder: 64,
+    displayOrder: 65,
     sortOrder: 0,
   },
   {
@@ -303,18 +316,7 @@ export const CATALOG_DISHES: CatalogDish[] = [
       "A bento cake, 2 pieces of peppered turkey, stir fry pasta, fried rice, 5 samosa, 5 spring rolls, 10 puff-puff, 2 cookies, 2 chocolates, 1 fruit juice and 1 mini bottled water.",
     price: 55000,
     image: "/images/box-55-bento.jpg",
-    displayOrder: 65,
-    sortOrder: 0,
-  },
-  {
-    name: "Efo Riro Feast Platter",
-    collection: "Food Boxes",
-    collectionMatch: FOOD_BOXES,
-    description:
-      "1L efo riro, 4 pieces of poundo, 1L jollof rice, 1L fried rice, 1L stir fry pasta, 4 pieces of peppered turkey, 5 samosa, 5 spring rolls, 10 puff-puff, fried plantain, 4 mini bottled water and 1 grapefruit wine.",
-    price: 100000,
-    image: "/images/efo-riro-tray.jpg",
-    displayOrder: 67,
+    displayOrder: 66,
     sortOrder: 0,
   },
   {
@@ -325,7 +327,18 @@ export const CATALOG_DISHES: CatalogDish[] = [
       "Stir fry pasta, fried rice, 5 waffles, 4 pieces of peppered turkey, 2 fruit juices, 2 chocolates, 2 cookies, 5 samosa, 5 spring rolls, 10 puff-puff and 1 Pringles.",
     price: 60000,
     image: "/images/box-60-waffles.jpg",
-    displayOrder: 66,
+    displayOrder: 67,
+    sortOrder: 0,
+  },
+  {
+    name: "Efo Riro Feast Platter",
+    collection: "Food Boxes",
+    collectionMatch: FOOD_BOXES,
+    description:
+      "1L efo riro, 4 pieces of poundo, 1L jollof rice, 1L fried rice, 1L stir fry pasta, 4 pieces of peppered turkey, 5 samosa, 5 spring rolls, 10 puff-puff, fried plantain, 4 mini bottled water and 1 grapefruit wine.",
+    price: 100000,
+    image: "/images/efo-riro-tray.jpg",
+    displayOrder: 68,
     sortOrder: 0,
   },
 ];
