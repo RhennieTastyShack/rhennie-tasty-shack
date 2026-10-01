@@ -11,7 +11,6 @@ import MenuFilters from "./MenuFilters";
 import MealCard from "./MealCard";
 import FoodByLitreCard from "./FoodByLitreCard";
 import CollectionCard from "./CollectionCard";
-import CategoryTabs from "./CategoryTabs";
 
 type MenuItem = {
   id: string;
@@ -702,8 +701,6 @@ export default function MenuGrid() {
       <div className="pointer-events-none absolute -left-40 top-40 h-80 w-80 rounded-full bg-[#F26A21]/5 blur-[100px]" />
 
       <div className="pointer-events-none absolute -right-40 bottom-40 h-80 w-80 rounded-full bg-[#F26A21]/5 blur-[100px]" />
-
-      {!category && !search ? <CategoryTabs /> : null}
 
       {!category && !search ? (
         <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
