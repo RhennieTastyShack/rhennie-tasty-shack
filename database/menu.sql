@@ -88,6 +88,60 @@ VALUES
 -- =========================
 
 (
+  'RTS Chicken Sandwich',
+  'Executive Lunch',
+  'Fresh RTS chicken sandwiches packed for sharing. Available Fridays only.',
+  10000,
+  '/images/rts-chicken-sandwich.jpg',
+  true
+),
+
+(
+  'RTS Pasta Box',
+  'Food Boxes',
+  'Hearty RTS pasta box with sides and drinks. Available Wednesdays only.',
+  15000,
+  '/images/rts-pasta-box.jpg',
+  true
+),
+
+(
+  'Party Jollof Pack',
+  'Food Boxes',
+  'Individual party jollof meal pack with chicken and plantain. Minimum order of 10 packs.',
+  6200,
+  '/images/party-jollof-pack.jpg',
+  true
+),
+
+(
+  'RTS Treat Box',
+  'Food Boxes',
+  'A generous RTS treat box with rice, chicken, plantain, snacks and drinks for sharing.',
+  65000,
+  '/images/rts-treat-box.jpg',
+  true
+),
+
+(
+  'RTS Feast Box',
+  'Food Boxes',
+  'Premium RTS feast box packed with rice, pasta, proteins, small chops, fruit and drinks.',
+  280000,
+  '/images/rts-feast-box.jpg',
+  true
+),
+
+(
+  'RTS Grand Feast Box',
+  'Food Boxes',
+  'Our grand RTS celebration spread with rice, pasta, proteins, small chops, desserts, fruit and drinks.',
+  260000,
+  '/images/rts-grand-feast-box.jpg',
+  true
+),
+
+(
   'Luxury Brunch Box',
   'Food Boxes',
   'A premium brunch box curated by Rhennie Tasty Shack.',

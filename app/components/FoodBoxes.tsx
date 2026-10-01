@@ -4,46 +4,40 @@ import Link from "next/link";
 /**
  * Homepage Food Boxes preview only.
  * Full collection lives under Menu → Food Boxes.
- *
- * CONTENT NOTE:
- * - Luxury Brunch Box description from database/menu.sql (verified).
- * - Jollof & Pasta / Family / Grand descriptions from lib/catalog-dishes.ts.
- * - Peppered Turkey Box previously reused Weekend Treat Box contents —
- *   full ingredients need content-team confirmation before listing.
  */
 const featuredBoxes = [
   {
     number: "01",
-    title: "Jollof & Pasta Feast Box",
-    price: "₦32,000",
-    image: "/images/Jollof & Pasta Feast Box.png",
+    title: "RTS Pasta Box",
+    price: "₦15,000",
+    image: "/images/rts-pasta-box.jpg",
     description:
-      "A luxurious three-meal experience featuring jollof rice, fried rice and pasta, served with four generous pieces of seasoned chicken.",
+      "Hearty RTS pasta box with sides and drinks. Available Wednesdays only.",
   },
   {
     number: "02",
-    title: "Luxury Brunch Box",
-    price: "₦35,000",
-    image: "/images/Luxury Brunch Box.png",
+    title: "RTS Treat Box",
+    price: "₦65,000",
+    image: "/images/rts-treat-box.jpg",
     popular: true,
     description:
-      "A premium brunch box curated by Rhennie Tasty Shack.",
+      "A generous RTS treat box with rice, chicken, plantain, snacks and drinks for sharing.",
   },
   {
     number: "03",
-    title: "Family Feast Box",
-    price: "₦50,000",
-    image: "/images/box-50-family.jpg",
+    title: "RTS Grand Feast Box",
+    price: "₦260,000",
+    image: "/images/rts-grand-feast-box.jpg",
     description:
-      "2 apples, 2 pieces of peppered turkey, 10 pieces of peppered beef, 10 samosa, 10 spring rolls, 15 puff-puff, 1 fruit juice, fried rice and jollof rice.",
+      "Our grand RTS celebration spread with rice, pasta, proteins, small chops, desserts, fruit and drinks.",
   },
   {
     number: "04",
-    title: "Grand Celebration Box",
-    price: "₦80,000",
-    image: "/images/Grand Celebration Box.png",
+    title: "RTS Feast Box",
+    price: "₦280,000",
+    image: "/images/rts-feast-box.jpg",
     description:
-      "Our grand celebration spread with sausages, waffles, pancakes, small chops, turkey, scrambled eggs, jollof rice, fried rice, bento cake, chocolates, fruits and drinks.",
+      "Premium RTS feast box packed with rice, pasta, proteins, small chops, fruit and drinks.",
   },
 ];
 

@@ -49,6 +49,10 @@ export async function GET(request: NextRequest) {
     const platformDeliveries = deliveries.filter(
       (row) => row.mode === "PLATFORM"
     );
+    // Commission is earned only after successful delivery completion.
+    const completedPlatformDeliveries = platformDeliveries.filter(
+      (row) => row.status === "DELIVERED"
+    );
 
     const foodOrders = await supabase
       .from("orders")
@@ -66,7 +70,7 @@ export async function GET(request: NextRequest) {
       0
     );
 
-    const deliveryVolume = platformDeliveries.reduce(
+    const deliveryVolume = completedPlatformDeliveries.reduce(
       (sum, row) =>
         sum +
         Number(
@@ -77,13 +81,13 @@ export async function GET(request: NextRequest) {
       0
     );
 
-    const commissionEarned = platformDeliveries.reduce(
+    const commissionEarned = completedPlatformDeliveries.reduce(
       (sum, row) => sum + Number(row.platform_commission_amount || 0),
       0
     );
 
     const partnerGross = deliveryVolume;
-    const partnerNet = platformDeliveries.reduce(
+    const partnerNet = completedPlatformDeliveries.reduce(
       (sum, row) => sum + Number(row.partner_net_earning || 0),
       0
     );

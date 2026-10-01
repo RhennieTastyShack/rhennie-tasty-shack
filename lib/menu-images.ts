@@ -105,6 +105,30 @@ const IMAGE_MATCHES: Array<{
 
   /* FOOD BOXES & PLATTERS */
   {
+    keywords: ["rts grand feast box"],
+    image: "rts-grand-feast-box.jpg",
+  },
+  {
+    keywords: ["rts feast box"],
+    image: "rts-feast-box.jpg",
+  },
+  {
+    keywords: ["rts treat box"],
+    image: "rts-treat-box.jpg",
+  },
+  {
+    keywords: ["rts pasta box"],
+    image: "rts-pasta-box.jpg",
+  },
+  {
+    keywords: ["rts chicken sandwich"],
+    image: "rts-chicken-sandwich.jpg",
+  },
+  {
+    keywords: ["party jollof pack"],
+    image: "party-jollof-pack.jpg",
+  },
+  {
     keywords: ["jollof pasta food box", "jollof and pasta feast", "32k jollof"],
     image: "Luxury Brunch Box.png",
   },
@@ -275,6 +299,10 @@ const IMAGE_MATCHES: Array<{
   {
     keywords: ["veggie rice", "vegetable rice"],
     image: "white rice.jpeg",
+  },
+  {
+    keywords: ["special fried rice"],
+    image: "special-fried-rice.jpg",
   },
   {
     keywords: ["fried rice", "golden harvest"],

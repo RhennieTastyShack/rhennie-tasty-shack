@@ -88,7 +88,7 @@ export default function RiderPortalPage() {
   const profileLoaded = useRef(false);
   const deliveriesRef = useRef(deliveries);
   const [locationNote, setLocationNote] = useState("");
-  const [commissionPercent, setCommissionPercent] = useState(5);
+  const [commissionPercent, setCommissionPercent] = useState(6.6);
 
   useEffect(() => {
     deliveriesRef.current = deliveries;
@@ -861,43 +861,49 @@ export default function RiderPortalPage() {
                           );
                           const platformShare = Number(
                             delivery.platform_commission_amount ??
-                              Math.round((gross * percent) / 100)
+                              Math.round(((gross * percent) / 100) * 100) / 100
                           );
                           const net = Number(
                             delivery.partner_net_earning ??
                               Math.max(0, gross - platformShare)
                           );
+                          const tip = Number(delivery.tip_amount || 0);
+                          const totalEarning = net + tip;
                           if (gross <= 0) return null;
+                          const money = (n: number) =>
+                            n.toLocaleString("en-NG", {
+                              minimumFractionDigits: Number.isInteger(n) ? 0 : 2,
+                              maximumFractionDigits: 2,
+                            });
                           return (
                             <div className="mt-3 rounded-2xl border border-white/10 bg-black/40 px-3 py-3 text-xs leading-5 text-white/70">
                               <p className="font-bold text-white">
                                 Delivery earnings
                               </p>
                               <p className="mt-1 flex justify-between gap-3">
-                                <span>Gross delivery earning</span>
-                                <span>
-                                  ₦{gross.toLocaleString("en-NG")}
-                                </span>
+                                <span>Delivery Fee</span>
+                                <span>₦{money(gross)}</span>
                               </p>
                               <p className="mt-1 flex justify-between gap-3">
                                 <span>
-                                  RTS platform fee ({percent}%)
+                                  Platform Commission ({percent}%)
                                 </span>
-                                <span>
-                                  -₦{platformShare.toLocaleString("en-NG")}
-                                </span>
+                                <span>-₦{money(platformShare)}</span>
                               </p>
-                              <p className="mt-1 flex justify-between gap-3 font-semibold text-[#D4AF37]">
-                                <span>Your net earning</span>
-                                <span>
-                                  ₦{net.toLocaleString("en-NG")}
-                                </span>
+                              <p className="mt-1 flex justify-between gap-3">
+                                <span>Your Delivery Earnings</span>
+                                <span>₦{money(net)}</span>
                               </p>
-                              {Number(delivery.tip_amount || 0) > 0 ? (
-                                <p className="mt-1 text-white/45">
-                                  Tip is paid in full on top of net earning.
+                              {tip > 0 ? (
+                                <p className="mt-1 flex justify-between gap-3">
+                                  <span>Customer Tip</span>
+                                  <span>₦{money(tip)}</span>
                                 </p>
                               ) : null}
+                              <p className="mt-1 flex justify-between gap-3 font-semibold text-[#D4AF37]">
+                                <span>Your Total Earnings</span>
+                                <span>₦{money(totalEarning)}</span>
+                              </p>
                             </div>
                           );
                         })()}

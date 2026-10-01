@@ -241,6 +241,39 @@ export const CATALOG_DISHES: CatalogDish[] = [
     sortOrder: 0,
   },
   {
+    name: "RTS Chicken Sandwich",
+    collection: "Executive Lunch",
+    collectionMatch: EXECUTIVE_LUNCH,
+    description:
+      "Fresh RTS chicken sandwiches packed for sharing. Available Fridays only.",
+    price: 10000,
+    image: "/images/rts-chicken-sandwich.jpg",
+    displayOrder: 18,
+    sortOrder: 0,
+  },
+  {
+    name: "RTS Pasta Box",
+    collection: "Food Boxes",
+    collectionMatch: FOOD_BOXES,
+    description:
+      "Hearty RTS pasta box with sides and drinks. Available Wednesdays only.",
+    price: 15000,
+    image: "/images/rts-pasta-box.jpg",
+    displayOrder: 58,
+    sortOrder: 0,
+  },
+  {
+    name: "Party Jollof Pack",
+    collection: "Food Boxes",
+    collectionMatch: FOOD_BOXES,
+    description:
+      "Individual party jollof meal pack with chicken and plantain. Minimum order of 10 packs.",
+    price: 6200,
+    image: "/images/party-jollof-pack.jpg",
+    displayOrder: 59,
+    sortOrder: 0,
+  },
+  {
     name: "Jollof & Pasta Feast Box",
     collection: "Food Boxes",
     collectionMatch: FOOD_BOXES,
@@ -249,6 +282,39 @@ export const CATALOG_DISHES: CatalogDish[] = [
     price: 32000,
     image: "/images/Jollof & Pasta Feast Box.png",
     displayOrder: 60,
+    sortOrder: 0,
+  },
+  {
+    name: "RTS Treat Box",
+    collection: "Food Boxes",
+    collectionMatch: FOOD_BOXES,
+    description:
+      "A generous RTS treat box with rice, chicken, plantain, snacks and drinks for sharing.",
+    price: 65000,
+    image: "/images/rts-treat-box.jpg",
+    displayOrder: 69,
+    sortOrder: 0,
+  },
+  {
+    name: "RTS Feast Box",
+    collection: "Food Boxes",
+    collectionMatch: FOOD_BOXES,
+    description:
+      "Premium RTS feast box packed with rice, pasta, proteins, small chops, fruit and drinks.",
+    price: 280000,
+    image: "/images/rts-feast-box.jpg",
+    displayOrder: 70,
+    sortOrder: 0,
+  },
+  {
+    name: "RTS Grand Feast Box",
+    collection: "Food Boxes",
+    collectionMatch: FOOD_BOXES,
+    description:
+      "Our grand RTS celebration spread with rice, pasta, proteins, small chops, desserts, fruit and drinks.",
+    price: 260000,
+    image: "/images/rts-grand-feast-box.jpg",
+    displayOrder: 71,
     sortOrder: 0,
   },
   {

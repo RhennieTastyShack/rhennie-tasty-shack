@@ -78,7 +78,7 @@ CREATE TABLE IF NOT EXISTS delivery_assignments (
   rider_id UUID REFERENCES riders(id) ON DELETE SET NULL,
   vehicle_type TEXT,
   gross_earning NUMERIC(12,2) NOT NULL DEFAULT 0,
-  platform_commission_percent NUMERIC(5,2) NOT NULL DEFAULT 5,
+  platform_commission_percent NUMERIC(5,2) NOT NULL DEFAULT 6.6,
   platform_commission_amount NUMERIC(12,2) NOT NULL DEFAULT 0,
   partner_net_earning NUMERIC(12,2) NOT NULL DEFAULT 0,
   status TEXT NOT NULL DEFAULT 'UNASSIGNED',

@@ -15,7 +15,7 @@ export const RIDE_BRAND = {
 } as const;
 
 /** Default RTS platform share of a partner's GROSS delivery earning. Configurable via settings. */
-export const DEFAULT_PLATFORM_COMMISSION_PERCENT = 5;
+export const DEFAULT_PLATFORM_COMMISSION_PERCENT = 6.6;
 
 /** Fallback only — override via platform_settings.ride_base_location. */
 export const DEFAULT_RIDE_BASE_LOCATION =
@@ -60,7 +60,7 @@ export type VehiclePricingProfile = {
   surgeMultiplier: number;
 };
 
-/** Central vehicle pricing defaults. Motorcycle starts from ₦800 + ₦200/km. */
+/** Central vehicle pricing defaults. Motorcycle: MAX(₦800, km × ₦200). */
 export const VEHICLE_PRICING: Record<VehicleCategory, VehiclePricingProfile> = {
   bicycle: {
     category: "bicycle",
@@ -400,6 +400,7 @@ export function quoteRideDeliveryFee(input: DeliveryQuoteInput): {
   const cappedKm = Math.min(distanceKm, vehicle.maxDistanceKm);
 
   const base = vehicle.baseFeeNgn;
+  // Preserve decimal km (e.g. 5.4 × ₦200 = ₦1,080). Do not floor the distance first.
   const distance = Math.round(cappedKm * vehicle.perKmNgn);
   const items = Math.max(0, Number(input.itemCount) || 0);
   const bags =
@@ -425,7 +426,13 @@ export function quoteRideDeliveryFee(input: DeliveryQuoteInput): {
     Math.max(0, Number(input.waitingBlocks) || 0) *
     vehicle.waitingFeePer15MinNgn;
 
-  const beforeSurge = base + distance + vehicleFee;
+  // Motorcycle/Bike: ₦800 is the MINIMUM, not an additive base charge.
+  // deliveryFee = MAX(800, distanceKm × 200) [+ vehicle/surge/waiting as configured]
+  // Other vehicles keep their existing base + distance model unchanged.
+  const beforeSurge =
+    vehicle.category === "motorcycle"
+      ? Math.max(vehicle.minimumFeeNgn, distance) + vehicleFee
+      : base + distance + vehicleFee;
   const multiplier = Math.max(
     1,
     Number(input.surgeMultiplier ?? vehicle.surgeMultiplier) || 1
@@ -441,7 +448,9 @@ export function quoteRideDeliveryFee(input: DeliveryQuoteInput): {
     distanceKm: cappedKm,
     vehicle,
     breakdown: {
-      base,
+      // For motorcycle, expose the minimum floor separately from distance charge
+      // so checkout never presents ₦800 + distance as two additive fees.
+      base: vehicle.category === "motorcycle" ? 0 : base,
       distance,
       vehicleFee,
       largeOrder,
@@ -466,17 +475,26 @@ export function calculateWaitingFeeNgn(input: {
   return maxFee > 0 ? Math.min(maxFee, raw) : raw;
 }
 
+/** Round NGN money to 2 decimal places without floating-point drift. */
+export function roundNaira(amount: number) {
+  return Math.round((Number(amount) || 0) * 100) / 100;
+}
+
+/**
+ * Split a Ride with 701 delivery fee into platform commission + partner earning.
+ * Tips are NEVER passed into this function — partners keep 100% of tips separately.
+ */
 export function splitDeliveryEarning(
   grossDeliveryFeeNgn: number,
   platformCommissionPercent: number = DEFAULT_PLATFORM_COMMISSION_PERCENT
 ) {
-  const gross = Math.max(0, Math.round(Number(grossDeliveryFeeNgn) || 0));
+  const gross = Math.max(0, roundNaira(Number(grossDeliveryFeeNgn) || 0));
   const percent = Math.min(
     100,
     Math.max(0, Number(platformCommissionPercent) || 0)
   );
-  const platformShare = Math.round((gross * percent) / 100);
-  const partnerShare = Math.max(0, gross - platformShare);
+  const platformShare = roundNaira((gross * percent) / 100);
+  const partnerShare = roundNaira(Math.max(0, gross - platformShare));
 
   return {
     gross,

@@ -60,7 +60,7 @@ export default function RideFinancePage() {
           throw new Error(result?.message || "Unable to load finance.");
         }
         if (!active) return;
-        setCommission(Number(result.ride_platform_commission) || 5);
+        setCommission(Number(result.ride_platform_commission) || 6.6);
         setTotals(result.totals);
       } catch (err) {
         if (!active) return;

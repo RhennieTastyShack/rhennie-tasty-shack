@@ -261,7 +261,7 @@ export async function setRideWaitingConfig(config: RideWaitingConfig) {
 
 /**
  * Reads the configurable RTS share of a delivery partner's gross earning.
- * Falls back to env RIDE_PLATFORM_COMMISSION then 5.
+ * Falls back to env RIDE_PLATFORM_COMMISSION then 6.6.
  */
 export async function getRidePlatformCommissionPercent(): Promise<number> {
   const fromEnv = Number(process.env.RIDE_PLATFORM_COMMISSION);
@@ -292,7 +292,11 @@ export async function getRidePlatformCommissionPercent(): Promise<number> {
 export async function setRidePlatformCommissionPercent(
   percent: number
 ): Promise<{ ok: boolean; message?: string }> {
-  const value = Math.min(100, Math.max(0, Math.round(Number(percent))));
+  // Allow one decimal place (e.g. 6.6). Do not integer-round.
+  const value = Math.min(
+    100,
+    Math.max(0, Math.round(Number(percent) * 10) / 10)
+  );
   if (!Number.isFinite(value)) {
     return { ok: false, message: "Enter a valid commission percent." };
   }

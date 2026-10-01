@@ -7,7 +7,9 @@ export async function payRiderForDelivery(deliveryId: string) {
 
   const { data: delivery } = await supabase
     .from("deliveries")
-    .select("id, order_id, rider_id, tip_amount, status")
+    .select(
+      "id, order_id, rider_id, tip_amount, status, customer_delivery_charge, gross_delivery_earning, platform_commission_percent, platform_commission_amount, partner_net_earning"
+    )
     .eq("id", deliveryId)
     .maybeSingle();
 
@@ -35,17 +37,41 @@ export async function payRiderForDelivery(deliveryId: string) {
     .eq("id", delivery.rider_id)
     .maybeSingle();
 
-  const deliveryFee = Number(order?.delivery_fee || 0);
+  const deliveryFee = Number(
+    delivery.gross_delivery_earning ??
+      delivery.customer_delivery_charge ??
+      order?.delivery_fee ??
+      0
+  );
   const tip = Number(delivery.tip_amount || order?.tip_amount || 0);
-  // Admin-configured rate is the source of truth (defaults to 5%).
-  const commissionPercent = await getRidePlatformCommissionPercent();
-  const {
-    platformShare,
-    partnerShare: riderFee,
-    percent,
-  } = splitDeliveryEarning(deliveryFee, commissionPercent);
+
+  // Prefer commission snapshot stored at booking — do not recalculate history.
+  const storedPercent = Number(delivery.platform_commission_percent);
+  const storedPlatform = Number(delivery.platform_commission_amount);
+  const storedPartner = Number(delivery.partner_net_earning);
+  const hasSnapshot =
+    Number.isFinite(storedPercent) &&
+    storedPercent >= 0 &&
+    Number.isFinite(storedPlatform) &&
+    storedPlatform >= 0 &&
+    Number.isFinite(storedPartner) &&
+    storedPartner >= 0 &&
+    deliveryFee > 0;
+
+  let percent = storedPercent;
+  let platformShare = storedPlatform;
+  let riderFee = storedPartner;
+
+  if (!hasSnapshot) {
+    const commissionPercent = await getRidePlatformCommissionPercent();
+    const split = splitDeliveryEarning(deliveryFee, commissionPercent);
+    percent = split.percent;
+    platformShare = split.platformShare;
+    riderFee = split.partnerShare;
+  }
+
   const amount = riderFee + tip;
-  const commissionNote = `Rhennie Tasty Shack keeps ${percent}% of the Ride with 701 delivery fee (₦${platformShare.toLocaleString("en-NG")}) as platform commission. The delivery partner receives ₦${riderFee.toLocaleString("en-NG")} plus the full tip of ₦${tip.toLocaleString("en-NG")}.`;
+  const commissionNote = `Rhennie Tasty Shack keeps ${percent}% of the Ride with 701 delivery fee (₦${platformShare.toLocaleString("en-NG", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}) as platform commission. The delivery partner receives ₦${riderFee.toLocaleString("en-NG", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} plus the full tip of ₦${tip.toLocaleString("en-NG")}.`;
 
   await supabase
     .from("deliveries")

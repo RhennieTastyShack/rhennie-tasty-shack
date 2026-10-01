@@ -17,6 +17,7 @@ VALUES
     ]'
   ),
   ('ride_starting_fee_ngn', '800'),
+  ('ride_platform_commission', '6.6'),
   (
     'ride_surge_config',
     '{"enabled":false,"multiplier":1,"reason":"","startsAt":null,"endsAt":null,"areas":"","vehicleCategories":""}'
@@ -27,6 +28,17 @@ VALUES
   )
 ON CONFLICT (key)
 DO UPDATE SET value = EXCLUDED.value;
+
+
+-- Motorcycle / Bike: minimum ₦800, ₦200/km (₦800 is a floor, not an add-on).
+
+UPDATE delivery_vehicle_pricing
+SET
+  base_fee_ngn = 800,
+  per_km_ngn = 200,
+  minimum_fee_ngn = 800,
+  updated_at = NOW()
+WHERE category = 'motorcycle';
 
 
 -- Ensure eligible lower-cost vehicle categories start from at least ₦800.

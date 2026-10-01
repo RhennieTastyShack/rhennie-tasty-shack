@@ -1,6 +1,6 @@
 "use client";
 
-import { APPETIZER_MINIMUM, isAppetizerDish } from "@/lib/party-menu";
+import { minOrderQuantity } from "@/lib/menu-order-rules";
 import {
   createContext,
   useContext,
@@ -179,9 +179,7 @@ export function CartProvider({
               return existingItem;
             }
 
-            const floor = isAppetizerDish(existingItem.name)
-              ? APPETIZER_MINIMUM
-              : 1;
+            const floor = minOrderQuantity(existingItem.name);
             const added =
               existingItem.quantity < floor
                 ? floor
@@ -203,11 +201,10 @@ export function CartProvider({
         ...currentItems,
         {
           ...item,
-          quantity: isAppetizerDish(item.name)
-            ? Math.max(APPETIZER_MINIMUM, item.quantity || 0)
-            : item.quantity > 0
-              ? item.quantity
-              : 1,
+          quantity: Math.max(
+            minOrderQuantity(item.name),
+            item.quantity > 0 ? item.quantity : 1
+          ),
         },
       ];
     });
@@ -272,9 +269,7 @@ export function CartProvider({
           return item;
         }
 
-        const floor = isAppetizerDish(item.name)
-          ? APPETIZER_MINIMUM
-          : 1;
+        const floor = minOrderQuantity(item.name);
 
         return {
           ...item,

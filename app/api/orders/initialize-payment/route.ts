@@ -16,7 +16,12 @@ import {
   getVehiclePricingCatalog,
   isSurgeActiveNow,
 } from "@/lib/platform-settings";
-import { APPETIZER_MINIMUM, isAppetizerDish } from "@/lib/party-menu";
+import { splitDeliveryEarning } from "@/lib/ride-with-701";
+import {
+  availabilityNote,
+  isMenuItemAvailableToday,
+  minOrderQuantity,
+} from "@/lib/menu-order-rules";
 import {
   isPaymentCurrency,
   NGN_PER_USD,
@@ -386,13 +391,22 @@ export async function POST(request: Request) {
         );
       }
 
-      if (
-        isAppetizerDish(item.name) &&
-        item.quantity < APPETIZER_MINIMUM
-      ) {
+      if (!isMenuItemAvailableToday(item.name)) {
         return NextResponse.json(
           {
-            error: `${item.name} has a minimum order of ${APPETIZER_MINIMUM}.`,
+            error:
+              availabilityNote(item.name) ||
+              `${item.name} is not available today.`,
+          },
+          { status: 400 }
+        );
+      }
+
+      const floor = minOrderQuantity(item.name);
+      if (item.quantity < floor) {
+        return NextResponse.json(
+          {
+            error: `${item.name} has a minimum order of ${floor}.`,
           },
           { status: 400 }
         );
@@ -442,6 +456,14 @@ export async function POST(request: Request) {
       }
     );
     const deliveryFee = deliveryQuote.feeNgn;
+    const deliverySplit =
+      resolvedDispatchMode === "PLATFORM"
+        ? splitDeliveryEarning(deliveryFee, commissionPercent)
+        : {
+            percent: 0,
+            platformShare: 0,
+            partnerShare: 0,
+          };
     const recommendedVehicle =
       deliveryQuote.recommendedVehicle?.category || null;
     const pickupCode =
@@ -782,17 +804,9 @@ export async function POST(request: Request) {
         recommended_vehicle: recommendedVehicle,
         customer_delivery_charge: deliveryFee,
         gross_delivery_earning: deliveryFee,
-        platform_commission_percent:
-          resolvedDispatchMode === "PLATFORM" ? commissionPercent : 0,
-        platform_commission_amount:
-          resolvedDispatchMode === "PLATFORM"
-            ? Math.round((deliveryFee * commissionPercent) / 100)
-            : 0,
-        partner_net_earning:
-          resolvedDispatchMode === "PLATFORM"
-            ? deliveryFee -
-              Math.round((deliveryFee * commissionPercent) / 100)
-            : 0,
+        platform_commission_percent: deliverySplit.percent,
+        platform_commission_amount: deliverySplit.platformShare,
+        partner_net_earning: deliverySplit.partnerShare,
         status: initialStatus,
         tracking_token: trackingToken,
         order_code: orderCode,

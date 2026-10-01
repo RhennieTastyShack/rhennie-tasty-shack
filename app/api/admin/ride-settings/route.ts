@@ -338,7 +338,7 @@ export async function PATCH(request: NextRequest) {
       success: true,
       ride_platform_commission: Math.min(
         100,
-        Math.max(0, Math.round(percent))
+        Math.max(0, Math.round(Number(percent) * 10) / 10)
       ),
       message: "Ride with 701 platform commission updated.",
     });

@@ -1079,27 +1079,14 @@ export default function CheckoutPage() {
                           </p>
                           <div className="mt-3 space-y-1.5 border-t border-[#D4AF37]/20 pt-3">
                             <div className="flex justify-between gap-3">
-                              <span>Base Delivery Fee</span>
+                              <span>Distance</span>
                               <span>
-                                {formatPrice(deliveryQuote.breakdown.base)}
+                                {deliveryQuote.breakdown.distanceKm} km
                               </span>
                             </div>
-                            {deliveryQuote.breakdown.distance > 0 ? (
-                              <div className="flex justify-between gap-3">
-                                <span>
-                                  Distance Fee (
-                                  {deliveryQuote.breakdown.distanceKm} km)
-                                </span>
-                                <span>
-                                  {formatPrice(
-                                    deliveryQuote.breakdown.distance
-                                  )}
-                                </span>
-                              </div>
-                            ) : null}
                             {deliveryQuote.breakdown.vehicleFee > 0 ? (
                               <div className="flex justify-between gap-3">
-                                <span>Vehicle Fee</span>
+                                <span>Vehicle capacity adjustment</span>
                                 <span>
                                   {formatPrice(
                                     deliveryQuote.breakdown.vehicleFee
@@ -1110,7 +1097,7 @@ export default function CheckoutPage() {
                             {deliveryQuote.breakdown.surge > 0 ? (
                               <div className="flex justify-between gap-3 text-[#B45309]">
                                 <span>
-                                  Surge Fee
+                                  Surge
                                   {deliveryQuote.breakdown.surgeReason
                                     ? ` · ${deliveryQuote.breakdown.surgeReason}`
                                     : ""}
@@ -1121,11 +1108,15 @@ export default function CheckoutPage() {
                               </div>
                             ) : null}
                             <div className="flex justify-between gap-3 border-t border-[#D4AF37]/20 pt-2 font-semibold text-[#171717]">
-                              <span>Estimated Total</span>
+                              <span>Delivery Fee</span>
                               <span>{formatPrice(deliveryFee)}</span>
                             </div>
                           </div>
                           <p className="mt-2 text-black/45">
+                            Calculated based on distance. Minimum delivery fee
+                            ₦{deliveryQuote.startingFromNgn.toLocaleString("en-NG")}.
+                          </p>
+                          <p className="mt-1 text-black/45">
                             Waiting/delay fees are not included and only apply
                             later if the customer, sender or receiver causes a
                             wait after free waiting ends.

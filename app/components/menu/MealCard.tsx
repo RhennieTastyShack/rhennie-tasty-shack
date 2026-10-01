@@ -5,6 +5,11 @@ import { useState } from "react";
 import { useCart } from "@/app/context/CartContext";
 import { resolveMenuImage } from "@/lib/menu-images";
 import { dishChoices, dishChoiceUi } from "@/lib/menu-choices";
+import {
+  availabilityNote,
+  isMenuItemAvailableToday,
+  minOrderQuantity,
+} from "@/lib/menu-order-rules";
 import { partyChoices } from "@/lib/party-menu";
 
 type MealCardProps = {
@@ -54,6 +59,10 @@ export default function MealCard({
   const [cupsOpen, setCupsOpen] = useState(false);
 
   const imagePath = resolveMenuImage(name, imageUrl);
+  const dayNote = availabilityNote(name);
+  const orderableToday = isMenuItemAvailableToday(name);
+  const canOrder = available && orderableToday;
+  const minQty = minOrderQuantity(name);
 
   function toggleCup(option: string) {
     setSelectedCups((current) =>
@@ -64,7 +73,7 @@ export default function MealCard({
   }
 
   function handleAddToCart() {
-    if (!available) return;
+    if (!canOrder) return;
 
     if (choices.length > 0 && selectedCups.length === 0) {
       setCupsOpen(true);
@@ -77,7 +86,7 @@ export default function MealCard({
         name,
         collection,
         price,
-        quantity: 1,
+        quantity: minQty,
         selectedSize: selectedCups.join(" + "),
       });
     } else if (selectedCups.length > 0) {
@@ -87,7 +96,7 @@ export default function MealCard({
           name,
           collection,
           price,
-          quantity: 1,
+          quantity: minQty,
           selectedSize: cup,
         });
       }
@@ -97,7 +106,7 @@ export default function MealCard({
         name,
         collection,
         price,
-        quantity: 1,
+        quantity: minQty,
       });
     }
 
@@ -283,13 +292,17 @@ export default function MealCard({
             shadow-sm
             backdrop-blur-md
             ${
-              available
+              canOrder
                 ? "bg-white/90 text-green-700"
                 : "bg-black/75 text-white"
             }
           `}
         >
-          {available ? "Available" : "Unavailable"}
+          {canOrder
+            ? "Available"
+            : dayNote
+              ? dayNote.replace(/\.$/, "")
+              : "Unavailable"}
         </span>
       </div>
 
@@ -342,6 +355,12 @@ export default function MealCard({
         {description ? (
           <p className="mt-3 line-clamp-3 text-sm leading-6 text-gray-500">
             {description}
+          </p>
+        ) : null}
+
+        {minQty > 1 ? (
+          <p className="mt-2 text-xs font-medium text-[#F26A21]">
+            Minimum order: {minQty}
           </p>
         ) : null}
 
@@ -424,7 +443,7 @@ export default function MealCard({
                 </p>
               </div>
 
-              {available && (
+              {canOrder && (
                 <div className="mb-1 flex items-center gap-1.5">
                   <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
 
@@ -448,8 +467,8 @@ export default function MealCard({
             <button
               type="button"
               onClick={handleAddToCart}
-              disabled={!available}
-              aria-disabled={!available}
+              disabled={!canOrder}
+              aria-disabled={!canOrder}
               className={`
                 mt-5
                 flex
@@ -465,7 +484,7 @@ export default function MealCard({
                 duration-300
 
                 ${
-                  !available
+                  !canOrder
                     ? `
                       cursor-not-allowed
                       bg-gray-200
@@ -488,15 +507,17 @@ export default function MealCard({
                 }
               `}
             >
-              {!available
-                ? "Currently Unavailable"
+              {!canOrder
+                ? dayNote || "Currently Unavailable"
                 : choices.length > 0 && selectedCups.length === 0
                   ? choiceUi?.choose || "Choose options"
                   : added
                   ? "Added to Cart ✓"
                   : selectedCups.length > 1
                     ? `Add ${selectedCups.length}`
-                    : "Add to Cart"}
+                    : minQty > 1
+                      ? `Add ${minQty} to Cart`
+                      : "Add to Cart"}
             </button>
           </div>
         </div>

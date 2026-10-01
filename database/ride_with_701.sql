@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS platform_settings (
 );
 
 INSERT INTO platform_settings (key, value)
-VALUES ('ride_platform_commission', '5')
+VALUES ('ride_platform_commission', '6.6')
 ON CONFLICT (key) DO NOTHING;
 
 CREATE TABLE IF NOT EXISTS delivery_vehicle_pricing (

@@ -29,7 +29,7 @@ export default function SettingsPage() {
   const [success, setSuccess] = useState("");
   const [error, setError] = useState("");
 
-  const [commissionPercent, setCommissionPercent] = useState(5);
+  const [commissionPercent, setCommissionPercent] = useState(6.6);
   const [commissionSaving, setCommissionSaving] = useState(false);
   const [commissionMessage, setCommissionMessage] = useState("");
   const [vehiclePricing, setVehiclePricing] = useState<
@@ -1207,7 +1207,7 @@ export default function SettingsPage() {
               type="number"
               min={0}
               max={100}
-              step={1}
+              step={0.1}
               value={commissionPercent}
               onChange={(event) =>
                 setCommissionPercent(Number(event.target.value) || 0)
