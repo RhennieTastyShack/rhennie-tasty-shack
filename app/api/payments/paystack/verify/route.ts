@@ -22,12 +22,6 @@ if (!serviceRoleKey) {
   );
 }
 
-if (!paystackSecretKey) {
-  throw new Error(
-    "PAYSTACK_SECRET_KEY is missing"
-  );
-}
-
 const supabaseAdmin = createClient(
   supabaseUrl,
   serviceRoleKey
@@ -40,6 +34,16 @@ const supabaseAdmin = createClient(
 
 export async function GET(request: Request) {
   try {
+    if (!paystackSecretKey) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Payment provider is not configured.",
+        },
+        { status: 503 }
+      );
+    }
+
     const { searchParams } =
       new URL(request.url);
 
