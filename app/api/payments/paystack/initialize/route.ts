@@ -1,26 +1,15 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
-import { getAuthUser, requireAdmin, userOwnsOrder } from "@/lib/supabase-admin";
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const paystackSecretKey = process.env.PAYSTACK_SECRET_KEY;
-
-if (!supabaseUrl) {
-  throw new Error("NEXT_PUBLIC_SUPABASE_URL is missing");
-}
-
-if (!serviceRoleKey) {
-  throw new Error("SUPABASE_SERVICE_ROLE_KEY is missing");
-}
-
-const supabaseAdmin = createClient(
-  supabaseUrl,
-  serviceRoleKey
-);
+import { getPaystackSecretKey } from "@/lib/env";
+import {
+  getAuthUser,
+  getSupabaseAdmin,
+  requireAdmin,
+  userOwnsOrder,
+} from "@/lib/supabase-admin";
 
 export async function POST(request: Request) {
   try {
+    const paystackSecretKey = getPaystackSecretKey();
     if (!paystackSecretKey) {
       return NextResponse.json(
         {
@@ -30,6 +19,8 @@ export async function POST(request: Request) {
         { status: 503 }
       );
     }
+
+    const supabaseAdmin = getSupabaseAdmin();
 
     const body = await request.json();
     const { payment_id } = body;

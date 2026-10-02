@@ -1,31 +1,6 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
-
-const supabaseUrl =
-  process.env.NEXT_PUBLIC_SUPABASE_URL;
-
-const serviceRoleKey =
-  process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-const paystackSecretKey =
-  process.env.PAYSTACK_SECRET_KEY;
-
-if (!supabaseUrl) {
-  throw new Error(
-    "NEXT_PUBLIC_SUPABASE_URL is missing"
-  );
-}
-
-if (!serviceRoleKey) {
-  throw new Error(
-    "SUPABASE_SERVICE_ROLE_KEY is missing"
-  );
-}
-
-const supabaseAdmin = createClient(
-  supabaseUrl,
-  serviceRoleKey
-);
+import { getPaystackSecretKey } from "@/lib/env";
+import { getSupabaseAdmin } from "@/lib/supabase-admin";
 
 // =====================================================
 // VERIFY PAYSTACK PAYMENT
@@ -34,6 +9,7 @@ const supabaseAdmin = createClient(
 
 export async function GET(request: Request) {
   try {
+    const paystackSecretKey = getPaystackSecretKey();
     if (!paystackSecretKey) {
       return NextResponse.json(
         {
@@ -43,6 +19,8 @@ export async function GET(request: Request) {
         { status: 503 }
       );
     }
+
+    const supabaseAdmin = getSupabaseAdmin();
 
     const { searchParams } =
       new URL(request.url);

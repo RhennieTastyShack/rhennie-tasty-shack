@@ -30,28 +30,16 @@ import {
 } from "@/lib/payment-currency";
 import { promoDiscount, quotePromo } from "@/lib/promos";
 import { debitWallet } from "@/lib/customer-wallet";
+import { getPaystackSecretKey } from "@/lib/env";
+import { getSupabaseAdmin } from "@/lib/supabase-admin";
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const paystackSecretKey = process.env.PAYSTACK_SECRET_KEY;
 const publishableKey =
   process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 
-if (!supabaseUrl) {
-  throw new Error("NEXT_PUBLIC_SUPABASE_URL is missing");
+/** Lazy admin client — avoids import-time crashes when secrets are absent in Preview. */
+function supabaseAdmin() {
+  return getSupabaseAdmin();
 }
-
-if (!serviceRoleKey) {
-  throw new Error("SUPABASE_SERVICE_ROLE_KEY is missing");
-}
-
-// Do not throw on missing PAYSTACK at import time — Preview builds omit
-// Production-only secrets and would fail during "Collecting page data".
-
-const supabaseAdmin = createClient(
-  supabaseUrl,
-  serviceRoleKey
-);
 
 type CheckoutItem = {
   id: string;
@@ -230,7 +218,7 @@ export async function POST(request: Request) {
     >();
 
     const { data: menuItemRows, error: menuItemError } =
-      await supabaseAdmin
+      await supabaseAdmin()
         .from("menu_items")
         .select("id, name, price")
         .in("id", itemIds);
@@ -255,7 +243,7 @@ export async function POST(request: Request) {
 
     if (missingIds.length > 0) {
       const { data: menuRows, error: menuError } =
-        await supabaseAdmin
+        await supabaseAdmin()
           .from("menu")
           .select("id, name, price")
           .in("id", missingIds);
@@ -291,7 +279,7 @@ export async function POST(request: Request) {
     async function collectNamedPrices(table: "menu_items" | "menu") {
       if (sizedNames.length === 0) return;
 
-      const { data, error } = await supabaseAdmin
+      const { data, error } = await supabaseAdmin()
         .from(table)
         .select("name, price")
         .in("name", sizedNames);
@@ -528,7 +516,7 @@ export async function POST(request: Request) {
         token
       ) {
         const supabaseAuth = createClient(
-          supabaseUrl as string,
+          process.env.NEXT_PUBLIC_SUPABASE_URL as string,
           publishableKey,
           {
             auth: {
@@ -628,7 +616,7 @@ export async function POST(request: Request) {
         };
 
     let { data: order, error: orderError } =
-      await supabaseAdmin
+      await supabaseAdmin()
         .from("orders")
         .insert(orderPayload)
         .select("id")
@@ -645,7 +633,7 @@ export async function POST(request: Request) {
       );
       if (missing?.[1] && missing[1] in orderPayload) {
         delete orderPayload[missing[1]];
-        const retry = await supabaseAdmin
+        const retry = await supabaseAdmin()
           .from("orders")
           .insert(orderPayload)
           .select("id")
@@ -666,7 +654,7 @@ export async function POST(request: Request) {
       delete orderPayload.recommended_vehicle;
       delete orderPayload.pickup_code;
       delete orderPayload.pickup_status;
-      const retry = await supabaseAdmin
+      const retry = await supabaseAdmin()
         .from("orders")
         .insert(orderPayload)
         .select("id")
@@ -733,7 +721,7 @@ export async function POST(request: Request) {
 
     const {
       error: orderItemsError,
-    } = await supabaseAdmin
+    } = await supabaseAdmin()
       .from("order_items")
       .insert(orderItems);
 
@@ -747,7 +735,7 @@ export async function POST(request: Request) {
        * Remove the order if its items
        * could not be created.
        */
-      await supabaseAdmin
+      await supabaseAdmin()
         .from("orders")
         .delete()
         .eq("id", order.id);
@@ -825,7 +813,7 @@ export async function POST(request: Request) {
       let deliveryError: { message?: string } | null = null;
 
       for (let attempt = 0; attempt < 6; attempt += 1) {
-        const { error } = await supabaseAdmin
+        const { error } = await supabaseAdmin()
           .from("deliveries")
           .insert(deliveryRow);
 
@@ -854,7 +842,7 @@ export async function POST(request: Request) {
           deliveryError
         );
 
-        await supabaseAdmin
+        await supabaseAdmin()
           .from("orders")
           .delete()
           .eq("id", order.id);
@@ -872,7 +860,7 @@ export async function POST(request: Request) {
 
     if (paymentCurrency === "WALLET") {
       if (!customerId) {
-        await supabaseAdmin.from("orders").delete().eq("id", order.id);
+        await supabaseAdmin().from("orders").delete().eq("id", order.id);
 
         return NextResponse.json(
           { error: "Sign in to pay with your RTS wallet." },
@@ -883,7 +871,7 @@ export async function POST(request: Request) {
       const debit = await debitWallet(customerId, total, order.id);
 
       if (!debit.ok) {
-        await supabaseAdmin.from("orders").delete().eq("id", order.id);
+        await supabaseAdmin().from("orders").delete().eq("id", order.id);
 
         return NextResponse.json(
           { error: debit.message },
@@ -891,7 +879,7 @@ export async function POST(request: Request) {
         );
       }
 
-      await supabaseAdmin
+      await supabaseAdmin()
         .from("orders")
         .update({
           payment_status: "paid",
@@ -942,7 +930,7 @@ export async function POST(request: Request) {
       const payload = { ...row };
 
       for (let attempt = 0; attempt < 12; attempt += 1) {
-        const { error } = await supabaseAdmin
+        const { error } = await supabaseAdmin()
           .from("payments")
           .insert(payload);
 
@@ -990,7 +978,7 @@ export async function POST(request: Request) {
           paymentInsertError
         );
 
-        await supabaseAdmin
+        await supabaseAdmin()
           .from("orders")
           .delete()
           .eq("id", order.id);
@@ -1005,7 +993,7 @@ export async function POST(request: Request) {
         );
       }
 
-      await supabaseAdmin
+      await supabaseAdmin()
         .from("orders")
         .update({
           payment_reference: reference,
@@ -1049,7 +1037,7 @@ export async function POST(request: Request) {
     const callbackUrl =
       `${appUrl}/checkout/success?${successParams.toString()}`;
 
-    if (!paystackSecretKey) {
+    if (!getPaystackSecretKey()) {
       return NextResponse.json(
         {
           success: false,
@@ -1086,7 +1074,7 @@ export async function POST(request: Request) {
         {
           method: "POST",
           headers: {
-            Authorization: `Bearer ${paystackSecretKey}`,
+            Authorization: `Bearer ${getPaystackSecretKey()}`,
             "Content-Type": "application/json",
           },
           body: JSON.stringify(body),
@@ -1129,7 +1117,7 @@ export async function POST(request: Request) {
        * Payment wasn't initialized,
        * so remove the pending order.
        */
-      await supabaseAdmin
+      await supabaseAdmin()
         .from("orders")
         .delete()
         .eq("id", order.id);
@@ -1153,7 +1141,7 @@ export async function POST(request: Request) {
 
     const {
       error: updateError,
-    } = await supabaseAdmin
+    } = await supabaseAdmin()
       .from("orders")
       .update({
         payment_reference:
@@ -1196,7 +1184,7 @@ export async function POST(request: Request) {
         paymentInsertError
       );
 
-      await supabaseAdmin
+      await supabaseAdmin()
         .from("orders")
         .delete()
         .eq("id", order.id);
@@ -1245,7 +1233,7 @@ export async function POST(request: Request) {
      * creating an order, clean it up.
      */
     if (createdOrderId) {
-      await supabaseAdmin
+      await supabaseAdmin()
         .from("orders")
         .delete()
         .eq("id", createdOrderId);
