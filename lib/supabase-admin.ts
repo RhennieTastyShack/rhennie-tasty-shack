@@ -1,4 +1,18 @@
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+
+type AdminClient = SupabaseClient;
+
+function lazyClient(factory: () => AdminClient): AdminClient {
+  return new Proxy({} as AdminClient, {
+    get(_target, prop, receiver) {
+      const client = factory();
+      const value = Reflect.get(client as object, prop, receiver);
+      return typeof value === "function"
+        ? (value as (...args: unknown[]) => unknown).bind(client)
+        : value;
+    },
+  });
+}
 
 export function getSupabaseAdmin() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -36,6 +50,10 @@ export function getPublishableClient() {
     },
   });
 }
+
+/** Drop-in for module-scope clients — resolves on first property access. */
+export const lazySupabaseAdmin = lazyClient(getSupabaseAdmin);
+export const lazyPublishableClient = lazyClient(getPublishableClient);
 
 export function cleanText(value: unknown) {
   return String(value ?? "").trim();

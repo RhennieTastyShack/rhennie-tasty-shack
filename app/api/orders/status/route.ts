@@ -1,20 +1,10 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
 import { PICKUP_STATUSES, type PickupStatus } from "@/lib/delivery";
-import { cleanText, requireAdmin } from "@/lib/supabase-admin";
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-if (!supabaseUrl) {
-  throw new Error("NEXT_PUBLIC_SUPABASE_URL is missing");
-}
-
-if (!serviceRoleKey) {
-  throw new Error("SUPABASE_SERVICE_ROLE_KEY is missing");
-}
-
-const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
+import {
+  cleanText,
+  lazySupabaseAdmin as supabaseAdmin,
+  requireAdmin,
+} from "@/lib/supabase-admin";
 
 const VALID_STATUSES = [
   "IN REVIEW",

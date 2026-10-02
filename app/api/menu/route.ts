@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import {
   CATALOG_DISHES,
   RETIRED_CATALOG_NAMES,
@@ -12,22 +12,7 @@ import {
   RETIRED_PARTY_DISHES,
   type PartyDish,
 } from "@/lib/party-menu";
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-if (!supabaseUrl) {
-  throw new Error("NEXT_PUBLIC_SUPABASE_URL is missing");
-}
-
-if (!serviceRoleKey) {
-  throw new Error("SUPABASE_SERVICE_ROLE_KEY is missing");
-}
-
-const supabaseAdmin = createClient(
-  supabaseUrl,
-  serviceRoleKey
-);
+import { lazySupabaseAdmin as supabaseAdmin } from "@/lib/supabase-admin";
 
 async function ensurePartyMenu(client: SupabaseClient) {
   await client

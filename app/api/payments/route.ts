@@ -1,34 +1,15 @@
 import { NextResponse } from "next/server";
 import { randomBytes } from "crypto";
-import { createClient } from "@supabase/supabase-js";
 import {
   NGN_PER_USD,
   ngnToUsd,
 } from "@/lib/payment-currency";
-import { getAuthUser, requireAdmin, userOwnsOrder } from "@/lib/supabase-admin";
-
-const supabaseUrl =
-  process.env.NEXT_PUBLIC_SUPABASE_URL;
-
-const serviceRoleKey =
-  process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-if (!supabaseUrl) {
-  throw new Error(
-    "NEXT_PUBLIC_SUPABASE_URL is missing"
-  );
-}
-
-if (!serviceRoleKey) {
-  throw new Error(
-    "SUPABASE_SERVICE_ROLE_KEY is missing"
-  );
-}
-
-const supabaseAdmin = createClient(
-  supabaseUrl,
-  serviceRoleKey
-);
+import {
+  getAuthUser,
+  lazySupabaseAdmin as supabaseAdmin,
+  requireAdmin,
+  userOwnsOrder,
+} from "@/lib/supabase-admin";
 
 // =====================================================
 // CREATE PAYMENT RECORD
