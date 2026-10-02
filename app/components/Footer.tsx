@@ -73,14 +73,6 @@ export default function Footer() {
               </li>
               <li>
                 <Link
-                  href="/riders/join"
-                  className="text-sm text-gray-400 transition-colors hover:text-[#F26A21]"
-                >
-                  Ride with 701
-                </Link>
-              </li>
-              <li>
-                <Link
                   href="/customer-care"
                   className="text-sm text-gray-400 transition-colors hover:text-[#F26A21]"
                 >

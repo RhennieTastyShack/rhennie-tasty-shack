@@ -81,7 +81,7 @@ export default function Hero() {
   return (
     <section
       ref={sectionRef}
-      className="relative min-h-[calc(100svh-76px)] w-full overflow-hidden bg-black sm:min-h-[calc(100svh-80px)] lg:min-h-[calc(100svh-96px)]"
+      className="relative z-0 min-h-[calc(100svh-76px)] w-full overflow-hidden bg-black sm:min-h-[calc(100svh-80px)] lg:min-h-[calc(100svh-96px)]"
     >
       {/* One video element only — avoids Android/iPhone decoding 3 streams. */}
       <video

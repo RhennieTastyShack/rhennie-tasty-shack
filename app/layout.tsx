@@ -14,6 +14,11 @@ export const metadata: Metadata = {
   description:
     "Premium Nigerian and continental cuisine, catering, meal subscriptions and unforgettable dining experiences.",
   applicationName: "Rhennie Tasty Shack",
+  icons: {
+    icon: [{ url: "/images/logo.png", type: "image/png" }],
+    shortcut: ["/images/logo.png"],
+    apple: [{ url: "/images/logo.png" }],
+  },
   formatDetection: {
     telephone: true,
     email: true,
