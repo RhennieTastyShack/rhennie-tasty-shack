@@ -407,4 +407,21 @@ export const CATALOG_DISHES: CatalogDish[] = [
     displayOrder: 68,
     sortOrder: 0,
   },
+  {
+    name: "Mix Beef Sauce",
+    collection: "Soups, Sides & Sauces",
+    collectionMatch: [
+      "soups, sides & sauces",
+      "soups-sides-sauces",
+      "sauces",
+      "sauce",
+      "signature sauces",
+    ],
+    description:
+      "Tender beef stir-fried with colourful peppers and onions in our signature pepper sauce. ₦3,500 per portion.",
+    price: 3500,
+    image: "/images/mix-beef-sauce.jpg",
+    displayOrder: 40,
+    sortOrder: 0,
+  },
 ];

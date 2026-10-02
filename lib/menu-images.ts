@@ -500,6 +500,10 @@ const IMAGE_MATCHES: Array<{
     image: "ayamase.jpeg",
   },
   {
+    keywords: ["mix beef sauce", "mixed beef sauce", "mixbeef sauce"],
+    image: "mix-beef-sauce.jpg",
+  },
+  {
     keywords: ["mix meat sauce", "mixed meat"],
     image: "cabbage sauce.jpeg",
   },

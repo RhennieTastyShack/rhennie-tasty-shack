@@ -64,4 +64,18 @@ export const sauces = [
     available: true,
     featured: true,
   },
+  {
+    id: "mix-beef-sauce",
+    name: "Mix Beef Sauce",
+    premiumName: "Mix Beef Sauce",
+    description:
+      "Tender beef stir-fried with colourful peppers and onions in our signature pepper sauce. Priced per portion.",
+    price: 3500,
+    category: "Sauce",
+    collection: "Signature Sauces",
+    badge: "New",
+    preparationTime: "20 mins",
+    available: true,
+    featured: true,
+  },
 ];
