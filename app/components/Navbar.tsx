@@ -93,8 +93,7 @@ export default function Navbar() {
       ];
 
   return (
-    <>
-    <header className="fixed inset-x-0 top-0 z-[9999] isolate w-full overflow-x-hidden border-b border-black/8 bg-white/95 pt-[env(safe-area-inset-top,0px)] text-[#171717] shadow-sm backdrop-blur-xl supports-[backdrop-filter]:bg-white/90">
+    <header className="sticky top-0 z-[9999] isolate w-full border-b border-black/8 bg-white/95 pt-[env(safe-area-inset-top,0px)] text-[#171717] backdrop-blur-xl supports-[backdrop-filter]:bg-white/90">
       <div className="mx-auto flex h-14 w-full max-w-7xl items-center justify-between gap-2 px-4 sm:h-[72px] sm:gap-3 sm:px-6 lg:h-[84px] lg:gap-4 lg:px-12 xl:px-16">
         <Link
           href="/"
@@ -285,12 +284,6 @@ export default function Navbar() {
         </div>
       </aside>
     </header>
-    {/* Reserve space so page content (hero) starts below the fixed header */}
-    <div
-      aria-hidden
-      className="h-[calc(3.5rem+env(safe-area-inset-top,0px))] shrink-0 sm:h-[calc(4.5rem+env(safe-area-inset-top,0px))] lg:h-[calc(5.25rem+env(safe-area-inset-top,0px))]"
-    />
-    </>
   );
 }
 

@@ -53,7 +53,7 @@ export default function RootLayout({
       data-scroll-behavior="smooth"
       suppressHydrationWarning
     >
-      <body suppressHydrationWarning className="overflow-x-clip">
+      <body suppressHydrationWarning>
         {/* Dev-only: strip Cursor editor refs that can cause hydration noise. */}
         {isDev ? (
           <Script id="strip-editor-refs" strategy="afterInteractive">
