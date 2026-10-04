@@ -4,8 +4,11 @@ import { Suspense, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 
+import { useCart } from "@/app/context/CartContext";
+
 function CryptoCheckoutContent() {
   const searchParams = useSearchParams();
+  const { clearCart } = useCart();
   const orderId = searchParams.get("order");
   const reference = searchParams.get("reference");
   const usdt = searchParams.get("usdt");
@@ -66,6 +69,7 @@ function CryptoCheckoutContent() {
         );
       }
 
+      clearCart();
       setSent(true);
     } catch (error) {
       setSendError(

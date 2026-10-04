@@ -77,7 +77,7 @@ export default function RootLayout({
         <CartProvider>
           <Navbar />
 
-          <div className="pb-[calc(6.5rem+env(safe-area-inset-bottom,0px))] sm:pb-0">
+          <div className="pb-[calc(var(--rts-fab-stack-height)+env(safe-area-inset-bottom,0px))] sm:pb-0">
             {children}
           </div>
 

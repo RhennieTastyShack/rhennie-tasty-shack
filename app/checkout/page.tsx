@@ -15,6 +15,17 @@ import { useCart } from "@/app/context/CartContext";
 import { getCheckoutDeliveryQuote } from "@/lib/delivery-fee";
 import { selectionLabel } from "@/lib/menu-choices";
 import { ngnToUsd, PaymentCurrency } from "@/lib/payment-currency";
+import { supabase } from "@/lib/supabase";
+
+const CHECKOUT_DRAFT_KEY = "rts-checkout-draft-v1";
+
+type CheckoutDraft = {
+  customerName?: string;
+  customerEmail?: string;
+  customerPhone?: string;
+  deliveryAddress?: string;
+  notes?: string;
+};
 
 function formatPrice(price: number) {
   return new Intl.NumberFormat("en-NG", {
@@ -88,6 +99,95 @@ export default function CheckoutPage() {
     surgeMultiplier: 1,
     surgeReason: "",
   });
+
+  useEffect(() => {
+    setMounted(true);
+
+    try {
+      const raw = sessionStorage.getItem(CHECKOUT_DRAFT_KEY);
+      if (raw) {
+        const draft = JSON.parse(raw) as CheckoutDraft;
+        if (draft.customerName) setCustomerName(draft.customerName);
+        if (draft.customerEmail) setCustomerEmail(draft.customerEmail);
+        if (draft.customerPhone) setCustomerPhone(draft.customerPhone);
+        if (draft.deliveryAddress) setDeliveryAddress(draft.deliveryAddress);
+        if (draft.notes) setNotes(draft.notes);
+      }
+    } catch {
+      /* ignore bad draft */
+    }
+
+    let cancelled = false;
+
+    async function prefillFromProfile() {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session?.user || cancelled) return;
+
+      const meta = session.user.user_metadata || {};
+      const metaName = String(meta.full_name || meta.name || "").trim();
+      const metaPhone = String(meta.phone || "").trim();
+      const email = session.user.email || "";
+
+      setCustomerName((current) => current || metaName);
+      setCustomerEmail((current) => current || email);
+      setCustomerPhone((current) => current || metaPhone);
+
+      try {
+        const { data: profile } = await supabase
+          .from("client_profiles")
+          .select("full_name, phone, email")
+          .eq("auth_user_id", session.user.id)
+          .limit(1)
+          .maybeSingle();
+
+        if (cancelled || !profile) return;
+
+        setCustomerName(
+          (current) => current || String(profile.full_name || "").trim()
+        );
+        setCustomerEmail(
+          (current) =>
+            current || String(profile.email || email || "").trim()
+        );
+        setCustomerPhone(
+          (current) => current || String(profile.phone || "").trim()
+        );
+      } catch {
+        /* profile table may be RLS-restricted for this client */
+      }
+    }
+
+    void prefillFromProfile();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!mounted) return;
+    const draft: CheckoutDraft = {
+      customerName,
+      customerEmail,
+      customerPhone,
+      deliveryAddress,
+      notes,
+    };
+    try {
+      sessionStorage.setItem(CHECKOUT_DRAFT_KEY, JSON.stringify(draft));
+    } catch {
+      /* ignore quota */
+    }
+  }, [
+    mounted,
+    customerName,
+    customerEmail,
+    customerPhone,
+    deliveryAddress,
+    notes,
+  ]);
 
   useEffect(() => {
     let cancelled = false;
@@ -223,6 +323,11 @@ export default function CheckoutPage() {
       return;
     }
 
+    if (customerPhone.replace(/\D/g, "").length < 10) {
+      setError("Please enter a valid phone number (at least 10 digits).");
+      return;
+    }
+
     if (
       deliveryType === "delivery" &&
       !deliveryAddress.trim()
@@ -347,7 +452,6 @@ export default function CheckoutPage() {
       }
 
       if (data.crypto) {
-        clearCart();
         const params = new URLSearchParams({
           order: data.orderId,
           reference: data.reference,
@@ -381,17 +485,25 @@ export default function CheckoutPage() {
       }
 
       /*
-       * Fallback if the server returns an order
-       * without a Paystack URL.
+       * Wallet (or other) paid without Paystack redirect.
        */
       if (data.orderId) {
         clearCart();
 
-        router.push(
-          `/checkout/success?order=${encodeURIComponent(
-            data.orderId
-          )}`
-        );
+        const params = new URLSearchParams({
+          order: data.orderId,
+        });
+        if (data.trackingToken) {
+          params.set("tracking", data.trackingToken);
+        }
+        if (data.orderCode) {
+          params.set("code", data.orderCode);
+        }
+        if (data.reference) {
+          params.set("reference", data.reference);
+        }
+
+        router.push(`/checkout/success?${params.toString()}`);
 
         return;
       }
@@ -414,10 +526,6 @@ export default function CheckoutPage() {
       setLoading(false);
     }
   }
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   /*
    * Wait until the cart has loaded from this browser.
@@ -529,10 +637,11 @@ export default function CheckoutPage() {
           CHECKOUT
       ====================================================== */}
 
-      <section className="px-4 pb-20 sm:px-6 lg:px-8">
+      <section className="px-4 pb-28 sm:px-6 lg:px-8 lg:pb-20">
         <div className="mx-auto max-w-7xl">
 
           <form
+            id="rts-checkout-form"
             onSubmit={handleSubmit}
             className="grid gap-6 lg:grid-cols-[1fr_420px] lg:items-start"
           >
@@ -1285,7 +1394,7 @@ export default function CheckoutPage() {
                   <button
                     type="submit"
                     disabled={loading}
-                    className="flex min-h-[56px] w-full items-center justify-center rounded-full bg-[#F26A21] px-5 text-sm font-bold text-white shadow-[0_15px_35px_rgba(242,106,33,0.22)] transition-all hover:-translate-y-1 hover:bg-[#D95512] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
+                    className="hidden min-h-[56px] w-full items-center justify-center rounded-full bg-[#F26A21] px-5 text-sm font-bold text-white shadow-[0_15px_35px_rgba(242,106,33,0.22)] transition-all hover:-translate-y-1 hover:bg-[#D95512] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0 lg:flex"
                   >
                     {loading ? (
                       <>
@@ -1323,6 +1432,35 @@ export default function CheckoutPage() {
             </aside>
 
           </form>
+
+          {/* Mobile sticky pay bar — mirrors desktop CTA */}
+          <div className="fixed inset-x-0 bottom-0 z-[70] border-t border-black/10 bg-white/95 px-4 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] pt-3 backdrop-blur lg:hidden">
+            <div className="mx-auto flex max-w-7xl items-center gap-3">
+              <div className="min-w-0 flex-1">
+                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-black/40">
+                  Total
+                </p>
+                <p className="truncate text-lg font-extrabold text-[#F26A21]">
+                  {payLabel}
+                </p>
+              </div>
+              <button
+                type="submit"
+                form="rts-checkout-form"
+                disabled={loading || items.length === 0}
+                className="flex min-h-[52px] shrink-0 items-center justify-center rounded-full bg-[#F26A21] px-6 text-sm font-bold text-white shadow-[0_10px_25px_rgba(242,106,33,0.2)] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 size={18} className="mr-2 animate-spin" />
+                    Paying…
+                  </>
+                ) : (
+                  <>Pay {payLabel}</>
+                )}
+              </button>
+            </div>
+          </div>
         </div>
       </section>
 

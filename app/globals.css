@@ -33,6 +33,15 @@
   --rts-radius-md: 22px;
   --rts-radius-lg: 28px;
   --rts-radius-xl: 32px;
+
+  /* WhatsApp + Ride FABs + gaps + home indicator gutter on mobile */
+  --rts-fab-stack-height: 10rem;
+}
+
+@media (min-width: 640px) {
+  :root {
+    --rts-fab-stack-height: 0px;
+  }
 }
 
 @keyframes ride-float {

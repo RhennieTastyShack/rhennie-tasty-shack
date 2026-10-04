@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { thankYouNote } from "@/lib/thank-you-notes";
+import { getDeliveryStatusLabel } from "@/lib/delivery";
 
 type DeliveryInfo = {
   id: string;
@@ -50,8 +51,12 @@ export default function OrdersPage() {
   useEffect(() => {
     let active = true;
 
-    async function loadOrders() {
+    async function loadOrders(opts?: { silent?: boolean }) {
       try {
+        if (!opts?.silent) {
+          setLoading(true);
+        }
+
         const {
           data: { session },
         } = await supabase.auth.getSession();
@@ -78,11 +83,12 @@ export default function OrdersPage() {
 
         if (active) {
           setOrders(Array.isArray(data) ? data : data?.orders || []);
+          setError("");
         }
       } catch (loadError) {
         console.error("Orders loading error:", loadError);
 
-        if (active) {
+        if (active && !opts?.silent) {
           setError("Unable to load your orders.");
         }
       } finally {
@@ -92,10 +98,25 @@ export default function OrdersPage() {
       }
     }
 
-    loadOrders();
+    void loadOrders();
+
+    const pollId = window.setInterval(() => {
+      if (document.visibilityState === "visible") {
+        void loadOrders({ silent: true });
+      }
+    }, 18000);
+
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") {
+        void loadOrders({ silent: true });
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibility);
 
     return () => {
       active = false;
+      window.clearInterval(pollId);
+      document.removeEventListener("visibilitychange", onVisibility);
     };
   }, [router]);
 
@@ -416,7 +437,7 @@ export default function OrdersPage() {
                           Delivery tracking
                         </p>
                         <p className="mt-2 text-sm text-white">
-                          {delivery.status.replaceAll("_", " ")}
+                          {getDeliveryStatusLabel(delivery.status)}
                           {riderName ? ` · ${riderName}` : ""}
                         </p>
                         {delivery.order_code ? (

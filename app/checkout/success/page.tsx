@@ -12,6 +12,7 @@ import {
 
 import { useCart } from "@/app/context/CartContext";
 import { orderAppreciation, thankYouNote } from "@/lib/thank-you-notes";
+import { supabase } from "@/lib/supabase";
 
 type VerifyState =
   | "loading"
@@ -39,11 +40,15 @@ function CheckoutSuccessContent() {
   const [copiedTracking, setCopiedTracking] = useState(false);
   const [siteOrigin, setSiteOrigin] = useState("");
   const [trackingFromPayment, setTrackingFromPayment] = useState("");
+  const [signedIn, setSignedIn] = useState(false);
   const clearCartRef = useRef(clearCart);
   clearCartRef.current = clearCart;
 
   useEffect(() => {
     setSiteOrigin(window.location.origin);
+    supabase.auth.getSession().then(({ data }) => {
+      setSignedIn(Boolean(data.session));
+    });
   }, []);
 
   const resolvedTracking =
@@ -396,12 +401,37 @@ function CheckoutSuccessContent() {
                 Continue Shopping
               </Link>
 
-              <Link
-                href="/orders"
-                className="inline-flex min-h-[52px] items-center justify-center rounded-full border border-black/10 bg-white px-7 text-sm font-bold text-black/60 transition-all hover:border-[#F26A21]/40 hover:text-[#F26A21]"
-              >
-                View My Orders
-              </Link>
+              {signedIn ? (
+                <Link
+                  href="/client-portal/orders"
+                  className="inline-flex min-h-[52px] items-center justify-center rounded-full border border-black/10 bg-white px-7 text-sm font-bold text-black/60 transition-all hover:border-[#F26A21]/40 hover:text-[#F26A21]"
+                >
+                  View My Orders
+                </Link>
+              ) : trackingUrl ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const url = trackingUrl.startsWith("http")
+                      ? trackingUrl
+                      : `${window.location.origin}${trackingPath}`;
+                    void navigator.clipboard.writeText(url).then(() => {
+                      setCopiedTracking(true);
+                      window.setTimeout(() => setCopiedTracking(false), 2000);
+                    });
+                  }}
+                  className="inline-flex min-h-[52px] items-center justify-center rounded-full border border-black/10 bg-white px-7 text-sm font-bold text-black/60 transition-all hover:border-[#F26A21]/40 hover:text-[#F26A21]"
+                >
+                  {copiedTracking ? "Tracking link copied" : "Copy tracking link"}
+                </button>
+              ) : (
+                <Link
+                  href="/login"
+                  className="inline-flex min-h-[52px] items-center justify-center rounded-full border border-black/10 bg-white px-7 text-sm font-bold text-black/60 transition-all hover:border-[#F26A21]/40 hover:text-[#F26A21]"
+                >
+                  Sign in to save orders
+                </Link>
+              )}
             </div>
 
             <p className="mt-10 text-[8px] font-bold uppercase tracking-[0.3em] text-black/25">

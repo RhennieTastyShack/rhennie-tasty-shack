@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { thankYouNote } from "@/lib/thank-you-notes";
+import { getDeliveryStatusLabel } from "@/lib/delivery";
 
 type DeliveryInfo = {
   id: string;
@@ -53,14 +54,12 @@ export default function OrdersPage() {
   useEffect(() => {
     let active = true;
 
-    async function loadOrders() {
+    async function loadOrders(opts?: { silent?: boolean }) {
       try {
-        setLoading(true);
+        if (!opts?.silent) {
+          setLoading(true);
+        }
         setError("");
-
-        /* ============================================
-           GET LOGGED-IN CUSTOMER SESSION
-        ============================================ */
 
         const {
           data: { session },
@@ -82,18 +81,10 @@ export default function OrdersPage() {
           return;
         }
 
-        /* ============================================
-           CUSTOMER IS NOT LOGGED IN
-        ============================================ */
-
         if (!session?.access_token) {
           router.replace("/login");
           return;
         }
-
-        /* ============================================
-           LOAD ONLY THIS CUSTOMER'S ORDERS
-        ============================================ */
 
         const response = await fetch(
           "/api/orders",
@@ -106,10 +97,6 @@ export default function OrdersPage() {
             cache: "no-store",
           }
         );
-
-        /* ============================================
-           SESSION EXPIRED / INVALID
-        ============================================ */
 
         if (response.status === 401) {
           await supabase.auth.signOut();
@@ -140,7 +127,7 @@ export default function OrdersPage() {
           error
         );
 
-        if (active) {
+        if (active && !opts?.silent) {
           setError(
             error instanceof Error
               ? error.message
@@ -154,10 +141,25 @@ export default function OrdersPage() {
       }
     }
 
-    loadOrders();
+    void loadOrders();
+
+    const pollId = window.setInterval(() => {
+      if (document.visibilityState === "visible") {
+        void loadOrders({ silent: true });
+      }
+    }, 18000);
+
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") {
+        void loadOrders({ silent: true });
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibility);
 
     return () => {
       active = false;
+      window.clearInterval(pollId);
+      document.removeEventListener("visibilitychange", onVisibility);
     };
   }, [router]);
 
@@ -580,9 +582,9 @@ export default function OrdersPage() {
                             <p className="mt-2 text-sm text-white">
                               {delivery.mode === "CUSTOMER_DISPATCH"
                                 ? "Your own dispatch"
-                                : "Platform rider"}
+                                : "Ride with 701"}
                               {" · "}
-                              {delivery.status.replaceAll("_", " ")}
+                              {getDeliveryStatusLabel(delivery.status)}
                             </p>
                             {delivery.order_code ? (
                               <p className="mt-2 text-sm text-white">

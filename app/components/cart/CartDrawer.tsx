@@ -226,7 +226,7 @@ ${thankYouNote()}`;
         type="button"
         aria-label="Close cart"
         onClick={closeCart}
-        className="fixed inset-0 z-[90] bg-black/40 backdrop-blur-sm"
+        className="fixed inset-0 z-[10050] bg-black/40 backdrop-blur-sm"
       />
 
       {/* =====================================================
@@ -239,7 +239,7 @@ ${thankYouNote()}`;
           fixed
           right-0
           top-0
-          z-[100]
+          z-[10051]
           flex
           h-[100dvh]
           w-full
@@ -254,7 +254,7 @@ ${thankYouNote()}`;
             HEADER
         ==================================================== */}
 
-        <div className="flex shrink-0 items-center justify-between border-b border-black/[0.08] bg-white px-5 py-5 sm:px-7">
+        <div className="flex shrink-0 items-center justify-between border-b border-black/[0.08] bg-white px-5 pb-5 pt-[calc(1.25rem+env(safe-area-inset-top,0px))] sm:px-7">
 
           <div className="min-w-0">
 
@@ -950,7 +950,7 @@ ${thankYouNote()}`;
             ================================================== */}
 
             {items.length > 0 && (
-              <div className="shrink-0 border-t border-black/[0.08] bg-white px-5 py-5 sm:px-7">
+              <div className="shrink-0 border-t border-black/[0.08] bg-white px-5 pb-[calc(1.25rem+env(safe-area-inset-bottom,0px))] pt-5 sm:px-7">
 
                 <div className="flex items-center justify-between">
 

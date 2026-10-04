@@ -1,6 +1,11 @@
 "use client";
 
+import { useShowFloatingActions } from "@/app/hooks/useShowFloatingActions";
+
 export default function WhatsAppButton() {
+  const show = useShowFloatingActions();
+  if (!show) return null;
+
   return (
     <a
       href="https://wa.me/2348121577759"

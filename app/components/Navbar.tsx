@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Menu, ShoppingBag, UserRound, X } from "lucide-react";
+import { Bell, Menu, ShoppingBag, UserRound, X } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useCart } from "@/app/context/CartContext";
 
@@ -23,6 +23,7 @@ export default function Navbar() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [signedIn, setSignedIn] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   const { totalItems, openCart } = useCart();
 
   const closeMenu = () => setOpen(false);
@@ -33,21 +34,73 @@ export default function Navbar() {
   };
 
   useEffect(() => {
+    document.documentElement.dataset.rtsNavOpen = open ? "1" : "0";
+    window.dispatchEvent(new Event("rts-nav-open-change"));
+    return () => {
+      document.documentElement.dataset.rtsNavOpen = "0";
+      window.dispatchEvent(new Event("rts-nav-open-change"));
+    };
+  }, [open]);
+
+  useEffect(() => {
     let mounted = true;
 
+    async function refreshUnread(token: string) {
+      try {
+        const response = await fetch("/api/notifications", {
+          headers: { Authorization: `Bearer ${token}` },
+          cache: "no-store",
+        });
+        const result = await response.json();
+        if (!mounted || !response.ok || !result?.success) return;
+        const rows = Array.isArray(result.notifications)
+          ? result.notifications
+          : [];
+        setUnreadCount(
+          rows.filter((row: { is_read?: boolean | null }) => !row.is_read)
+            .length
+        );
+      } catch {
+        /* ignore badge errors */
+      }
+    }
+
     supabase.auth.getSession().then(({ data }) => {
-      if (mounted) setSignedIn(Boolean(data.session));
+      if (!mounted) return;
+      const session = data.session;
+      setSignedIn(Boolean(session));
+      if (session?.access_token) {
+        void refreshUnread(session.access_token);
+      } else {
+        setUnreadCount(0);
+      }
     });
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (mounted) setSignedIn(Boolean(session));
+      if (!mounted) return;
+      setSignedIn(Boolean(session));
+      if (session?.access_token) {
+        void refreshUnread(session.access_token);
+      } else {
+        setUnreadCount(0);
+      }
     });
+
+    const pollId = window.setInterval(() => {
+      if (document.visibilityState !== "visible") return;
+      void supabase.auth.getSession().then(({ data }) => {
+        if (data.session?.access_token) {
+          void refreshUnread(data.session.access_token);
+        }
+      });
+    }, 30000);
 
     return () => {
       mounted = false;
       subscription.unsubscribe();
+      window.clearInterval(pollId);
     };
   }, []);
 
@@ -82,7 +135,9 @@ export default function Navbar() {
   const accountLinks: DrawerLink[] = signedIn
     ? [
         { label: "My Account", href: "/client-portal" },
-        { label: "My Orders", href: "/orders" },
+        { label: "My Orders", href: "/client-portal/orders" },
+        { label: "Wallet", href: "/client-portal/wallet" },
+        { label: "Notifications", href: "/client-portal/notifications" },
         { label: "Meal Plans", href: "/subscription" },
         { label: "Profile", href: "/client-portal/profile" },
       ]
@@ -141,10 +196,30 @@ export default function Navbar() {
             href={signedIn ? "/client-portal" : "/login"}
             onClick={closeMenu}
             aria-label={signedIn ? "Open account" : "Sign in"}
-            className="hidden h-11 w-11 items-center justify-center rounded-full border border-black/10 bg-[#F8F6F2] text-[#171717] transition-all duration-300 hover:border-[#F26A21] hover:text-[#F26A21] sm:inline-flex"
+            className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-black/10 bg-[#F8F6F2] text-[#171717] transition-all duration-300 hover:border-[#F26A21] hover:text-[#F26A21] sm:h-11 sm:w-11"
           >
             <UserRound size={18} strokeWidth={2} />
           </Link>
+
+          {signedIn ? (
+            <Link
+              href="/client-portal/notifications"
+              onClick={closeMenu}
+              aria-label={
+                unreadCount > 0
+                  ? `${unreadCount} unread notifications`
+                  : "Notifications"
+              }
+              className="relative inline-flex h-9 w-9 items-center justify-center rounded-full border border-black/10 bg-[#F8F6F2] text-[#171717] transition-all duration-300 hover:border-[#F26A21] hover:text-[#F26A21] sm:h-11 sm:w-11"
+            >
+              <Bell size={18} strokeWidth={2} />
+              {unreadCount > 0 ? (
+                <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full border-2 border-white bg-[#F26A21] px-1 text-[9px] font-extrabold text-white">
+                  {unreadCount > 99 ? "99+" : unreadCount}
+                </span>
+              ) : null}
+            </Link>
+          ) : null}
 
           <button
             type="button"

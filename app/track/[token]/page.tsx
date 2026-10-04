@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { Loader2, Share2 } from "lucide-react";
+import { Loader2, Phone, Share2 } from "lucide-react";
 
 import {
   DELIVERY_STATUS_FLOW,
@@ -324,7 +324,7 @@ export default function TrackDeliveryPage() {
                 />
               </div>
 
-              <div className="mt-4 grid grid-cols-4 gap-2 sm:grid-cols-8">
+              <div className="mt-4 hidden grid-cols-4 gap-2 sm:grid sm:grid-cols-8">
                 {DELIVERY_STATUS_FLOW.map((step, index) => {
                   const done =
                     delivery.status !== "CANCELLED" &&
@@ -351,9 +351,59 @@ export default function TrackDeliveryPage() {
                   );
                 })}
               </div>
+
+              <div className="mt-4 space-y-2 sm:hidden">
+                {DELIVERY_STATUS_FLOW.map((step, index) => {
+                  const done =
+                    delivery.status !== "CANCELLED" &&
+                    currentIndex >= index;
+                  const current =
+                    delivery.status !== "CANCELLED" &&
+                    currentIndex === index;
+                  return (
+                    <div
+                      key={`m-${step}`}
+                      className={`flex items-center gap-3 rounded-2xl px-3 py-2.5 ${
+                        current
+                          ? "bg-[#FFF7F2] ring-1 ring-[#F26A21]/30"
+                          : "bg-transparent"
+                      }`}
+                    >
+                      <div
+                        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[11px] font-bold ${
+                          done
+                            ? "bg-[#F26A21] text-white"
+                            : "bg-black/[0.06] text-black/35"
+                        }`}
+                      >
+                        {index + 1}
+                      </div>
+                      <p
+                        className={`text-sm font-semibold ${
+                          done ? "text-[#171717]" : "text-black/35"
+                        }`}
+                      >
+                        {getDeliveryStatusLabel(step)}
+                      </p>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
 
-            <div className="mt-10">
+            {riderPhone ? (
+              <div className="fixed inset-x-0 bottom-0 z-[40] border-t border-black/10 bg-white/95 px-4 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] pt-3 backdrop-blur sm:static sm:mt-6 sm:border-0 sm:bg-transparent sm:p-0 sm:backdrop-blur-none">
+                <a
+                  href={`tel:${riderPhone.replace(/\s+/g, "")}`}
+                  className="inline-flex min-h-[48px] w-full items-center justify-center gap-2 rounded-full bg-[#F26A21] px-5 text-sm font-bold text-white transition hover:bg-[#D95512] sm:max-w-xs"
+                >
+                  <Phone size={16} />
+                  Call rider
+                </a>
+              </div>
+            ) : null}
+
+            <div className={`mt-10 ${riderPhone ? "pb-24 sm:pb-0" : ""}`}>
               <h2 className="font-serif text-xl font-bold">Status timeline</h2>
               <div className="mt-5 space-y-4">
                 {history.length === 0 ? (
