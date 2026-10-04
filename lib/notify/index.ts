@@ -55,7 +55,7 @@ export type NotifyCustomerInput = {
     riderName?: string | null;
     note?: string | null;
   };
-  skipChannels?: Array<"email" | "sms" | "whatsapp" | "inbox">;
+  skipChannels?: Array<"email" | "sms" | "whatsapp" | "inbox" | "push">;
 };
 
 function resolveTemplate(input: NotifyCustomerInput): NotifyTemplate | null {
@@ -288,6 +288,49 @@ export async function notifyCustomer(input: NotifyCustomerInput) {
         status: result.skipped ? "skipped" : result.ok ? "sent" : "failed",
         providerId: result.id,
         error: result.error,
+      });
+    }
+
+    // Web push for signed-in customers (order/delivery events only — no OTP spam).
+    const pushEvents = new Set([
+      "ORDER_PAID",
+      "ORDER_STATUS",
+      "PICKUP_READY",
+      "DELIVERY_STATUS",
+      "OWN_RIDER_CODE",
+    ]);
+    if (
+      !skip.has("push") &&
+      input.authUserId &&
+      pushEvents.has(input.event)
+    ) {
+      const { sendWebPushToUser } = await import("@/lib/notify/push");
+      const pushUrl =
+        input.data?.trackingUrl ||
+        `${siteOrigin()}/client-portal/orders`;
+      const result = await sendWebPushToUser(input.authUserId, {
+        title: template.title,
+        body: template.sms,
+        url: pushUrl,
+        tag: `${input.event}:${input.data?.orderNo || "rts"}`,
+      });
+
+      await logSend({
+        authUserId: input.authUserId,
+        clientProfileId: input.clientProfileId,
+        channel: "push",
+        event: input.event,
+        payload: {
+          url: pushUrl,
+          ...(dedupeKey ? { dedupeKey } : {}),
+        },
+        status:
+          "skipped" in result && result.skipped
+            ? "skipped"
+            : result.ok
+              ? "sent"
+              : "failed",
+        error: "error" in result ? result.error : undefined,
       });
     }
 

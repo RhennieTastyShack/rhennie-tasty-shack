@@ -298,6 +298,8 @@ export default function CheckoutPage() {
   ) {
     event.preventDefault();
 
+    if (loading) return;
+
     setError("");
 
     if (items.length === 0) {

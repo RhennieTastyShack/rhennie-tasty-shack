@@ -8,6 +8,8 @@ import CartDrawer from "@/app/components/cart/CartDrawer";
 import WhatsAppButton from "@/app/components/WhatsAppButton";
 import RideWith701Button from "@/app/components/RideWith701Button";
 import PwaRegister from "@/app/components/PwaRegister";
+import PushPrompt from "@/app/components/PushPrompt";
+import OfflineBanner from "@/app/components/OfflineBanner";
 import { CartProvider } from "@/app/context/CartContext";
 
 export const metadata: Metadata = {
@@ -76,6 +78,7 @@ export default function RootLayout({
         ) : null}
         <CartProvider>
           <Navbar />
+          <OfflineBanner />
 
           <div className="pb-[calc(var(--rts-fab-stack-height)+env(safe-area-inset-bottom,0px))] sm:pb-0">
             {children}
@@ -86,6 +89,7 @@ export default function RootLayout({
           <RideWith701Button />
           <WhatsAppButton />
           <PwaRegister />
+          <PushPrompt />
         </CartProvider>
       </body>
     </html>

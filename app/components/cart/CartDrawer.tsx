@@ -758,7 +758,10 @@ ${thankYouNote()}`;
 
                   <button
                     type="button"
-                    onClick={closeCart}
+                    onClick={() => {
+                      closeCart();
+                      window.location.href = "/menu";
+                    }}
                     className="
                       mt-6
                       rounded-full

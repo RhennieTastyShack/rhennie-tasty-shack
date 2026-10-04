@@ -1,5 +1,5 @@
-/* Rhennie Tasty Shack — lightweight install + offline shell */
-const CACHE_VERSION = "rts-pwa-v2";
+/* Rhennie Tasty Shack — PWA shell + web push */
+const CACHE_VERSION = "rts-pwa-v3";
 const SHELL_URLS = [
   "/",
   "/manifest.webmanifest",
@@ -39,7 +39,6 @@ self.addEventListener("fetch", (event) => {
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
 
-  // Keep API / menu / auth data fresh — network only.
   if (
     url.pathname.startsWith("/api/") ||
     url.pathname.startsWith("/menu") ||
@@ -50,7 +49,6 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Static assets: cache-first.
   if (
     url.pathname.startsWith("/_next/static/") ||
     url.pathname.startsWith("/images/") ||
@@ -72,7 +70,6 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Navigation / HTML: network-first, fall back to cached home shell.
   if (request.mode === "navigate") {
     event.respondWith(
       fetch(request)
@@ -88,4 +85,63 @@ self.addEventListener("fetch", (event) => {
         )
     );
   }
+});
+
+self.addEventListener("push", (event) => {
+  let data = {
+    title: "Rhennie Tasty Shack",
+    body: "You have a new order update.",
+    url: "/client-portal/notifications",
+    tag: "rts-order",
+    icon: "/icon-192.png",
+    badge: "/icon-192.png",
+  };
+
+  try {
+    if (event.data) {
+      const parsed = event.data.json();
+      data = { ...data, ...parsed };
+    }
+  } catch {
+    try {
+      const text = event.data?.text();
+      if (text) data.body = text;
+    } catch {
+      /* keep defaults */
+    }
+  }
+
+  event.waitUntil(
+    self.registration.showNotification(data.title, {
+      body: data.body,
+      icon: data.icon || "/icon-192.png",
+      badge: data.badge || "/icon-192.png",
+      tag: data.tag || "rts-order",
+      data: { url: data.url || "/client-portal/notifications" },
+      renotify: true,
+    })
+  );
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const target = event.notification?.data?.url || "/client-portal/notifications";
+  const absolute = new URL(target, self.location.origin).href;
+
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then(
+      (clientList) => {
+        for (const client of clientList) {
+          if ("focus" in client && client.url.startsWith(self.location.origin)) {
+            client.navigate(absolute);
+            return client.focus();
+          }
+        }
+        if (self.clients.openWindow) {
+          return self.clients.openWindow(absolute);
+        }
+        return undefined;
+      }
+    )
+  );
 });

@@ -176,7 +176,16 @@ export default function NotificationsPage() {
 
         {items.length === 0 ? (
           <div className="mt-10 rounded-3xl border border-white/10 bg-[#111111] p-10 text-center">
-            <p className="text-white/50">No notifications yet.</p>
+            <p className="text-lg font-semibold text-white">No notifications yet</p>
+            <p className="mt-2 text-sm text-white/50">
+              Order and delivery updates will appear here when you place an order.
+            </p>
+            <Link
+              href="/menu"
+              className="mt-6 inline-flex rounded-full bg-[#D4AF37] px-5 py-2 text-xs font-bold uppercase tracking-wider text-black"
+            >
+              Browse menu
+            </Link>
           </div>
         ) : (
           <div className="mt-8 space-y-3">

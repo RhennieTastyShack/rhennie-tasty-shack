@@ -311,7 +311,10 @@ export default function WalletPage() {
           <h2 className="text-xl font-bold">Recent wallet activity</h2>
           <ul className="mt-4 space-y-3">
             {ledger.length === 0 && (
-              <li className="text-sm text-white/50">No wallet activity yet.</li>
+              <li className="rounded-2xl border border-white/10 px-4 py-8 text-center text-sm text-white/50">
+                No wallet activity yet. Fund your RTS Wallet to pay for orders
+                faster next time.
+              </li>
             )}
             {ledger.map((row) => (
               <li key={row.id} className="rounded-2xl border border-white/10 px-4 py-3 text-sm">

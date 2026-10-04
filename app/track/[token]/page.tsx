@@ -139,8 +139,15 @@ export default function TrackDeliveryPage() {
 
   if (loading) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-[#F8F6F2] px-4">
-        <Loader2 className="animate-spin text-[#F26A21]" size={36} />
+      <main className="min-h-screen bg-[#F8F6F2] px-4 py-16">
+        <div className="mx-auto max-w-lg space-y-4">
+          <div className="h-40 animate-pulse rounded-[28px] bg-white" />
+          <div className="h-56 animate-pulse rounded-[28px] bg-white" />
+          <p className="flex items-center justify-center gap-2 text-sm text-[#F26A21]">
+            <Loader2 className="animate-spin" size={16} />
+            Loading tracking…
+          </p>
+        </div>
       </main>
     );
   }
@@ -156,14 +163,51 @@ export default function TrackDeliveryPage() {
             Tracking unavailable
           </h1>
           <p className="mt-3 text-sm text-black/50">
-            {error || "This tracking link could not be found."}
+            {error ||
+              "This tracking link could not be found. Check your connection or try again shortly."}
           </p>
-          <Link
-            href="/"
-            className="mt-6 inline-flex min-h-[48px] items-center justify-center rounded-full bg-[#F26A21] px-6 text-sm font-bold text-white"
-          >
-            Back home
-          </Link>
+          <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
+            <button
+              type="button"
+              onClick={() => {
+                setLoading(true);
+                setError("");
+                void (async () => {
+                  try {
+                    const response = await fetch(
+                      `/api/deliveries?token=${encodeURIComponent(token)}`,
+                      { cache: "no-store" }
+                    );
+                    const result = await response.json();
+                    if (!response.ok || !result?.success || !result.delivery) {
+                      throw new Error(
+                        result?.error || "Unable to load this delivery."
+                      );
+                    }
+                    setDelivery(result.delivery);
+                  } catch (retryError) {
+                    setError(
+                      retryError instanceof Error
+                        ? retryError.message
+                        : "Unable to load this delivery."
+                    );
+                    setDelivery(null);
+                  } finally {
+                    setLoading(false);
+                  }
+                })();
+              }}
+              className="inline-flex min-h-[48px] items-center justify-center rounded-full bg-[#F26A21] px-6 text-sm font-bold text-white"
+            >
+              Try again
+            </button>
+            <Link
+              href="/"
+              className="inline-flex min-h-[48px] items-center justify-center rounded-full border border-black/10 px-6 text-sm font-bold text-black/60"
+            >
+              Back home
+            </Link>
+          </div>
         </div>
       </main>
     );
@@ -284,17 +328,28 @@ export default function TrackDeliveryPage() {
                 )}
                 <p className="mt-1 text-xs text-black/45">
                   {[
+                    delivery.rider?.vehicle_type,
                     delivery.rider?.vehicle_model,
                     delivery.rider?.vehicle_color,
                     delivery.rider?.plate_number,
                   ]
                     .filter(Boolean)
                     .join(" · ") ||
-                    riderPhone ||
+                    (riderPhone && !delivery.rider
+                      ? "Tap Call rider below"
+                      : "") ||
                     (delivery.status === "UNASSIGNED"
-                      ? "A rider will be assigned soon"
-                      : "Contact unavailable")}
+                      ? "A partner will be assigned soon"
+                      : "Contact available when assigned")}
                 </p>
+                {delivery.order_code ? (
+                  <p className="mt-3 rounded-xl bg-white px-3 py-2 text-xs font-semibold text-[#171717]">
+                    Delivery code{" "}
+                    <span className="tracking-[0.2em] text-[#F26A21]">
+                      {delivery.order_code}
+                    </span>
+                  </p>
+                ) : null}
               </div>
             </div>
 

@@ -15,6 +15,7 @@ const HIDDEN_PREFIXES = [
   "/admin",
   "/admin-login",
   "/riders/portal",
+  "/track",
 ];
 
 function pathHidesFabs(pathname: string | null) {
