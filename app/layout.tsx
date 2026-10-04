@@ -7,19 +7,28 @@ import SiteFooter from "@/app/components/SiteFooter";
 import CartDrawer from "@/app/components/cart/CartDrawer";
 import WhatsAppButton from "@/app/components/WhatsAppButton";
 import RideWith701Button from "@/app/components/RideWith701Button";
+import PwaRegister from "@/app/components/PwaRegister";
 import { CartProvider } from "@/app/context/CartContext";
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://rhennietastyshack.com"),
   title: "Rhennie Tasty Shack",
   description:
     "Premium Nigerian and continental cuisine, catering, meal subscriptions and unforgettable dining experiences.",
   applicationName: "Rhennie Tasty Shack",
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    title: "Rhennie Tasty Shack",
+    statusBarStyle: "default",
+  },
   icons: {
     icon: [
       { url: "/favicon.ico", sizes: "any" },
       { url: "/favicon-16.png", sizes: "16x16", type: "image/png" },
       { url: "/favicon-32.png", sizes: "32x32", type: "image/png" },
       { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
     ],
     shortcut: ["/favicon.ico"],
     apple: [{ url: "/apple-icon.png", sizes: "180x180", type: "image/png" }],
@@ -76,6 +85,7 @@ export default function RootLayout({
           <CartDrawer />
           <RideWith701Button />
           <WhatsAppButton />
+          <PwaRegister />
         </CartProvider>
       </body>
     </html>
